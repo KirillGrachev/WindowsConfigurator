@@ -1,0 +1,331 @@
+{
+  "$schema": "./config.schema.json",
+  "Meta": {
+    "Version": "2.0.0",
+    "IsTestData": true,
+    "Environment": "TEST",
+    "CompanyName": "Test Company LLC",
+    "Maintainer": "it-support@test.local",
+    "Description": "ТЕСТОВАЯ конфигурация WindowsConfigurator. Все значения ниже - заглушки. Замените их на реальные корпоративные данные (список - в README.md, раздел 'Конфигурация')."
+  },
+  "General": {
+    "DefaultSteps": [
+      "Activation",
+      "AppRemoval",
+      "Installation",
+      "Desktop",
+      "Taskbar",
+      "Autostart",
+      "Power",
+      "NumLock"
+    ],
+    "StepDelaySeconds": 2,
+    "RequireAdministrator": true,
+    "ConfirmImpact": "Medium",
+    "StopOnFirstFailure": false
+  },
+  "Logging": {
+    "Level": "Info",
+    "FilePath": "%SystemRoot%\\Temp\\WindowsConfigurator\\configurator.log",
+    "RetentionDays": 30,
+    "WriteToConsole": true
+  },
+  "Environment": {
+    "PowerSkipComputerNamePatterns": [
+      "^TEST-PC\\d+$",
+      "^TEST-NB\\d+$"
+    ],
+    "MinimumSupportedBuild": 19045,
+    "UserProfilesRoot": "%SystemDrive%\\Users"
+  },
+  "Secrets": {
+    "Provider": "Plain",
+    "EnvironmentVariablePrefix": "WC_",
+    "DpapiStorePath": "",
+    "BlockTestDataSecrets": true
+  },
+  "WindowsVersions": [
+    { "MinBuild": 27000, "Label": "Win11-25H2" },
+    { "MinBuild": 26100, "Label": "Win11-24H2" },
+    { "MinBuild": 22621, "Label": "Win11-23H2" },
+    { "MinBuild": 19045, "Label": "Win10-22H2" }
+  ],
+  "Activation": {
+    "Enabled": true,
+    "KmsClientKey": "TEST1-TEST2-TEST3-TEST4-TEST5",
+    "KmsServer": "kms.test.local",
+    "KmsPort": 1688,
+    "SlmgrPath": "%SystemRoot%\\System32\\slmgr.vbs",
+    "ScriptHost": "cscript.exe",
+    "DelayBetweenCommandsSeconds": 3,
+    "BlockTestDataKey": true,
+    "RetryCount": 2,
+    "RetryDelaySeconds": 5
+  },
+  "Deployment": {
+    "AppsRepositoryRoot": "\\\\fileserver01.test.local\\Deploy$\\Apps",
+    "MsiExecPath": "msiexec.exe",
+    "CommandInterpreter": "cmd.exe",
+    "InstallerRetryCount": 3,
+    "InstallerLockWaitSeconds": 300,
+    "InstallerLockCheckIntervalSeconds": 5,
+    "SuccessExitCodes": [ 0, 3010 ],
+    "RetryExitCodes": [ 1618 ],
+    "NetFx3FeatureName": "NetFx3",
+    "NetFx3SourceTemplate": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs",
+    "DismExecutable": "DISM"
+  },
+  "AppsToRemove": {
+    "Bloatware": [
+      "*Test.BingWeather*",
+      "*Test.ZuneMusic*",
+      "*Test.GetHelp*"
+    ],
+    "Games": [
+      "*Test.MicrosoftSolitaireCollection*"
+    ],
+    "Office365Stub": [
+      "*Test.OfficeHub*"
+    ]
+  },
+  "ProvisionedAppFilters": [
+    "*WebExperience*"
+  ],
+  "RemoveWebExperience": true,
+  "LegacyAppsToRemove": [
+    {
+      "Name": "Test Legacy App",
+      "PathToExe": "C:\\Program Files\\TestLegacyApp\\app.exe",
+      "PathToUninstaller": "C:\\Program Files\\TestLegacyApp\\uninstall.exe",
+      "UninstallerArguments": "/silent",
+      "Processes": [ "TestLegacyApp", "TestLegacyHelper" ],
+      "RemoveFolder": true,
+      "WaitAfterUninstallSeconds": 5
+    }
+  ],
+  "AppsToInstall": [
+    {
+      "Name": "Test Office Suite",
+      "Type": "MSI",
+      "InstallerPath": "{AppsRepositoryRoot}\\Office\\testoffice.msi",
+      "TransformPath": "{AppsRepositoryRoot}\\Office\\testoffice.mst",
+      "Arguments": "/qn /norestart ALLUSERS=1",
+      "ProductCode": "{11111111-2222-3333-4444-555555555555}",
+      "InstallPath": "C:\\Program Files\\Test Office",
+      "PostInstall": [
+        {
+          "InstallerPath": "{AppsRepositoryRoot}\\Office\\postinstall.cmd",
+          "Arguments": "/Q"
+        }
+      ],
+      "CopyFiles": [
+        {
+          "Source": "{AppsRepositoryRoot}\\Office\\templates\\default.dotx",
+          "Destination": "[InstallPath]\\Templates\\default.dotx"
+        }
+      ]
+    },
+    {
+      "Name": "Test PDF Reader",
+      "Type": "Executable",
+      "InstallerPath": "{AppsRepositoryRoot}\\PdfReader\\setup.exe",
+      "Arguments": "/S /D=[InstallPath]",
+      "UninstallKey": "Test PDF Reader",
+      "InstallPath": "C:\\Program Files\\Test PDF Reader"
+    },
+    {
+      "Name": "Test Agent",
+      "Type": "Batch",
+      "InstallerPath": "{AppsRepositoryRoot}\\Agent\\install.cmd",
+      "UninstallKey": "TestAgent",
+      "InstallPath": "C:\\ProgramData\\TestAgent"
+    },
+    {
+      "Name": "NET FRAMEWORK 3.5",
+      "Type": "DISM",
+      "FeatureName": "NetFx3",
+      "SourcePath": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs"
+    }
+  ],
+  "AutoStartApps": {
+    "Test Legacy App": [ "TestLegacyApp" ],
+    "Microsoft Edge": [ "MicrosoftEdge" ],
+    "Acrobat Collaboration Synchronizer": [ "Adobe Collab Sync" ]
+  },
+  "AutostartTweaks": {
+    "Adobe": {
+      "Enabled": true,
+      "TriggerKey": "Acrobat Collaboration Synchronizer",
+      "ServiceNamePattern": "*AdobeARM*",
+      "ScheduledTaskPattern": "*Adobe*",
+      "PolicyPath": "HKLM:\\SOFTWARE\\Policies\\Adobe\\Adobe Acrobat\\DC\\FeatureLockDown",
+      "PolicyValues": {
+        "cServices": 0,
+        "bToggleFolio": 0
+      }
+    },
+    "Edge": {
+      "Enabled": true,
+      "TriggerKey": "Microsoft Edge",
+      "PolicyPath": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+      "PolicyValues": {
+        "StartupBoostEnabled": 0
+      },
+      "ScheduledTasks": [
+        "MicrosoftEdgeUpdateTaskMachineCore",
+        "MicrosoftEdgeUpdateTaskMachineUA",
+        "MicrosoftEdgeShadowStackRollbackTask"
+      ]
+    }
+  },
+  "DesktopSettings": {
+    "Icons": [
+      {
+        "Clsid": "{20D04FE0-3AEA-1069-A2D8-08002B30309D}",
+        "Name": "Этот компьютер",
+        "Hidden": false
+      },
+      {
+        "Clsid": "{645FF040-5081-101B-9F08-00AA002F954E}",
+        "Name": "Корзина",
+        "Hidden": false
+      }
+    ],
+    "RegistrySubPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\HideDesktopIcons\\NewStartPanel",
+    "RestartExplorer": true
+  },
+  "TaskbarSettings": {
+    "DisableTaskView": true,
+    "DisableWidgets": true,
+    "TaskViewValueName": "ShowTaskViewButton",
+    "TaskViewRegistrySubPath": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+    "WidgetsPolicyPath": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Dsh",
+    "WidgetsValueName": "AllowNewsAndInterests",
+    "MaxRetries": 3,
+    "RetryDelaySeconds": 2,
+    "RestartExplorer": true,
+    "PreWriteDelayMilliseconds": 500
+  },
+  "PowerSettings": {
+    "DesiredPlan": "Test Balanced Plan",
+    "SetActiveAfterChanges": true,
+    "Settings": [
+      {
+        "Label": "Отключать дисплей",
+        "SubGroupGuid": "7516b95f-f776-4464-8c53-06167f40cc99",
+        "SettingGuid": "3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e",
+        "Minutes": 15,
+        "Target": "Both"
+      },
+      {
+        "Label": "Переводить в сон",
+        "SubGroupGuid": "238c9fa8-0aad-41ed-83f4-97be242c8f20",
+        "SettingGuid": "29f6c1db-86da-48c5-9fdb-f2b67b1f44da",
+        "Minutes": 30,
+        "Target": "AC"
+      }
+    ]
+  },
+  "NumLock": {
+    "ValueName": "InitialKeyboardIndicators",
+    "EnabledValue": "2",
+    "DisabledValue": "0",
+    "RegistrySubPath": "Control Panel\\Keyboard",
+    "ApplyToDefaultUser": true
+  },
+  "FolderRedirection": {
+    "RootFolderName": "Users",
+    "PreferredDriveLetter": "",
+    "ExcludedDriveLetters": [ "C" ],
+    "AllowedDriveTypes": [ 3 ],
+    "RegistrySubPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+    "Folders": [
+      { "Name": "Desktop", "RegValueName": "Desktop", "SourceFolderName": "Desktop" },
+      { "Name": "Documents", "RegValueName": "Personal", "SourceFolderName": "Documents" },
+      { "Name": "Downloads", "RegValueName": "{374DE290-123F-4565-9164-39C4925E467B}", "SourceFolderName": "Downloads" },
+      { "Name": "Pictures", "RegValueName": "My Pictures", "SourceFolderName": "Pictures" },
+      { "Name": "Music", "RegValueName": "My Music", "SourceFolderName": "Music" },
+      { "Name": "Videos", "RegValueName": "My Video", "SourceFolderName": "Videos" }
+    ]
+  },
+  "SignatureSettings": {
+    "TemplatePath": "\\\\fileserver01.test.local\\Deploy$\\Templates\\signature-template.htm",
+    "LogoSource": "\\\\fileserver01.test.local\\Deploy$\\Templates\\logo.jpg",
+    "OfficeVersion": "16.0",
+    "FolderNamePattern": "Outlook_Signature_{UserName}",
+    "OutputRoot": "UserDesktop",
+    "RegardsText": "С уважением,",
+    "FallbackCompany": "Test Company LLC",
+    "FallbackEmailDomain": "test.local",
+    "FallbackFullName": "",
+    "AdSearchRoot": "",
+    "AdSearchFilter": "(&(objectClass=user)(sAMAccountName={UserName}))",
+    "AdAttributes": [
+      "displayName",
+      "cn",
+      "company",
+      "mail",
+      "title",
+      "telephoneNumber",
+      "mobile"
+    ],
+    "PhoneLabels": {
+      "Work": "Тел.:",
+      "Mobile": "Моб.:"
+    },
+    "PhoneFormatPattern": "^\\+?7(\\d{3})(\\d{3})(\\d{2})(\\d{2})$",
+    "PhoneFormatReplacement": "+7 ($1) $2-$3-$4",
+    "Placeholders": {
+      "FullName": "[FULL_NAME]",
+      "JobTitle": "[JOB_TITLE]",
+      "CompanyName": "[COMPANY_NAME]",
+      "EmailAddress": "[EMAIL_ADDRESS]",
+      "PhoneNumber": "[PHONE_NUMBER]",
+      "PhoneLabel": "[PHONE_LABEL]",
+      "Regards": "[REGARDS]",
+      "LogoUrl": "[LOGO_URL]"
+    },
+    "GenerateHtml": true,
+    "GenerateText": true,
+    "GenerateRtf": true,
+    "RtfCodePage": 1251,
+    "RtfFontName": "Calibri",
+    "RtfFontSizeHalfPoints": 22,
+    "InstallToUserSignaturesFolder": true,
+    "SetAsDefaultSignature": true,
+    "LogoImageName": "image001.jpg",
+    "WriteFileListXml": true,
+    "WriteColorSchemeXml": true,
+    "ColorSchemeXml": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<a:clrMap xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" bg1=\"lt1\" tx1=\"dk1\" bg2=\"lt2\" tx2=\"dk2\" accent1=\"accent1\" accent2=\"accent2\" accent3=\"accent3\" accent4=\"accent4\" accent5=\"accent5\" accent6=\"accent6\" hlink=\"hlink\" folHlink=\"folHlink\"/>"
+  },
+  "ContextMenu": {
+    "EnableClassic": true,
+    "Clsid": "{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}",
+    "RegistrySubPath": "Software\\Classes\\CLSID",
+    "ValueName": "(Default)",
+    "RestartExplorer": true
+  },
+  "Menu": {
+    "Title": "Windows 11 Конфигуратор",
+    "ExitChoice": "0",
+    "ContinuePrompt": "Нажмите Enter для продолжения",
+    "InvalidChoiceMessage": "Неправильный выбор",
+    "InvalidChoiceDelaySeconds": 1,
+    "RunAllLabel": "Запустить все эти шаги",
+    "Items": [
+      { "Id": "1", "Label": "Активация Windows (KMS)", "Step": "Activation", "Color": "White", "RequiresUser": false, "InRunAll": true },
+      { "Id": "2", "Label": "Удаление встроенных приложений", "Step": "AppRemoval", "Color": "White", "RequiresUser": false, "InRunAll": true },
+      { "Id": "3", "Label": "Установка приложений", "Step": "Installation", "Color": "White", "RequiresUser": false, "InRunAll": true, "HasSubmenu": true },
+      { "Id": "4", "Label": "Показ значков рабочего стола", "Step": "Desktop", "Color": "White", "RequiresUser": true, "InRunAll": true },
+      { "Id": "5", "Label": "Настройка панели задач", "Step": "Taskbar", "Color": "White", "RequiresUser": true, "InRunAll": true },
+      { "Id": "6", "Label": "Отключение автозагрузки", "Step": "Autostart", "Color": "White", "RequiresUser": true, "InRunAll": true },
+      { "Id": "7", "Label": "Настройка планов питания", "Step": "Power", "Color": "White", "RequiresUser": false, "InRunAll": true },
+      { "Id": "8", "Label": "Перенаправление пользовательских папок", "Step": "FolderRedirection", "Color": "White", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 12" },
+      { "Id": "9", "Label": "Включить NumLock при запуске", "Step": "NumLock", "Color": "White", "RequiresUser": true, "InRunAll": true },
+      { "Id": "10", "Label": "Создать подпись для почты", "Step": "Signature", "Color": "White", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 12" },
+      { "Id": "11", "Label": "Вернуть контекстное меню Windows 10", "Step": "ClassicContextMenu", "Color": "Yellow", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 12" },
+      { "Id": "12", "Label": "Выключить NumLock при запуске", "Step": "NumLockOff", "Color": "Yellow", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 12" },
+      { "Id": "13", "Label": "Запустить все эти шаги", "Step": "RunAll", "Color": "Green", "RequiresUser": true, "InRunAll": false }
+    ]
+  }
+}
