@@ -1,0 +1,30 @@
+# Окончания строк и кодировки (согласованы с tools/Set-ProjectEncoding.ps1
+# и тестом ProjectStructure.Tests.ps1).
+* text=auto
+
+# PowerShell: CRLF обязателен, UTF-8 BOM критичен для Windows PowerShell 5.1
+# (без BOM кириллица в строковых литералах читается как ANSI и ломается).
+*.ps1  text eol=crlf working-tree-encoding=UTF-8
+*.psm1 text eol=crlf working-tree-encoding=UTF-8
+*.psd1 text eol=crlf working-tree-encoding=UTF-8
+
+# Пакетные файлы Windows
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Лицензия (файл без расширения)
+LICENSE text eol=lf
+
+# Данные и документация - LF
+*.json text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Бинарные файлы (логотип подписи, DPAPI-конверты и т.п.)
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.bin  binary
+*.msi  binary
+*.exe  binary

@@ -1,0 +1,609 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.local/schemas/windows-configurator/config.schema.json",
+  "title": "WindowsConfigurator configuration",
+  "description": "Единственный источник структуры и ЗНАЧЕНИЙ ПО УМОЛЧАНИЮ для config.json. Дефолты НЕ дублируются в коде: Import-Configuration строит их из этого файла (Get-ConfigurationDefaults).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [ "Meta", "Activation", "AppsToInstall", "SignatureSettings" ],
+  "properties": {
+    "$schema": {
+      "description": "Ссылка на схему (игнорируется валидатором).",
+      "type": "string"
+    },
+    "Meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "IsTestData" ],
+      "properties": {
+        "Version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "default": "1.0.0", "description": "Версия конфигурации (SemVer)." },
+        "IsTestData": { "type": "boolean", "default": true, "description": "true = в файле тестовые заглушки. Скрипт предупреждает при запуске, шаг Activation отказывается работать с тестовым KMS-ключом." },
+        "Environment": { "type": "string", "enum": [ "TEST", "DEV", "STAGE", "PROD" ], "default": "TEST", "description": "Окружение, для которого предназначен конфиг." },
+        "CompanyName": { "type": "string", "minLength": 1, "default": "Test Company LLC", "description": "Название компании (используется как фолбэк подписи, если в AD нет атрибута company)." },
+        "Maintainer": { "type": "string", "default": "", "description": "Контакт сопровождающего (email или имя)." },
+        "Description": { "type": "string", "default": "", "description": "Свободное описание конфигурации." }
+      }
+    },
+    "General": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "DefaultSteps": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/stepName" },
+          "default": [ "Activation", "AppRemoval", "Installation", "Desktop", "Taskbar", "Autostart", "Power", "NumLock" ],
+          "description": "Состав -RunAll. Порядок = порядок выполнения."
+        },
+        "StepDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 60, "default": 2, "description": "Пауза между шагами (сек)." },
+        "RequireAdministrator": { "type": "boolean", "default": true, "description": "Требовать запуск от администратора. false - только для отладки." },
+        "ConfirmImpact": { "type": "string", "enum": [ "None", "Low", "Medium", "High" ], "default": "Medium", "description": "ConfirmImpact для шагов с SupportsShouldProcess." },
+        "StopOnFirstFailure": { "type": "boolean", "default": false, "description": "Прерывать выполнение остальных шагов после первой ошибки." }
+      }
+    },
+    "Logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Level": { "type": "string", "enum": [ "Debug", "Info", "Warning", "Error", "None" ], "default": "Info", "description": "Минимальный уровень вывода в консоль." },
+        "FilePath": { "type": "string", "default": "", "description": "Файл журнала. Пустая строка = файловый журнал выключен. Поддерживает %SystemRoot% и прочие переменные окружения." },
+        "RetentionDays": { "type": "integer", "minimum": 0, "maximum": 3650, "default": 30, "description": "Срок хранения журнала в днях (0 = не удалять)." },
+        "WriteToConsole": { "type": "boolean", "default": true, "description": "Дублировать сообщения в консоль." }
+      }
+    },
+    "Environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PowerSkipComputerNamePatterns": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": [],
+          "description": "Regex-шаблоны имён ПК, на которых шаг Power пропускается (например ноутбуки клиники). В оригинале было захардкожено: ^KMA-N\\d+$ и ^KMA-CLINICNOUT\\d+$."
+        },
+        "MinimumSupportedBuild": { "type": "integer", "minimum": 7600, "default": 19045, "description": "Минимальная поддерживаемая сборка Windows." },
+        "UserProfilesRoot": { "type": "string", "default": "%SystemDrive%\\Users", "description": "Корень профилей пользователей." }
+      }
+    },
+    "Secrets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Provider": { "type": "string", "enum": [ "Plain", "Environment", "File", "Dpapi" ], "default": "Plain", "description": "Провайдер по умолчанию для значений-секретов, заданных простой строкой." },
+        "EnvironmentVariablePrefix": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "default": "WC_", "description": "Префикс переменных окружения для ссылок вида env:KMS_KEY." },
+        "DpapiStorePath": { "type": "string", "default": "", "description": "Каталог с DPAPI-конвертами (.bin), созданными tools\\New-EncryptedSecret.ps1." },
+        "BlockTestDataSecrets": { "type": "boolean", "default": true, "description": "Запрещать использование тестовых значений секретов (защита от запуска заглушки в бою)." }
+      }
+    },
+    "WindowsVersions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/windowsVersion" },
+      "default": [
+        { "MinBuild": 27000, "Label": "Win11-25H2" },
+        { "MinBuild": 26100, "Label": "Win11-24H2" },
+        { "MinBuild": 22621, "Label": "Win11-23H2" },
+        { "MinBuild": 19045, "Label": "Win10-22H2" }
+      ],
+      "description": "Карта 'сборка -> метка версии'. Используется для подстановки {VersionLabel} в пути (NetFx3 sxs). Порядок: от старшей сборки к младшей."
+    },
+    "Activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Enabled": { "type": "boolean", "default": true, "description": "false = пропустить шаг активации." },
+        "KmsClientKey": {
+          "description": "GVLK-ключ клиента KMS. Либо строка в формате XXXXX-XXXXX-XXXXX-XXXXX-XXXXX, либо ссылка на секрет (env:/file:/dpapi:). В поставке - ТЕСТОВОЕ значение.",
+          "oneOf": [
+            { "type": "string", "pattern": "^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$" },
+            { "$ref": "#/definitions/secretReference" }
+          ],
+          "default": "TEST1-TEST2-TEST3-TEST4-TEST5"
+        },
+        "KmsServer": { "type": "string", "default": "", "description": "FQDN/IP KMS-сервера (slmgr /skms). Пусто = не задавать сервер." },
+        "KmsPort": { "type": "integer", "minimum": 1, "maximum": 65535, "default": 1688, "description": "Порт KMS-сервера." },
+        "SlmgrPath": { "type": "string", "default": "%SystemRoot%\\System32\\slmgr.vbs", "description": "Путь к slmgr.vbs." },
+        "ScriptHost": { "type": "string", "default": "cscript.exe", "description": "Хост VBScript (cscript.exe/wscript.exe)." },
+        "DelayBetweenCommandsSeconds": { "type": "integer", "minimum": 0, "maximum": 300, "default": 3, "description": "Пауза между /ipk и /ato." },
+        "BlockTestDataKey": { "type": "boolean", "default": true, "description": "Блокировать активацию, если ключ совпадает с тестовым из поставки." },
+        "RetryCount": { "type": "integer", "minimum": 0, "maximum": 10, "default": 2, "description": "Повторы при ошибке активации." },
+        "RetryDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 600, "default": 5, "description": "Пауза между повторами." }
+      }
+    },
+    "Deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AppsRepositoryRoot": {
+          "description": "Корень репозитория установщиков (UNC). Подставляется в токен {AppsRepositoryRoot}. Может быть ссылкой на секрет, если путь считается чувствительным.",
+          "oneOf": [
+            { "type": "string", "minLength": 2 },
+            { "$ref": "#/definitions/secretReference" }
+          ],
+          "default": "\\\\fileserver01.test.local\\Deploy$\\Apps"
+        },
+        "MsiExecPath": { "type": "string", "default": "msiexec.exe", "description": "Путь к msiexec.exe." },
+        "CommandInterpreter": { "type": "string", "default": "cmd.exe", "description": "Интерпретатор для DISM/Batch." },
+        "InstallerRetryCount": { "type": "integer", "minimum": 1, "maximum": 10, "default": 3, "description": "Максимум попыток установки одного приложения." },
+        "InstallerLockWaitSeconds": { "type": "integer", "minimum": 0, "maximum": 7200, "default": 300, "description": "Сколько ждать снятия блокировки msiexec (код 1618)." },
+        "InstallerLockCheckIntervalSeconds": { "type": "integer", "minimum": 1, "maximum": 300, "default": 5, "description": "Интервал проверки msiexec." },
+        "SuccessExitCodes": { "type": "array", "items": { "type": "integer" }, "minItems": 1, "uniqueItems": true, "default": [ 0, 3010 ], "description": "Коды возврата, считающиеся успехом (3010 = нужен рестарт)." },
+        "RetryExitCodes": { "type": "array", "items": { "type": "integer" }, "uniqueItems": true, "default": [ 1618 ], "description": "Коды возврата, при которых установка повторяется." },
+        "NetFx3FeatureName": { "type": "string", "default": "NetFx3", "description": "Имя компонента DISM для .NET Framework 3.5." },
+        "NetFx3SourceTemplate": { "type": "string", "default": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs", "description": "Шаблон пути к источнику sxs. Токены: {AppsRepositoryRoot}, {VersionLabel}." },
+        "DismExecutable": { "type": "string", "default": "DISM", "description": "Имя/путь DISM." }
+      }
+    },
+    "AppsToRemove": {
+      "type": "object",
+      "description": "Категории Appx-пакетов для удаления. Ключ - произвольное имя категории, значение - список шаблонов имён пакетов.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 },
+        "uniqueItems": true
+      },
+      "default": {}
+    },
+    "ProvisionedAppFilters": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "default": [ "*WebExperience*" ],
+      "description": "Шаблоны provisioned-пакетов, удаляемых для всех будущих пользователей."
+    },
+    "RemoveWebExperience": { "type": "boolean", "default": true, "description": "Принудительно удалять пакет виджетов (*WebExperience*)." },
+    "LegacyAppsToRemove": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/legacyApp" },
+      "default": [],
+      "description": "Классические (Win32) приложения, удаляемые через их uninstaller."
+    },
+    "AppsToInstall": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/appItem" },
+      "default": []
+    },
+    "AutoStartApps": {
+      "type": "object",
+      "description": "Приложения, чью автозагрузку нужно вычистить. Ключ - группа (используется как триггер для твиков), значение - имена файлов/значений реестра без расширения.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 },
+        "uniqueItems": true
+      },
+      "default": {}
+    },
+    "AutostartTweaks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Adobe": { "$ref": "#/definitions/autostartTweak" },
+        "Edge": { "$ref": "#/definitions/autostartTweak" }
+      },
+      "default": {}
+    },
+    "DesktopSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Icons": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/desktopIcon" },
+          "default": [
+            { "Clsid": "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "Name": "Этот компьютер", "Hidden": false },
+            { "Clsid": "{645FF040-5081-101B-9F08-00AA002F954E}", "Name": "Корзина", "Hidden": false }
+          ],
+          "description": "Значки рабочего стола: Hidden=false - показать, true - скрыть."
+        },
+        "RegistrySubPath": { "type": "string", "default": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\HideDesktopIcons\\NewStartPanel", "description": "Подпуть в кусте пользователя." },
+        "RestartExplorer": { "type": "boolean", "default": true, "description": "Перезапускать Explorer после изменения." }
+      }
+    },
+    "TaskbarSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "DisableTaskView": { "type": "boolean", "default": true, "description": "Скрыть кнопку Представления задач." },
+        "DisableWidgets": { "type": "boolean", "default": true, "description": "Отключить виджеты/Новости и интересы (политика Dsh)." },
+        "TaskViewValueName": { "type": "string", "default": "ShowTaskViewButton", "description": "Имя значения реестра Task View." },
+        "TaskViewRegistrySubPath": { "type": "string", "default": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "description": "Подпуть в кусте пользователя для Task View." },
+        "WidgetsPolicyPath": { "type": "string", "default": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Dsh", "description": "Путь политики виджетов." },
+        "WidgetsValueName": { "type": "string", "default": "AllowNewsAndInterests", "description": "Имя значения политики виджетов." },
+        "MaxRetries": { "type": "integer", "minimum": 1, "maximum": 10, "default": 3, "description": "Попытки записи значения реестра." },
+        "RetryDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 60, "default": 2, "description": "Базовая задержка между попытками (линейный рост)." },
+        "RestartExplorer": { "type": "boolean", "default": true, "description": "Перезапускать Explorer после применения политик." },
+        "PreWriteDelayMilliseconds": { "type": "integer", "minimum": 0, "maximum": 10000, "default": 500, "description": "Пауза после загрузки куста (устойчивость к гонке)." }
+      }
+    },
+    "PowerSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "DesiredPlan": { "type": "string", "minLength": 1, "default": "Test Balanced Plan", "description": "Точное имя плана питания из powercfg /l (например 'Сбалансированная')." },
+        "SetActiveAfterChanges": { "type": "boolean", "default": true, "description": "Вызвать powercfg /SetActive после изменения индексов." },
+        "Settings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/powerSetting" },
+          "default": [],
+          "description": "Таймауты: Minutes -> секунды, Target = AC/DC/Both."
+        }
+      }
+    },
+    "NumLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ValueName": { "type": "string", "default": "InitialKeyboardIndicators", "description": "Имя значения реестра." },
+        "EnabledValue": { "type": "string", "default": "2", "description": "Значение для включения NumLock." },
+        "DisabledValue": { "type": "string", "default": "0", "description": "Значение для выключения NumLock." },
+        "RegistrySubPath": { "type": "string", "default": "Control Panel\\Keyboard", "description": "Подпуть в кусте пользователя." },
+        "ApplyToDefaultUser": { "type": "boolean", "default": true, "description": "Применять также к HKEY_USERS\\.DEFAULT (для экрана входа)." }
+      }
+    },
+    "FolderRedirection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "RootFolderName": { "type": "string", "default": "Users", "description": "Имя родительского каталога на целевом диске." },
+        "PreferredDriveLetter": { "type": "string", "pattern": "^[A-Za-z]?$", "default": "", "description": "Предпочтительная буква диска. Пусто = первый подходящий." },
+        "ExcludedDriveLetters": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z]$" }, "uniqueItems": true, "default": [ "C" ], "description": "Буквы дисков, которые нельзя использовать." },
+        "AllowedDriveTypes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 6 }, "minItems": 1, "default": [ 3 ], "description": "Win32_LogicalDisk.DriveType: 3 = локальный фиксированный, 4 = сетевой, 5 = CD/DVD." },
+        "RegistrySubPath": { "type": "string", "default": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders", "description": "Подпуть User Shell Folders в кусте пользователя." },
+        "Folders": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/redirectedFolder" },
+          "default": [],
+          "description": "Перенаправляемые папки профиля."
+        }
+      }
+    },
+    "SignatureSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "TemplatePath" ],
+      "properties": {
+        "TemplatePath": {
+          "description": "Путь к HTML-шаблону подписи (не пустой) либо ссылка на секрет.",
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "$ref": "#/definitions/secretReference" }
+          ],
+          "default": "\\\\fileserver01.test.local\\Deploy$\\Templates\\signature-template.htm"
+        },
+        "LogoSource": {
+          "description": "Путь к файлу логотипа либо ссылка на секрет. Пусто = подпись без логотипа.",
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/definitions/secretReference" }
+          ],
+          "default": ""
+        },
+        "OfficeVersion": { "type": "string", "pattern": "^\\d+\\.\\d+$", "default": "16.0", "description": "Версия Office для ключа реестра подписей." },
+        "FolderNamePattern": { "type": "string", "default": "Outlook_Signature_{UserName}", "description": "Имя папки подписи. Токен {UserName}." },
+        "OutputRoot": { "type": "string", "enum": [ "UserDesktop", "Temp", "UserProfile" ], "default": "UserDesktop", "description": "Где создавать папку подписи. UserDesktop = рабочий стол ЦЕЛЕВОГО пользователя (в оригинале ошибочно брался рабочий стол администратора)." },
+        "RegardsText": { "type": "string", "default": "С уважением,", "description": "Текст для плейсхолдера [REGARDS]." },
+        "FallbackCompany": { "type": "string", "default": "Test Company LLC", "description": "Компания, если атрибут AD company пуст." },
+        "FallbackEmailDomain": { "type": "string", "pattern": "^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", "default": "test.local", "description": "Домен почты для синтеза адреса, если в AD нет mail." },
+        "FallbackFullName": { "type": "string", "default": "", "description": "Имя, если в AD нет displayName. Пусто = использовать логин." },
+        "AdSearchRoot": { "type": "string", "default": "", "description": "LDAP-корень поиска. Пусто = домен по умолчанию." },
+        "AdSearchFilter": { "type": "string", "default": "(&(objectClass=user)(sAMAccountName={UserName}))", "description": "LDAP-фильтр. Токен {UserName}." },
+        "AdAttributes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true, "default": [ "displayName", "cn", "company", "mail", "title", "telephoneNumber", "mobile" ], "description": "Загружаемые атрибуты AD." },
+        "PhoneLabels": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "Work": { "type": "string", "default": "Тел.:" },
+            "Mobile": { "type": "string", "default": "Моб.:" }
+          },
+          "default": { "Work": "Тел.:", "Mobile": "Моб.:" }
+        },
+        "PhoneFormatPattern": { "type": "string", "format": "regex", "default": "^\\+?7(\\d{3})(\\d{3})(\\d{2})(\\d{2})$", "description": "Regex для нормализации телефона." },
+        "PhoneFormatReplacement": { "type": "string", "default": "+7 ($1) $2-$3-$4", "description": "Строка замены ($1..$9 = группы)." },
+        "Placeholders": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "FullName": { "type": "string", "default": "[FULL_NAME]" },
+            "JobTitle": { "type": "string", "default": "[JOB_TITLE]" },
+            "CompanyName": { "type": "string", "default": "[COMPANY_NAME]" },
+            "EmailAddress": { "type": "string", "default": "[EMAIL_ADDRESS]" },
+            "PhoneNumber": { "type": "string", "default": "[PHONE_NUMBER]" },
+            "PhoneLabel": { "type": "string", "default": "[PHONE_LABEL]" },
+            "Regards": { "type": "string", "default": "[REGARDS]" },
+            "LogoUrl": { "type": "string", "default": "[LOGO_URL]" }
+          },
+          "default": {
+            "FullName": "[FULL_NAME]",
+            "JobTitle": "[JOB_TITLE]",
+            "CompanyName": "[COMPANY_NAME]",
+            "EmailAddress": "[EMAIL_ADDRESS]",
+            "PhoneNumber": "[PHONE_NUMBER]",
+            "PhoneLabel": "[PHONE_LABEL]",
+            "Regards": "[REGARDS]",
+            "LogoUrl": "[LOGO_URL]"
+          },
+          "description": "Карта 'поле -> плейсхолдер в шаблоне'. Меняется без правки кода."
+        },
+        "GenerateHtml": { "type": "boolean", "default": true },
+        "GenerateText": { "type": "boolean", "default": true },
+        "GenerateRtf": { "type": "boolean", "default": true, "description": "Генерировать ЧЕСТНЫЙ RTF (конвертация из HTML), а не копию .htm." },
+        "RtfCodePage": { "type": "integer", "enum": [ 1250, 1251, 1252, 1253, 1254, 1257 ], "default": 1251, "description": "Кодовая страница RTF (\\ansicpg). 1251 = кириллица." },
+        "RtfFontName": { "type": "string", "default": "Calibri" },
+        "RtfFontSizeHalfPoints": { "type": "integer", "minimum": 8, "maximum": 200, "default": 22, "description": "Кегль в полупунктах (22 = 11pt)." },
+        "InstallToUserSignaturesFolder": { "type": "boolean", "default": true, "description": "Копировать подпись в %APPDATA%\\Microsoft\\Signatures целевого пользователя." },
+        "SetAsDefaultSignature": { "type": "boolean", "default": true, "description": "Прописать подпись как основную в реестре пользователя (Office <version>\\Common\\Mail\\Signatures)." },
+        "LogoImageName": { "type": "string", "default": "image001.jpg", "description": "Имя файла логотипа в папке *_files." },
+        "WriteFileListXml": { "type": "boolean", "default": true },
+        "WriteColorSchemeXml": { "type": "boolean", "default": true },
+        "ColorSchemeXml": { "type": "string", "default": "", "description": "Содержимое colorschememapping.xml (пусто = встроенный шаблон)." }
+      }
+    },
+    "ContextMenu": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "EnableClassic": { "type": "boolean", "default": true, "description": "Включить классическое контекстное меню Windows 10." },
+        "Clsid": { "type": "string", "pattern": "^\\{[0-9a-fA-F-]{36}\\}$", "default": "{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}", "description": "CLSID-заглушка InprocServer32." },
+        "RegistrySubPath": { "type": "string", "default": "Software\\Classes\\CLSID", "description": "Подпуть в кусте ЦЕЛЕВОГО пользователя (оригинал ошибочно писал в HKCU администратора)." },
+        "ValueName": { "type": "string", "default": "(Default)" },
+        "RestartExplorer": { "type": "boolean", "default": true }
+      }
+    },
+    "Menu": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Title": { "type": "string", "default": "Windows 11 Конфигуратор" },
+        "ExitChoice": { "type": "string", "default": "0" },
+        "ContinuePrompt": { "type": "string", "default": "Нажмите Enter для продолжения" },
+        "InvalidChoiceMessage": { "type": "string", "default": "Неправильный выбор" },
+        "InvalidChoiceDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 30, "default": 1 },
+        "RunAllLabel": { "type": "string", "default": "Запустить все эти шаги" },
+        "Items": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/menuItem" },
+          "default": [],
+          "description": "Пункты меню как данные: Id уникальны, Step ссылается на шаг."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "Правило целостности: конфигурация, помеченная как PROD, не может содержать тестовые данные.",
+      "if": {
+        "properties": { "Meta": { "properties": { "Environment": { "const": "PROD" } }, "required": [ "Environment" ] } },
+        "required": [ "Meta" ]
+      },
+      "then": {
+        "properties": { "Meta": { "properties": { "IsTestData": { "const": false } }, "required": [ "IsTestData" ] } }
+      }
+    }
+  ],
+  "definitions": {
+    "stepName": {
+      "type": "string",
+      "enum": [
+        "Activation",
+        "AppRemoval",
+        "Installation",
+        "Desktop",
+        "Taskbar",
+        "Autostart",
+        "Power",
+        "NumLock",
+        "NumLockOff",
+        "FolderRedirection",
+        "Signature",
+        "ClassicContextMenu",
+        "OldContextMenu"
+      ],
+      "description": "Идентификатор шага. OldContextMenu - устаревший алиас ClassicContextMenu."
+    },
+    "guid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "GUID в канонической форме."
+    },
+    "secretReference": {
+      "type": "object",
+      "description": "Ссылка на секрет вместо открытого текста: env:ИМЯ, file:ПУТЬ, dpapi:ПУТЬ.",
+      "additionalProperties": false,
+      "required": [ "$secret" ],
+      "properties": {
+        "$secret": {
+          "type": "string",
+          "pattern": "^(env|file|dpapi):[^\\s]+$",
+          "description": "Провайдер и адрес: 'env:WC_KMS_KEY', 'file:C:\\vault\\kms.txt', 'dpapi:C:\\vault\\kms.bin'."
+        },
+        "Fallback": { "type": "string", "default": "", "description": "Значение, если секрет недоступен (пусто = ошибка)." },
+        "Optional": { "type": "boolean", "default": false, "description": "true = не считать ошибкой отсутствие секрета." }
+      }
+    },
+    "windowsVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "MinBuild", "Label" ],
+      "properties": {
+        "MinBuild": { "type": "integer", "minimum": 7600, "description": "Минимальная сборка (включительно)." },
+        "Label": { "type": "string", "minLength": 1, "description": "Метка версии для подстановки в пути." }
+      }
+    },
+    "legacyApp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "Name", "PathToExe" ],
+      "properties": {
+        "Name": { "type": "string", "minLength": 1 },
+        "PathToExe": { "type": "string", "minLength": 1, "description": "Маркер наличия приложения (если файла нет - удалять нечего)." },
+        "PathToUninstaller": { "type": "string", "default": "" },
+        "UninstallerArguments": { "type": "string", "default": "/silent" },
+        "Processes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true, "default": [] },
+        "RemoveFolder": { "type": "boolean", "default": true, "description": "Удалять каталог приложения после uninstaller." },
+        "WaitAfterUninstallSeconds": { "type": "integer", "minimum": 0, "maximum": 300, "default": 5 }
+      }
+    },
+    "appItem": {
+      "description": "Одно устанавливаемое приложение.additionalProperties:false объявлен ЗДЕСЬ ЖЕ, где и properties (в draft-07 additionalProperties не видит свойства соседних ветвей allOf), а обязательность полей зависит от Type через allOf + if/then.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "Name", "Type" ],
+      "properties": {
+        "Name": { "type": "string", "minLength": 1, "description": "Отображаемое имя приложения." },
+        "Type": { "type": "string", "enum": [ "MSI", "Executable", "Batch", "DISM" ], "description": "Способ установки." },
+        "InstallerPath": { "type": "string", "default": "", "description": "Путь к установщику (MSI/EXE/Batch). Токен {AppsRepositoryRoot}." },
+        "TransformPath": { "type": "string", "default": "", "description": "MSI-трансформация (.mst), передаётся как TRANSFORMS=\"путь\"." },
+        "Arguments": { "type": "string", "default": "", "description": "Аргументы установщика. Разбираются с учётом кавычек (Split-CommandLineArguments); токен [InstallerPath] раскрывается в путь установщика." },
+        "ProductCode": { "type": "string", "default": "", "description": "MSI ProductCode - маркер 'уже установлено' в ветке Uninstall." },
+        "UninstallKey": { "type": "string", "default": "", "description": "Имя ключа Uninstall (для EXE/Batch)." },
+        "InstallPath": { "type": "string", "default": "", "description": "Каталог установки: второй маркер 'уже установлено' и цель CopyFiles ([InstallPath])." },
+        "Retries": { "type": "integer", "minimum": 1, "maximum": 10, "default": 3, "description": "Переопределение Deployment.InstallerRetryCount для этого приложения." },
+        "PostInstall": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/postInstallStep" },
+          "default": [],
+          "description": "Команды, выполняемые после успешной установки."
+        },
+        "CopyFiles": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/copyFileSpec" },
+          "default": [],
+          "description": "Файлы, копируемые после успешной установки."
+        },
+        "FeatureName": { "type": "string", "default": "", "description": "DISM: имя компонента Windows (NetFx3 и т.п.). В оригинале поддерживался только захардкоженный 'NET FRAMEWORK 3.5'." },
+        "SourcePath": { "type": "string", "default": "", "description": "DISM: источник /Source. Пусто = Deployment.NetFx3SourceTemplate с токеном {VersionLabel}." },
+        "AllFeatures": { "type": "boolean", "default": true, "description": "DISM: флаг /All." },
+        "LimitAccess": { "type": "boolean", "default": true, "description": "DISM: флаг /LimitAccess (не обращаться в Windows Update)." }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "Type": { "const": "MSI" } }, "required": [ "Type" ] },
+          "then": { "required": [ "InstallerPath" ], "properties": { "InstallerPath": { "minLength": 1 } } }
+        },
+        {
+          "if": { "properties": { "Type": { "const": "Executable" } }, "required": [ "Type" ] },
+          "then": { "required": [ "InstallerPath" ], "properties": { "InstallerPath": { "minLength": 1 } } }
+        },
+        {
+          "if": { "properties": { "Type": { "const": "Batch" } }, "required": [ "Type" ] },
+          "then": { "required": [ "InstallerPath" ], "properties": { "InstallerPath": { "minLength": 1 } } }
+        },
+        {
+          "if": { "properties": { "Type": { "const": "DISM" } }, "required": [ "Type" ] },
+          "then": { "required": [ "FeatureName" ], "properties": { "FeatureName": { "minLength": 1 } } },
+          "else": { "not": { "required": [ "FeatureName" ] } }
+        }
+      ]
+    },
+    "postInstallStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "InstallerPath" ],
+      "properties": {
+        "InstallerPath": { "type": "string", "minLength": 1, "description": "Команда пост-установки." },
+        "Arguments": { "type": "string", "default": "", "description": "Аргументы (разбор с учётом кавычек)." },
+        "SuccessExitCodes": { "type": "array", "items": { "type": "integer" }, "minItems": 1, "uniqueItems": true, "default": [ 0 ], "description": "Коды возврата, считающиеся успехом." }
+      }
+    },
+    "copyFileSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "Source", "Destination" ],
+      "properties": {
+        "Source": { "type": "string", "minLength": 1, "description": "Откуда копировать. Токен {AppsRepositoryRoot}." },
+        "Destination": { "type": "string", "minLength": 1, "description": "Куда копировать. Токены [InstallPath] и переменные окружения." }
+      }
+    },
+    "autostartTweak": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Enabled": { "type": "boolean", "default": true },
+        "TriggerKey": { "type": "string", "default": "", "description": "Ключ AutoStartApps, при наличии которого применяется твик." },
+        "ServiceNamePattern": { "type": "string", "default": "", "description": "Шаблон имён служб для отключения (пусто = не трогать службы)." },
+        "ScheduledTaskPattern": { "type": "string", "default": "", "description": "Шаблон имён задач планировщика (пусто = не трогать)." },
+        "ScheduledTasks": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true, "default": [], "description": "Точные имена задач для отключения." },
+        "PolicyPath": { "type": "string", "default": "", "description": "Путь политики в реестре." },
+        "PolicyValues": {
+          "type": "object",
+          "description": "Имя значения -> DWORD.",
+          "additionalProperties": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+          "default": {}
+        }
+      }
+    },
+    "desktopIcon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "Clsid", "Name" ],
+      "properties": {
+        "Clsid": { "type": "string", "pattern": "^\\{[0-9a-fA-F-]{36}\\}$" },
+        "Name": { "type": "string", "minLength": 1 },
+        "Hidden": { "type": "boolean", "default": false, "description": "false -> значение 0 (показать), true -> 1 (скрыть)." }
+      }
+    },
+    "powerSetting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "Label", "SubGroupGuid", "SettingGuid", "Minutes" ],
+      "properties": {
+        "Label": { "type": "string", "minLength": 1 },
+        "SubGroupGuid": { "$ref": "#/definitions/guid" },
+        "SettingGuid": { "$ref": "#/definitions/guid" },
+        "Minutes": { "type": "integer", "minimum": 0, "maximum": 10080 },
+        "Target": { "type": "string", "enum": [ "AC", "DC", "Both" ], "default": "Both", "description": "К какой схеме питания применять значение." }
+      }
+    },
+    "redirectedFolder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "Name", "RegValueName" ],
+      "properties": {
+        "Name": { "type": "string", "minLength": 1, "description": "Имя папки на целевом диске." },
+        "RegValueName": { "type": "string", "minLength": 1, "description": "Имя значения в User Shell Folders (Personal, Desktop, {374DE290-...})." },
+        "SourceFolderName": { "type": "string", "default": "", "description": "Имя исходной папки в профиле. Пусто = совпадает с Name." }
+      }
+    },
+    "menuItem": {
+      "description": "Пункт интерактивного меню. RequiresUser=true допустим только для шагов, которым нужен пользователь (if/then).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "Id", "Label", "Step" ],
+      "properties": {
+        "Id": { "type": "string", "pattern": "^\\d{1,3}$", "description": "Что вводит пользователь." },
+        "Label": { "type": "string", "minLength": 1 },
+        "Step": {
+          "description": "Шаг или служебное действие (InstallSubmenu/RunAll/Exit).",
+          "anyOf": [
+            { "$ref": "#/definitions/stepName" },
+            { "type": "string", "enum": [ "RunAll", "InstallSubmenu" ] }
+          ]
+        },
+        "Color": { "type": "string", "enum": [ "White", "Yellow", "Green", "Red", "Cyan", "Gray", "Magenta" ], "default": "White" },
+        "RequiresUser": { "type": "boolean", "default": false, "description": "Шагу нужен -UserName." },
+        "InRunAll": { "type": "boolean", "default": false, "description": "Информационный флаг: входит ли шаг в 'запустить все'." },
+        "Hint": { "type": "string", "default": "", "description": "Пояснение, выводимое в меню." },
+        "HasSubmenu": { "type": "boolean", "default": false, "description": "Пункт открывает подменю (выбор приложения)." }
+      },
+      "if": {
+        "properties": { "RequiresUser": { "const": true } },
+        "required": [ "RequiresUser" ]
+      },
+      "then": {
+        "properties": {
+          "Step": {
+            "anyOf": [
+              { "$ref": "#/definitions/stepName" },
+              { "type": "string", "enum": [ "RunAll" ] }
+            ],
+            "not": { "const": "Activation" }
+          }
+        }
+      }
+    }
+  }
+}

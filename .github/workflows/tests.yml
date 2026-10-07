@@ -1,0 +1,175 @@
+name: tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PESTER_V5: '5.7.1'
+  PESTER_V6: '6.2.0'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Быстрые проверки: кодировки, валидность конфигурации по схеме, коды возврата
+  # ---------------------------------------------------------------------------
+  static-checks:
+    name: Static checks (encoding, schema, entry point)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Проверка кодировок и окончаний строк
+        shell: pwsh
+        run: |
+          $changed = ./tools/Set-ProjectEncoding.ps1 -Check
+          if ($changed.Count -gt 0) {
+            Write-Error "Кодировки/окончания строк не соответствуют стандарту проекта ($($changed.Count) файлов)."
+            exit 1
+          }
+
+      - name: Валидация конфигурации по JSON Schema
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File ./Configure-Windows.ps1 -ValidateConfig
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Невалидная конфигурация должна давать код 2
+        shell: pwsh
+        run: |
+          $tmp = Join-Path ([IO.Path]::GetTempPath()) 'broken-config.json'
+          $json = Get-Content ./config/config.json -Raw | ConvertFrom-Json
+          $json.Activation.KmsClientKey = 'not-a-valid-key'
+          $json | ConvertTo-Json -Depth 30 | Set-Content -Path $tmp
+          Copy-Item ./config/config.schema.json (Join-Path (Split-Path $tmp -Parent) 'config.schema.json') -Force
+          pwsh -NoProfile -File ./Configure-Windows.ps1 -ValidateConfig -ConfigPath $tmp
+          if ($LASTEXITCODE -ne 2) {
+            Write-Error "Ожидался код возврата 2 для невалидной конфигурации, получен $LASTEXITCODE"
+            exit 1
+          }
+          Write-Host '[OK] Невалидная конфигурация отклонена с кодом 2.'
+
+      - name: Отсутствие захардкоженных корпоративных данных в коде
+        shell: pwsh
+        run: |
+          $forbidden = @('W269N-WFGWX-YVC9B-4J6C9-T83GX', 'kma-fs03', 'KMA-CLINICNOUT')
+          $hits = @()
+          Get-ChildItem ./functions, ./tools, ./Configure-Windows.ps1 -Recurse -Filter *.ps1 |
+            ForEach-Object {
+              $text = Get-Content $_.FullName -Raw
+              foreach ($pattern in $forbidden) {
+                if ($text -match [regex]::Escape($pattern)) { $hits += "$($_.Name): $pattern" }
+              }
+            }
+          if ($hits.Count -gt 0) { $hits | ForEach-Object { Write-Error $_ }; exit 1 }
+          Write-Host '[OK] Корпоративные данные в коде не захардкожены.'
+
+  # ---------------------------------------------------------------------------
+  # Статический анализ: PSScriptAnalyzer с настройками проекта
+  # ---------------------------------------------------------------------------
+  analyze:
+    name: PSScriptAnalyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: Анализ поставляемого кода
+        shell: pwsh
+        run: |
+          Import-Module PSScriptAnalyzer
+          $issues = @()
+          foreach ($target in @('./functions', './tools', './tests', './Configure-Windows.ps1')) {
+            $issues += @(Invoke-ScriptAnalyzer -Path $target -Recurse -Settings ./ScriptAnalyzerSettings.psd1 -Severity @('Error','Warning','Information'))
+          }
+          if ($issues.Count -gt 0) {
+            $issues | ForEach-Object { Write-Host ("{0} {1}:{2} [{3}] {4}" -f $_.Severity, $_.ScriptName, $_.Line, $_.RuleName, $_.Message) }
+            Write-Error "PSScriptAnalyzer: замечаний $($issues.Count)"
+            exit 1
+          }
+          Write-Host '[OK] PSScriptAnalyzer: 0 замечаний.'
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## PSScriptAnalyzer`n0 замечаний (профиль: ``ScriptAnalyzerSettings.psd1``)"
+
+  # ---------------------------------------------------------------------------
+  # Тесты: матрица ОС x версия PowerShell x версия Pester (5.x и 6.x)
+  # ---------------------------------------------------------------------------
+  test:
+    name: Tests (${{ matrix.os }} / ${{ matrix.shell }} / Pester ${{ matrix.pester }})
+    runs-on: ${{ matrix.os }}
+    needs: [ static-checks, analyze ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # РЕАЛЬНЫЙ Windows PowerShell 5.1 - проверка совместимости, которую
+          # невозможно выполнить на Linux (настоящие сигнатуры Appx/DISM/CIM).
+          - os: windows-latest
+            shell: powershell
+            pester: '5.7.1'
+            coverage: false
+          - os: windows-latest
+            shell: pwsh
+            pester: '6.2.0'
+            coverage: true
+          - os: ubuntu-latest
+            shell: pwsh
+            pester: '5.7.1'
+            coverage: true
+          - os: ubuntu-latest
+            shell: pwsh
+            pester: '6.2.0'
+            coverage: false
+          - os: macos-latest
+            shell: pwsh
+            pester: '5.7.1'
+            coverage: false
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Версия PowerShell
+        run: |
+          Write-Host "PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))"
+
+      - name: Прогон тестов
+        run: |
+          $args = @('-PesterVersion', '${{ matrix.pester }}', '-Verbosity', 'Normal', '-OutputFile', 'testResults.xml')
+          if ('${{ matrix.coverage }}' -eq 'true') { $args += @('-WithCoverage', '-MinimumCoverage', '80') }
+          & ./tests/Run-Tests.ps1 @args
+          $code = $LASTEXITCODE
+          Write-Host "Run-Tests exit code: $code"
+          exit $code
+
+      - name: Публикация результатов (NUnit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.shell }}-${{ matrix.pester }}
+          path: |
+            testResults.xml
+            tests/coverage.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Сводка в отчёт job
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path ./testResults.xml) {
+            [xml]$xml = Get-Content ./testResults.xml
+            $total = [int]$xml.'test-results'.total
+            $failed = [int]$xml.'test-results'.failures
+            $summary = "| ${{ matrix.os }} | ${{ matrix.shell }} | ${{ matrix.pester }} | $total | $failed |"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
+          }
