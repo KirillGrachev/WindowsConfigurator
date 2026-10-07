@@ -21,7 +21,7 @@ jobs:
     name: Static checks (encoding, schema, entry point)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Проверка кодировок и окончаний строк
         shell: pwsh
@@ -75,7 +75,7 @@ jobs:
     name: PSScriptAnalyzer
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Установка PSScriptAnalyzer
         shell: pwsh
@@ -136,7 +136,7 @@ jobs:
       run:
         shell: ${{ matrix.shell }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Версия PowerShell
         run: |
