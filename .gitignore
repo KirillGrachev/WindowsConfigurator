@@ -1,0 +1,35 @@
+# Результаты тестов и покрытие
+testResults.xml
+tests/coverage.xml
+tests/TestResults/
+coverage/
+*.coverage.xml
+
+# Временные файлы и журналы
+*.log
+logs/
+tmp/
+temp/
+TestDrive/
+
+# Секреты: DPAPI-конверты и локальные переопределения конфигурации НИКОГДА
+# не должны попадать в репозиторий.
+*.bin
+secrets/
+vault/
+config/config.local.json
+config/*.local.json
+config/prod.json
+
+# Локальные копии модулей (Pester из кэша бутстрапа)
+tools/modules/
+PesterModules/
+
+# Служебные файлы ОС и редакторов
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
