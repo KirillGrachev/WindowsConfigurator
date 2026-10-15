@@ -52,10 +52,12 @@
     if ($resolvedPath) {
         $resolvedPath = Expand-EnvironmentVariableTokens -InputString $resolvedPath
 
-        # Если переменная окружения не определена (например %SystemRoot% в Linux/macOS),
-        # токен остаётся нераскрытым. Создавать каталог с именем '%SystemRoot%' -
-        # значит мусорить в файловой системе, поэтому файловый журнал отключается
-        # с предупреждением (регрессия, найденная прогоном тестов на Linux).
+        <#
+        Если переменная окружения не определена (например %SystemRoot% в Linux/macOS),
+        токен остаётся нераскрытым. Создавать каталог с именем '%SystemRoot%' -
+        значит мусорить в файловой системе, поэтому файловый журнал отключается
+        с предупреждением (регрессия, найденная прогоном тестов на Linux).
+        #>
         if ($resolvedPath -match '%[A-Za-z_][A-Za-z0-9_]*%') {
             Write-Warning "Путь журнала '$resolvedPath' содержит нераскрытую переменную окружения - файловый журнал отключён."
             $resolvedPath = ''
@@ -90,7 +92,7 @@
             if ($dir -and -not (Test-Path -Path $dir)) {
                 $null = New-Item -Path $dir -ItemType Directory -Force -ErrorAction Stop
             }
-            # Касание файла: ранняя диагностика проблем с правами (не падая на первом же шаге).
+            <# Касание файла: ранняя диагностика проблем с правами (не падая на первом же шаге). #>
             if (-not (Test-Path -Path $resolvedPath)) {
                 $null = New-Item -Path $resolvedPath -ItemType File -Force -ErrorAction Stop
             }

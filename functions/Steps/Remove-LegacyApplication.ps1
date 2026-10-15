@@ -38,6 +38,16 @@
         $waitSeconds = 5
         if ($App.ContainsKey('WaitAfterUninstallSeconds')) { $waitSeconds = [int]$App.WaitAfterUninstallSeconds }
 
+        if (Test-WCTestMode) {
+            <#
+            Тестовый режим: маркер приложения и uninstaller ищутся в зеркале
+            песочницы (фикстуры создают их по LegacyAppsToRemove конфигурации),
+            очистка каталога тоже происходит внутри песочницы.
+            #>
+            $exePath = ConvertTo-WCTestModeSandboxPath -Path $exePath
+            if ($uninstaller) { $uninstaller = ConvertTo-WCTestModeSandboxPath -Path $uninstaller }
+        }
+
         if ([string]::IsNullOrWhiteSpace($exePath) -or -not (Test-Path -Path $exePath -PathType Leaf -ErrorAction SilentlyContinue)) {
             Write-Log -Message "Приложение '$name' не обнаружено (маркер '$exePath' отсутствует) - пропуск." -Level Debug
             return [PSCustomObject]@{ Name = $name; Removed = $false; Found = $false; Error = '' }
@@ -51,21 +61,21 @@
         try {
             if ($processes.Count -gt 0) {
                 $null = Stop-NamedProcesses -ProcessNames $processes -Confirm:$false
-                Start-Sleep -Seconds 2
+                if (-not (Test-WCTestMode)) { Start-Sleep -Seconds 2 }
             }
 
             if ($uninstaller -and (Test-Path -Path $uninstaller -PathType Leaf -ErrorAction SilentlyContinue)) {
                 Write-Log -Message "Запуск uninstaller: $uninstaller $uninstallerArguments" -Level Debug
                 $arguments = @(Split-CommandLineArguments -CommandLine $uninstallerArguments)
                 $null = Start-ProcessAndWait -FilePath $uninstaller -Arguments $arguments
-                if ($waitSeconds -gt 0) { Start-Sleep -Seconds $waitSeconds }
+                if ($waitSeconds -gt 0 -and -not (Test-WCTestMode)) { Start-Sleep -Seconds $waitSeconds }
             } else {
                 Write-Log -Message "Uninstaller для '$name' не найден ('$uninstaller') - продолжаю без него." -Level Warn
             }
 
             if ($processes.Count -gt 0) {
                 $null = Stop-NamedProcesses -ProcessNames $processes -Confirm:$false
-                Start-Sleep -Seconds 2
+                if (-not (Test-WCTestMode)) { Start-Sleep -Seconds 2 }
             }
 
             if ($removeFolder) {

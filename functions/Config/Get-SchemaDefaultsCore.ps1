@@ -45,7 +45,7 @@
         return Copy-ConfigValue -Value $props['default']
     }
 
-    # Дефолты свойств самого узла (если это объект).
+    <# Дефолты свойств самого узла (если это объект). #>
     $declaredType = ''
     if ($props.Contains('type')) { $declaredType = [string]@($props['type'])[0] }
 
@@ -62,9 +62,11 @@
         }
     }
 
-    # allOf: дефолты всех ветвей сливаются с дефолтами самого узла.
-    # ВАЖНО именно сливать: корневой allOf схемы (правило PROD/IsTestData) не должен
-    # затирать дефолты свойств - иначе конфигурация оставалась бы без значений по умолчанию.
+    <#
+    allOf: дефолты всех ветвей сливаются с дефолтами самого узла.
+    ВАЖНО именно сливать: корневой allOf схемы (правило PROD/IsTestData) не должен
+    затирать дефолты свойств - иначе конфигурация оставалась бы без значений по умолчанию.
+    #>
     if ($props.Contains('allOf')) {
         foreach ($branch in @($props['allOf'])) {
             $branchDefaults = Get-SchemaDefaultsCore -Schema $branch -Root $Root
@@ -80,7 +82,7 @@
         }
     }
 
-    # oneOf/anyOf: берём дефолт первой ветви, у которой он есть (ветви взаимоисключающи).
+    <# oneOf/anyOf: берём дефолт первой ветви, у которой он есть (ветви взаимоисключающи). #>
     if ($null -eq $result) {
         foreach ($keyword in @('oneOf', 'anyOf')) {
             if (-not $props.Contains($keyword)) { continue }

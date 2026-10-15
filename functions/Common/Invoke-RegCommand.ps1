@@ -26,6 +26,19 @@
         [string]$RegPath = 'reg.exe'
     )
 
+    if (Test-WCTestMode) {
+        <#
+        Тестовый режим: reg.exe не запускается - аргументы применяются к
+        in-memory оверлею (чтение потом увидит записанное) и пишутся в журнал.
+        #>
+        $null = Update-WCTestModeRegistryOverlay -Arguments $Arguments
+        return [PSCustomObject]@{
+            ExitCode       = 0
+            Output         = @('The operation completed successfully. (TESTMODE)')
+            ArgumentString = (ConvertTo-ProcessArgumentString -Arguments $Arguments)
+        }
+    }
+
     $result = Start-ProcessAndWait -FilePath $RegPath -Arguments $Arguments -CaptureOutput
     $combined = @()
     if ($result.StandardOutput) { $combined += ($result.StandardOutput -split "`r`n|`n|`r" | Where-Object { $_ -ne '' }) }

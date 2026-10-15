@@ -40,6 +40,12 @@
 
     if (-not $PSCmdlet.ShouldProcess('explorer.exe', 'Перезапустить процесс')) { return $true }
 
+    if (Test-WCTestMode) {
+        Write-WCTestModeJournal -Category 'Explorer' -Action 'Restart' -Target 'explorer.exe'
+        Write-Log -Message '(ТЕСТ) Проводник был бы перезапущен.' -Level Info
+        return $true
+    }
+
     $processes = @(Get-Process -Name 'explorer' -ErrorAction SilentlyContinue)
     foreach ($process in $processes) {
         try {
@@ -56,8 +62,10 @@
         try {
             Start-Process -FilePath 'explorer.exe' -ErrorAction Stop | Out-Null
 
-            # Проверяем наличие процесса ДО первой паузы: иначе при
-            # WaitForStartSeconds = 0 успех не фиксируется никогда.
+            <#
+            Проверяем наличие процесса ДО первой паузы: иначе при
+            WaitForStartSeconds = 0 успех не фиксируется никогда.
+            #>
             $waited = 0
             while ($true) {
                 if (Get-Process -Name 'explorer' -ErrorAction SilentlyContinue) {

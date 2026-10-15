@@ -45,6 +45,15 @@
 
     $argumentString = ConvertTo-ProcessArgumentString -Arguments $Arguments
 
+    if (Test-WCTestMode) {
+        <#
+        Тестовый режим: процесс НЕ запускается. Результат синтетический
+        (по умолчанию ExitCode 0), вывод можно задать через
+        Set-WCTestModeFakeOutput (Initialize-WCTestModeFixtures задаёт powercfg /l).
+        #>
+        return Resolve-WCTestModeProcessResult -FilePath $FilePath -ArgumentString $argumentString -WorkingDirectory $WorkingDirectory
+    }
+
     $stdoutFile = $null
     $stderrFile = $null
     $startParams = @{
@@ -63,7 +72,7 @@
         $stderrFile = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc_err_{0}.txt" -f ([guid]::NewGuid().ToString('N')))
         $startParams['RedirectStandardOutput'] = $stdoutFile
         $startParams['RedirectStandardError'] = $stderrFile
-        # Перенаправление вывода несовместимо с Hidden в некоторых сценариях - оставляем NoNewWindow.
+        <# Перенаправление вывода несовместимо с Hidden в некоторых сценариях - оставляем NoNewWindow. #>
         $startParams.Remove('WindowStyle') | Out-Null
         $startParams['NoNewWindow'] = $true
     }

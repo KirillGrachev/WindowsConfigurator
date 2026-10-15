@@ -97,8 +97,10 @@ Describe 'Resolve-ConfigSecret: провайдеры' {
     }
 
     It 'DPAPI: полный цикл на Windows, понятная ошибка на других платформах' {
-        # На Windows проверяем полный цикл (создание конверта tools\New-EncryptedSecret.ps1 -> чтение),
-        # на других платформах - что функция сообщает о недоступности DPAPI.
+        <#
+        На Windows проверяем полный цикл (создание конверта tools\New-EncryptedSecret.ps1 -> чтение),
+        на других платформах - что функция сообщает о недоступности DPAPI.
+        #>
         if ($script:RunningOnWindows) {
             $dir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-dpapi-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
             $bin = Join-Path -Path $dir -ChildPath 'key.bin'
@@ -272,7 +274,7 @@ Describe 'Журналирование: Initialize-Logging и Write-Log' {
         $badPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'нет-такого-каталога/nested/deep/test.log'
         $state = Initialize-Logging -Level 'Info' -FilePath $badPath
         if ($state.FilePath) {
-            # Каталог удалось создать (права есть) - тогда проверяем, что запись работает.
+            <# Каталог удалось создать (права есть) - тогда проверяем, что запись работает. #>
             { Write-Log -Message 'x' -Level Info } | Should -Not -Throw
         } else {
             $state.FileError | Should -Not -BeNullOrEmpty
@@ -290,8 +292,10 @@ Describe 'Журналирование: Initialize-Logging и Write-Log' {
         $env:WC_LOG_ROOT = $script:LogDir
         try {
             $state = Initialize-Logging -Level 'Info' -FilePath '%WC_LOG_ROOT%\expanded.log'
-            # %VAR% раскрывается в обеих ОС (Expand-EnvironmentVariableTokens),
-            # разделитель пути остаётся как в исходной строке - сравниваем нормализованно.
+            <#
+            %VAR% раскрывается в обеих ОС (Expand-EnvironmentVariableTokens),
+            разделитель пути остаётся как в исходной строке - сравниваем нормализованно.
+            #>
             $normalized = $state.FilePath.Replace('\', [System.IO.Path]::DirectorySeparatorChar)
             $normalized | Should -Be (Join-Path -Path $script:LogDir -ChildPath 'expanded.log')
             Test-Path -Path $state.FilePath | Should -BeTrue

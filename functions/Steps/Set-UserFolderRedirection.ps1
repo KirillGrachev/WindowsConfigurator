@@ -73,11 +73,29 @@
             }
         }
 
-        # Пути с буквой диска собираем строкой, а НЕ через Join-Path: в Linux/macOS
-        # 'D:' трактуется как PSDrive, и Join-Path бросает 'Cannot find drive'.
-        # Шаг выполняется только в Windows, но тесты обязаны работать везде.
+        <#
+        Пути с буквой диска собираем строкой, а НЕ через Join-Path: в Linux/macOS
+        'D:' трактуется как PSDrive, и Join-Path бросает 'Cannot find drive'.
+        Шаг выполняется только в Windows, но тесты обязаны работать везде.
+        #>
         $basePath = "$($targetDrive):" + [System.IO.Path]::DirectorySeparatorChar + $rootFolderName
         $userBase = $basePath + [System.IO.Path]::DirectorySeparatorChar + $UserName
+
+        if (Test-WCTestMode) {
+            <#
+            Тестовый режим: 'несистемный диск' отображается в песочницу,
+            поэтому создание каталогов и перенос содержимого безопасны,
+            а структура зеркала повторяет реальную (files\D\Users\...).
+            #>
+            $mappedBase = ConvertTo-WCTestModeSandboxPath -Path $basePath
+            $mappedUserBase = ConvertTo-WCTestModeSandboxPath -Path $userBase
+            Write-WCTestModeJournal -Category 'File' -Action 'FolderRedirection' -Target "$($targetDrive): -> $userBase" -Details @{
+                SandboxBase     = $mappedBase
+                SandboxUserBase = $mappedUserBase
+            }
+            $basePath = $mappedBase
+            $userBase = $mappedUserBase
+        }
 
         if ($whatIf) {
             Write-Log -Message "WHAT IF: создать '$userBase' и перенести папки: $(@($folders | ForEach-Object { $_.Name }) -join ', ')" -Level Info

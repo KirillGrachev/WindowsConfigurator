@@ -30,8 +30,10 @@
         $builder = New-Object System.Text.StringBuilder
         foreach ($char in $Text.ToCharArray()) {
             $code = [int]$char
-            # ВАЖНО: не switch - в PowerShell `continue` внутри switch не прерывает
-            # итерацию внешнего цикла, из-за чего символ дублировался бы.
+            <#
+            ВАЖНО: не switch - в PowerShell `continue` внутри switch не прерывает
+            итерацию внешнего цикла, из-за чего символ дублировался бы.
+            #>
             if ($char -eq '\') { $null = $builder.Append('\\'); continue }
             if ($char -eq '{') { $null = $builder.Append('\{'); continue }
             if ($char -eq '}') { $null = $builder.Append('\}'); continue }

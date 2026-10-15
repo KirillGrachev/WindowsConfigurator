@@ -120,7 +120,7 @@ Describe 'Шаг Activation: KMS-активация' {
         $script:Attempt = 0
         Mock Invoke-Slmgr {
             $script:Attempt++
-            # Первая попытка (первый же вызов slmgr) неудачна, дальше всё успешно.
+            <# Первая попытка (первый же вызов slmgr) неудачна, дальше всё успешно. #>
             $code = if ($script:Attempt -eq 1) { 1 } else { 0 }
             return [PSCustomObject]@{ ExitCode = $code; Output = @(); ArgumentString = '' }
         }
@@ -452,7 +452,7 @@ Describe 'Wait-ForInstallerUnlock' {
     }
 
     It 'список процессов-установщиков передаётся из параметра' {
-        # Мок считает "занятым" всё, КРОМЕ вызова с trustedinstaller в списке.
+        <# Мок считает "занятым" всё, КРОМЕ вызова с trustedinstaller в списке. #>
         Mock Test-InstallerBusy { return -not ($ProcessNames -contains 'trustedinstaller') }
         Mock Start-Sleep { }
         Wait-ForInstallerUnlock -MaxWaitSeconds 2 -CheckIntervalSeconds 1 -ProcessNames @('msiexec', 'trustedinstaller') | Should -BeTrue

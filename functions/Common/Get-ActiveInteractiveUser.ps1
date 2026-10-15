@@ -19,6 +19,12 @@
     [OutputType([string])]
     param()
 
+    if (Test-WCTestMode) {
+        $fakeUser = [string](Get-WCTestModeState).FakeUserName
+        Write-Log -Message "(ТЕСТ) Активный пользователь (подставной): $fakeUser" -Level Debug
+        return $fakeUser
+    }
+
     Write-Log -Message 'Определение активного интерактивного пользователя...' -Level Debug
 
     try {

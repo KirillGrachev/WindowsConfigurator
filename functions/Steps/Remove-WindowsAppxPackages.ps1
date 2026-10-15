@@ -43,7 +43,7 @@
     $legacyResults = New-Object System.Collections.Generic.List[object]
     $problems = New-Object System.Collections.Generic.List[string]
 
-    # --- 1. Классические (Win32) приложения ---
+    <# --- 1. Классические (Win32) приложения --- #>
     $legacyApps = @()
     if ($null -ne $Config -and $Config.ContainsKey('LegacyAppsToRemove')) { $legacyApps = @($Config.LegacyAppsToRemove) }
 
@@ -54,9 +54,10 @@
         if ($legacyResult.Error) { $problems.Add("legacy:$($legacyResult.Name): $($legacyResult.Error)") }
     }
 
-    # --- 2. Appx-пакеты ---
-    $hasAppx = Test-CommandAvailable -Name 'Get-AppxPackage'
-    $hasProvisioned = Test-CommandAvailable -Name 'Get-AppxProvisionedPackage'
+    <# --- 2. Appx-пакеты --- #>
+    $testMode = Test-WCTestMode
+    $hasAppx = $testMode -or (Test-CommandAvailable -Name 'Get-AppxPackage')
+    $hasProvisioned = $testMode -or (Test-CommandAvailable -Name 'Get-AppxProvisionedPackage')
 
     $patterns = @()
     if ($null -ne $Config -and $Config.ContainsKey('AppsToRemove')) { $patterns = @($Config.AppsToRemove) }
@@ -69,7 +70,9 @@
             if ([string]::IsNullOrWhiteSpace($pattern)) { continue }
 
             if ($hasAppx) {
-                $installed = @(Get-AppxPackage -AllUsers -Name $pattern -ErrorAction SilentlyContinue)
+                $installed = @()
+                if ($testMode) { $installed = @(Get-WCTestModeAppxFixture -Filter $pattern) }
+                else { $installed = @(Get-AppxPackage -AllUsers -Name $pattern -ErrorAction SilentlyContinue) }
                 foreach ($package in $installed) {
                     if ($whatIf) {
                         Write-Log -Message "WHAT IF: Remove-AppxPackage $($package.PackageFullName)" -Level Info
@@ -77,9 +80,13 @@
                         continue
                     }
                     try {
-                        Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
+                        if ($testMode) {
+                            Write-WCTestModeJournal -Category 'Appx' -Action 'Remove-AppxPackage' -Target $package.PackageFullName
+                        } else {
+                            Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
+                        }
                         $removedPackages.Add([string]$package.PackageFullName)
-                        Write-Log -Message "Удалён пакет: $($package.PackageFullName)" -Level Ok
+                        Write-Log -Message "Удалён пакет$(if ($testMode) { ' (ТЕСТ)' }): $($package.PackageFullName)" -Level Ok
                     } catch {
                         $problems.Add("appx:$($package.PackageFullName): $($_.Exception.Message)")
                         Write-Log -Message "Не удалось удалить пакет $($package.PackageFullName): $($_.Exception.Message)" -Level Warn
@@ -88,8 +95,12 @@
             }
 
             if ($hasProvisioned) {
-                $provisioned = @(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
-                        Where-Object { $_.DisplayName -like $pattern })
+                $provisioned = @()
+                if ($testMode) { $provisioned = @(Get-WCTestModeAppxFixture -Filter $pattern -Provisioned $true) }
+                else {
+                    $provisioned = @(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
+                            Where-Object { $_.DisplayName -like $pattern })
+                }
                 foreach ($item in $provisioned) {
                     if ($whatIf) {
                         Write-Log -Message "WHAT IF: Remove-AppxProvisionedPackage $($item.PackageName)" -Level Info
@@ -97,9 +108,13 @@
                         continue
                     }
                     try {
-                        Remove-AppxProvisionedPackage -Online -PackageName $item.PackageName -ErrorAction Stop | Out-Null
+                        if ($testMode) {
+                            Write-WCTestModeJournal -Category 'Appx' -Action 'Remove-AppxProvisionedPackage' -Target $item.PackageName
+                        } else {
+                            Remove-AppxProvisionedPackage -Online -PackageName $item.PackageName -ErrorAction Stop | Out-Null
+                        }
                         $removedProvisioned.Add([string]$item.PackageName)
-                        Write-Log -Message "Удалён provisioned-пакет: $($item.PackageName)" -Level Ok
+                        Write-Log -Message "Удалён provisioned-пакет$(if ($testMode) { ' (ТЕСТ)' }): $($item.PackageName)" -Level Ok
                     } catch {
                         $problems.Add("provisioned:$($item.PackageName): $($_.Exception.Message)")
                         Write-Log -Message "Не удалось удалить provisioned-пакет $($item.PackageName): $($_.Exception.Message)" -Level Warn
@@ -108,7 +123,7 @@
             }
         }
 
-        # --- 3. Принудительное удаление виджетов (WebExperience) ---
+        <# --- 3. Принудительное удаление виджетов (WebExperience) --- #>
         $removeWebExperience = $true
         if ($null -ne $Config -and $Config.ContainsKey('RemoveWebExperience')) { $removeWebExperience = [bool]$Config.RemoveWebExperience }
         $provisionedFilters = @()
@@ -117,14 +132,20 @@
         if ($removeWebExperience -and $provisionedFilters.Count -gt 0) {
             foreach ($filter in $provisionedFilters) {
                 if ($hasAppx) {
-                    $packages = @(Get-AppxPackage -AllUsers -Name $filter -ErrorAction SilentlyContinue)
+                    $packages = @()
+                    if ($testMode) { $packages = @(Get-WCTestModeAppxFixture -Filter $filter) }
+                    else { $packages = @(Get-AppxPackage -AllUsers -Name $filter -ErrorAction SilentlyContinue) }
                     foreach ($package in $packages) {
                         if ($whatIf) {
                             Write-Log -Message "WHAT IF: Remove-AppxPackage $($package.PackageFullName) (фильтр $filter)" -Level Info
                             continue
                         }
                         try {
-                            Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
+                            if ($testMode) {
+                                Write-WCTestModeJournal -Category 'Appx' -Action 'Remove-AppxPackage' -Target "$($package.PackageFullName) (фильтр $filter)"
+                            } else {
+                                Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
+                            }
                             $removedPackages.Add([string]$package.PackageFullName)
                         } catch {
                             $problems.Add("appx:$($package.PackageFullName): $($_.Exception.Message)")
@@ -132,15 +153,23 @@
                     }
                 }
                 if ($hasProvisioned) {
-                    $provisioned = @(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
-                            Where-Object { $_.PackageName -like $filter })
+                    $provisioned = @()
+                    if ($testMode) { $provisioned = @(Get-WCTestModeAppxFixture -Filter $filter -Provisioned $true) }
+                    else {
+                        $provisioned = @(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
+                                Where-Object { $_.PackageName -like $filter })
+                    }
                     foreach ($item in $provisioned) {
                         if ($whatIf) {
                             Write-Log -Message "WHAT IF: Remove-AppxProvisionedPackage $($item.PackageName) (фильтр $filter)" -Level Info
                             continue
                         }
                         try {
-                            Remove-AppxProvisionedPackage -Online -PackageName $item.PackageName -ErrorAction Stop | Out-Null
+                            if ($testMode) {
+                                Write-WCTestModeJournal -Category 'Appx' -Action 'Remove-AppxProvisionedPackage' -Target "$($item.PackageName) (фильтр $filter)"
+                            } else {
+                                Remove-AppxProvisionedPackage -Online -PackageName $item.PackageName -ErrorAction Stop | Out-Null
+                            }
                             $removedProvisioned.Add([string]$item.PackageName)
                         } catch {
                             $problems.Add("provisioned:$($item.PackageName): $($_.Exception.Message)")

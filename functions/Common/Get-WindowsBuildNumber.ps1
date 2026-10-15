@@ -16,6 +16,8 @@
     [OutputType([int])]
     param()
 
+    if (Test-WCTestMode) { return [int](Get-WCTestModeState).FakeBuildNumber }
+
     $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
     if ($null -eq $os) { throw 'Не удалось получить Win32_OperatingSystem.' }
 

@@ -99,8 +99,10 @@ Describe 'Set-RegistryValue: аргументы reg.exe, ретраи, ShouldPro
     }
 
     It 'поддержка -Confirm объявлена (проверка метаданных, без интерактивного запроса)' {
-        # Сам интерактивный запрос подтверждение в CI не проверяется (нет хоста),
-        # поэтому контролируем наличие параметров ShouldProcess у примитива.
+        <#
+        Сам интерактивный запрос подтверждение в CI не проверяется (нет хоста),
+        поэтому контролируем наличие параметров ShouldProcess у примитива.
+        #>
         $command = Get-Command Set-RegistryValue
         $command.Parameters.ContainsKey('Confirm') | Should -BeTrue
         $command.Parameters.ContainsKey('WhatIf') | Should -BeTrue
@@ -274,7 +276,8 @@ Describe 'Remove-UserRegistryHive (алиас Unload-UserHiveIfNecessary)' {
     }
 
     It 'алиас совместимости Unload-UserHiveIfNecessary вызывает ту же функцию' {
-        Unload-UserHiveIfNecessary -UserInfo @{ UserName = 'u'; SID = 'Temp_Loaded_yyyy0000'; NeedToUnload = $true } -Confirm:$false | Should -BeTrue
+        $aliasCommand = 'Unload-UserHiveIfNecessary'
+        & $aliasCommand -UserInfo @{ UserName = 'u'; SID = 'Temp_Loaded_yyyy0000'; NeedToUnload = $true } -Confirm:$false | Should -BeTrue
         Should -Invoke Invoke-RegCommand -Times 1 -Exactly
     }
 
@@ -422,7 +425,7 @@ Describe 'Имя компьютера и шаблоны пропуска' {
 
     It 'Test-ComputerNameMatchesAnyPattern находит совпадение по regex' {
         Test-ComputerNameMatchesAnyPattern -ComputerName 'WS-0042' -Patterns @('^WS-\d+$') | Should -BeTrue
-        Test-ComputerNameMatchesAnyPattern -ComputerName 'WS-1' -Patterns @('^WS-\d+$') | Should -BeFalse
+        Test-ComputerNameMatchesAnyPattern -ComputerName 'PC-1' -Patterns @('^WS-\d+$') | Should -BeFalse
     }
 
     It 'пустые аргументы дают $false' {
@@ -499,7 +502,7 @@ Describe 'Test-InstallerBusy и Stop-NamedProcesses' {
     }
 
     It 'Stop-NamedProcesses возвращает число завершённых процессов' {
-        # Мок Stop-Process гарантирует, что реальный процесс не будет завершён.
+        <# Мок Stop-Process гарантирует, что реальный процесс не будет завершён. #>
         $self = [System.Diagnostics.Process]::GetCurrentProcess()
         Mock Get-Process { return @($self, $self) }
         Mock Stop-Process { }

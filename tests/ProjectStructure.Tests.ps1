@@ -20,7 +20,7 @@ BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath 'TestHelpers/ProjectLoader.ps1')
 
     $script:FunctionFiles = @(Get-ProjectFunctionFiles)
-    # Файлы, в которых запрещённые слова легально встречаются КАК ТЕКСТ ПРОВЕРОК.
+    <# Файлы, в которых запрещённые слова легально встречаются КАК ТЕКСТ ПРОВЕРОК. #>
     $script:SelfReferenceFiles = @('ProjectStructure.Tests.ps1')
     $script:AllProjectScripts = @(Get-ChildItem -Path (Get-ProjectRootPath) -Filter '*.ps1' -File -Recurse |
             Where-Object { $_.FullName -notmatch '[\\/](original|TestDrive)[\\/]' } |
@@ -67,8 +67,10 @@ Describe 'Синтаксис и структура проекта' {
             if ($file.Name -in @('Load-ProjectFunctions.ps1', 'Aliases.ps1')) { continue }
 
             $ast = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$null, [ref]$null)
-            # Только функции верхнего уровня: вложенные приватные хелперы (например
-            # Add-SchemaError внутри Test-JsonSchema) документировать не требуется.
+            <#
+            Только функции верхнего уровня: вложенные приватные хелперы (например
+            Add-SchemaError внутри Test-JsonSchema) документировать не требуется.
+            #>
             $isTopLevel = {
                 param($node)
                 $parent = $node.Parent
@@ -172,8 +174,10 @@ Describe 'Совместимость с Windows PowerShell 5.1' {
     }
 
     It 'Нет командлетов и параметров, отсутствующих в PowerShell 5.1' {
-        # Поиск по коду БЕЗ комментариев: упоминание Get-WmiObject в описании
-        # исправленной регрессии не является использованием командлета.
+        <#
+        Поиск по коду БЕЗ комментариев: упоминание Get-WmiObject в описании
+        исправленной регрессии не является использованием командлета.
+        #>
         $forbidden = @(
             'Get-WmiObject',
             'Join-Path\s+-AdditionalChildPath',
@@ -229,8 +233,10 @@ Describe 'Отсутствие захардкоженных корпоратив
     }
 
     It 'Шаги не используют Write-Host напрямую (только Write-Log), кроме отрисовки меню' {
-        # Write-Log - единственная функция, которой РАЗРЕШЕНО писать в консоль напрямую.
-        # Show-InteractiveMenu/Show-InstallationSubmenu - отрисовка меню (тоже консоль).
+        <#
+        Write-Log - единственная функция, которой РАЗРЕШЕНО писать в консоль напрямую.
+        Show-InteractiveMenu/Show-InstallationSubmenu - отрисовка меню (тоже консоль).
+        #>
         $allowed = @('Write-Log.ps1', 'Show-InteractiveMenu.ps1', 'Show-InstallationSubmenu.ps1')
         foreach ($file in ($script:FunctionFiles | Where-Object { $_.Directory.Name -eq 'Steps' })) {
             $content = Get-ScriptCodeWithoutComments -Path $file.FullName
@@ -247,9 +253,11 @@ Describe 'Отсутствие захардкоженных корпоратив
 Describe 'Защита от ловушек PowerShell' {
 
     It 'ни одна локальная переменная не отличается от параметра функции только регистром' {
-        # Переменные PowerShell регистронезависимы: `$section = $Config[$Section]`
-        # перезаписывает типизированный параметр [string]$Section, и значение молча
-        # приводится к строке. Реальный дефект, найденный тестами, - держим проверку.
+        <#
+        Переменные PowerShell регистронезависимы: `$section = $Config[$Section]`
+        перезаписывает типизированный параметр [string]$Section, и значение молча
+        приводится к строке. Реальный дефект, найденный тестами, - держим проверку.
+        #>
         $collisions = New-Object System.Collections.Generic.List[string]
 
         foreach ($file in $script:FunctionFiles) {
@@ -284,11 +292,13 @@ Describe 'Защита от ловушек PowerShell' {
     }
 
     It 'код не присваивает значения read-only automatic-переменным PowerShell' {
-        # $IsWindows/$IsLinux/$IsMacOS/$IsCoreCLR в PowerShell 6+ - константы только
-        # для чтения; присваивание $isWindows (регистр не важен) роняет скрипт с
-        # SessionStateUnauthorizedAccessException. Реальный дефект, найденный тестами.
-        # Только реально read-only/constant переменные. $Error, $Matches, $Args -
-        # обычные автоматические переменные, их перезапись допустима (и часто полезна).
+        <#
+        $IsWindows/$IsLinux/$IsMacOS/$IsCoreCLR в PowerShell 6+ - константы только
+        для чтения; присваивание $isWindows (регистр не важен) роняет скрипт с
+        SessionStateUnauthorizedAccessException. Реальный дефект, найденный тестами.
+        Только реально read-only/constant переменные. $Error, $Matches, $Args -
+        обычные автоматические переменные, их перезапись допустима (и часто полезна).
+        #>
         $readOnly = @('IsWindows', 'IsLinux', 'IsMacOS', 'IsCoreCLR', 'PSVersionTable', 'PID',
             'PSHome', 'Host', 'ExecutionContext', 'PSCulture', 'PSUICulture',
             'ShellId', 'MyInvocation', 'PSScriptRoot', 'PSCommandPath', 'Input')
@@ -310,9 +320,11 @@ Describe 'Защита от ловушек PowerShell' {
     }
 
     It 'в коде нет switch с break/continue (они не относятся к внешнему циклу)' {
-        # В PowerShell break/continue внутри switch прерывают SWITCH, а не внешний
-        # цикл: из-за этого тег попадал в RTF как текст, а WhatIf-режим установки
-        # продолжался реальным запуском процесса. Оба дефекта исправлены.
+        <#
+        В PowerShell break/continue внутри switch прерывают SWITCH, а не внешний
+        цикл: из-за этого тег попадал в RTF как текст, а WhatIf-режим установки
+        продолжался реальным запуском процесса. Оба дефекта исправлены.
+        #>
         $violations = New-Object System.Collections.Generic.List[string]
 
         foreach ($file in $script:AllProjectScripts) {
@@ -325,7 +337,7 @@ Describe 'Защита от ловушек PowerShell' {
                         ($node -is [System.Management.Automation.Language.ContinueStatementAst])
                     }, $true)
                 foreach ($jump in $jumpStatements) {
-                    # break/continue, явно относящиеся к switch (без метки цикла), недопустимы.
+                    <# break/continue, явно относящиеся к switch (без метки цикла), недопустимы. #>
                     $violations.Add("$($file.Name):$($jump.Extent.StartLineNumber)")
                 }
             }

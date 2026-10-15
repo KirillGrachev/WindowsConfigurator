@@ -14,7 +14,7 @@
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath 'TestHelpers/ProjectLoader.ps1')
 
-    # Компактная схема, на которой проверяются все ключевые слова draft-07.
+    <# Компактная схема, на которой проверяются все ключевые слова draft-07. #>
     $script:Schema = Get-JsonFileContent -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Fixtures/keywords.schema.json')
 }
 

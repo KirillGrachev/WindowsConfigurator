@@ -75,9 +75,11 @@ if (-not $ModuleCachePath) {
     $ModuleCachePath = Join-Path -Path $cacheBase -ChildPath 'WindowsConfigurator-PesterModules'
 }
 
-# ---------------------------------------------------------------------------
-# 1. Pester: поиск, при необходимости бутстрап из PSGallery
-# ---------------------------------------------------------------------------
+<#
+---------------------------------------------------------------------------
+1. Pester: поиск, при необходимости бутстрап из PSGallery
+---------------------------------------------------------------------------
+#>
 $requiredMinimum = [version]'5.7.0'
 
 function script:Find-PesterModule {
@@ -160,9 +162,11 @@ if ($null -eq $pester) {
     }
 }
 
-# ---------------------------------------------------------------------------
-# 2. Pester 5 и 6 несовместимы в одной сессии -> перезапуск в дочернем процессе
-# ---------------------------------------------------------------------------
+<#
+---------------------------------------------------------------------------
+2. Pester 5 и 6 несовместимы в одной сессии -> перезапуск в дочернем процессе
+---------------------------------------------------------------------------
+#>
 $loadedPester = @(Get-Module -Name Pester -ErrorAction SilentlyContinue)
 $needRestart = $false
 if ($loadedPester.Count -gt 0 -and $loadedPester[0].Version -ne $pester.Version) { $needRestart = $true }
@@ -205,9 +209,11 @@ Import-Module -Name (Join-Path -Path $pester.Path -ChildPath 'Pester.psd1') -For
 $pesterVersion = (Get-Module -Name Pester).Version
 Write-Host "[INFO] Pester $($pesterVersion.ToString()) | PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition)) | ОС: $([System.Environment]::OSVersion.Platform)" -ForegroundColor Cyan
 
-# ---------------------------------------------------------------------------
-# 3. Конфигурация прогона
-# ---------------------------------------------------------------------------
+<#
+---------------------------------------------------------------------------
+3. Конфигурация прогона
+---------------------------------------------------------------------------
+#>
 $configuration = New-PesterConfiguration
 $configuration.Run.Path = $testsRoot
 $configuration.Run.PassThru = $true
@@ -244,28 +250,35 @@ Write-Host ("Тестов: {0} | Passed: {1} | Failed: {2} | Skipped: {3}" -f $r
 
 $coveragePercent = -1.0
 if ($WithCoverage -and $null -ne $result.CodeCoverage) {
+    <#
+    Pester 5/6: скалярные счётчики - *Count; CommandsMissed - список записей
+    с полем File (полный путь). Группируем пропуски по файлам напрямую,
+    без вложенных $_ (в Sort-Object внутренний $_ перекрывал внешний).
+    #>
     $coveragePercent = [double]$result.CodeCoverage.CoveragePercent
-    $covered = @($result.CodeCoverage.CommandsExecuted).Count
-    $analyzed = @($result.CodeCoverage.CommandsAnalyzed).Count
-    Write-Host ("Покрытие: {0:N2}% (команд {1} из {2}, файлов {3})" -f $coveragePercent, $covered, $analyzed, @($result.CodeCoverage.FilesAnalyzed).Count) -ForegroundColor $(if ($coveragePercent -ge $MinimumCoverage) { 'Green' } else { 'Yellow' })
+    $covered = [int]$result.CodeCoverage.CommandsExecutedCount
+    $analyzed = [int]$result.CodeCoverage.CommandsAnalyzedCount
+    $filesAnalyzed = [int]$result.CodeCoverage.FilesAnalyzedCount
+    Write-Host ("Покрытие: {0:N2}% (команд {1} из {2}, файлов {3})" -f $coveragePercent, $covered, $analyzed, $filesAnalyzed) -ForegroundColor $(if ($coveragePercent -ge $MinimumCoverage) { 'Green' } else { 'Yellow' })
 
-    if ($result.CodeCoverage.CommandsMissed.Count -gt 0) {
-        $worst = @($result.CodeCoverage.FilesAnalyzed |
-                ForEach-Object { $_ } |
-                Sort-Object -Property @{Expression = { @($result.CodeCoverage.CommandsMissed | Where-Object { $_.File -eq $_.FullName }).Count } } -Descending |
+    if ([int]$result.CodeCoverage.CommandsMissedCount -gt 0) {
+        $worst = @($result.CodeCoverage.CommandsMissed |
+                Group-Object -Property File |
+                Sort-Object -Property Count -Descending |
                 Select-Object -First 5)
         Write-Host 'Худшие по покрытию файлы:' -ForegroundColor Yellow
-        foreach ($file in $worst) {
-            $missed = @($result.CodeCoverage.CommandsMissed | Where-Object { $_.File -eq $file }).Count
-            Write-Host ("  {0} : пропущено команд {1}" -f (Split-Path -Path $file -Leaf), $missed) -ForegroundColor DarkYellow
+        foreach ($group in $worst) {
+            Write-Host ("  {0} : пропущено команд {1}" -f (Split-Path -Path $group.Name -Leaf), $group.Count) -ForegroundColor DarkYellow
         }
     }
 }
 Write-Host '================================================================' -ForegroundColor Cyan
 
-# ---------------------------------------------------------------------------
-# 4. PSScriptAnalyzer
-# ---------------------------------------------------------------------------
+<#
+---------------------------------------------------------------------------
+4. PSScriptAnalyzer
+---------------------------------------------------------------------------
+#>
 $analyzerIssues = 0
 if ($WithAnalyzer) {
     if (-not (Get-Module -Name PSScriptAnalyzer -ListAvailable)) {
@@ -273,9 +286,11 @@ if ($WithAnalyzer) {
     } else {
         Import-Module -Name PSScriptAnalyzer -Force
         $settingsPath = Join-Path -Path $projectRoot -ChildPath 'ScriptAnalyzerSettings.psd1'
-        # Анализируем ПОСТАВЛЯЕМЫЙ код: каталог original/ содержит исходный
-        # монолитный скрипт (хранится только как справочник для REFACTORING.md)
-        # и намеренно не проверяется.
+        <#
+        Анализируем ПОСТАВЛЯЕМЫЙ код: каталог original/ содержит исходный
+        монолитный скрипт (хранится только как справочник для REFACTORING.md)
+        и намеренно не проверяется.
+        #>
         $analyzeTargets = @('functions', 'tools', 'tests', 'Configure-Windows.ps1') |
             ForEach-Object { Join-Path -Path $projectRoot -ChildPath $_ } |
             Where-Object { Test-Path -Path $_ }
@@ -302,9 +317,11 @@ if ($WithAnalyzer) {
     }
 }
 
-# ---------------------------------------------------------------------------
-# 5. Код возврата
-# ---------------------------------------------------------------------------
+<#
+---------------------------------------------------------------------------
+5. Код возврата
+---------------------------------------------------------------------------
+#>
 if ($result.FailedCount -gt 0) { exit 1 }
 if ($WithCoverage -and $MinimumCoverage -gt 0 -and $coveragePercent -lt $MinimumCoverage) {
     Write-Host "[FAIL] Покрытие $([Math]::Round($coveragePercent, 2))% ниже порога $MinimumCoverage%." -ForegroundColor Red

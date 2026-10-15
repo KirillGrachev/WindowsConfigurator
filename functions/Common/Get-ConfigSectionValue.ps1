@@ -41,11 +41,13 @@
     if ($null -eq $Config) { return $DefaultValue }
     if (-not $Config.ContainsKey($Section)) { return $DefaultValue }
 
-    # ВНИМАНИЕ: имя локальной переменной НЕ должно отличаться от параметра $Section
-    # только регистром. Переменные PowerShell регистронезависимы, поэтому
-    # `$section = $Config[$Section]` перезаписало бы типизированный параметр
-    # [string]$Section, и hashtable молча превратился бы в строку
-    # 'System.Collections.Hashtable' (найденный тестами дефект).
+    <#
+    ВНИМАНИЕ: имя локальной переменной НЕ должно отличаться от параметра $Section
+    только регистром. Переменные PowerShell регистронезависимы, поэтому
+    `$section = $Config[$Section]` перезаписало бы типизированный параметр
+    [string]$Section, и hashtable молча превратился бы в строку
+    'System.Collections.Hashtable' (найденный тестами дефект).
+    #>
     $sectionValue = $Config[$Section]
     if ($sectionValue -isnot [System.Collections.IDictionary]) { return $DefaultValue }
     if (-not $sectionValue.Contains($Key)) { return $DefaultValue }

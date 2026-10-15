@@ -48,8 +48,10 @@
     if ($null -eq $Root) { $Root = $Schema }
     $errors = New-Object System.Collections.Generic.List[object]
 
-    # Локальная (не script:) функция: не загрязняет глобальную область видимости,
-    # видит $errors родительской области.
+    <#
+    Локальная (не script:) функция: не загрязняет глобальную область видимости,
+    видит $errors родительской области.
+    #>
     function Add-SchemaError {
         param([string]$ErrorPath, [string]$Keyword, [string]$MessageText, [object]$Expected, [object]$Actual)
         $errors.Add([PSCustomObject]@{
@@ -61,7 +63,7 @@
             })
     }
 
-    # Схема может отсутствовать (anyOf из пустого массива и т.п.) - всё валидно.
+    <# Схема может отсутствовать (anyOf из пустого массива и т.п.) - всё валидно. #>
     if ($null -eq $Schema) {
         return [PSCustomObject]@{ Valid = $true; Errors = [object[]]@() }
     }
@@ -74,7 +76,7 @@
 
     $props = Get-ObjectPropertyTable -InputObject $Schema
 
-    # ---- `$ref: раскрываем и валидируем по целевой схеме (остальные keywords draft-07 игнорируются рядом с $ref) ----
+    <# ---- `$ref: раскрываем и валидируем по целевой схеме (остальные keywords draft-07 игнорируются рядом с $ref) ---- #>
     if ($props.Contains('$ref')) {
         $refTarget = Resolve-JsonReference -Reference ([string]$props['$ref']) -Root $Root
         if ($null -eq $refTarget) {
@@ -86,7 +88,7 @@
         return [PSCustomObject]@{ Valid = ($errors.Count -eq 0); Errors = $errors.ToArray() }
     }
 
-    # ---- type ----
+    <# ---- type ---- #>
     if ($props.Contains('type')) {
         $declared = @($props['type'])
         $actualType = Get-JsonTypeName -InputObject $InputObject
@@ -103,7 +105,7 @@
         }
     }
 
-    # ---- enum / const ----
+    <# ---- enum / const ---- #>
     if ($props.Contains('enum')) {
         $allowed = @($props['enum'])
         $found = $false
@@ -124,7 +126,7 @@
         }
     }
 
-    # ---- string ----
+    <# ---- string ---- #>
     $actualType = Get-JsonTypeName -InputObject $InputObject
     if ($actualType -eq 'string') {
         $text = [string]$InputObject
@@ -152,7 +154,7 @@
         }
     }
 
-    # ---- number ----
+    <# ---- number ---- #>
     if ($actualType -eq 'number' -or $actualType -eq 'integer') {
         $num = [double]$InputObject
         if ($props.Contains('minimum') -and $num -lt [double]$props['minimum']) {
@@ -178,7 +180,7 @@
         }
     }
 
-    # ---- array ----
+    <# ---- array ---- #>
     if ($actualType -eq 'array') {
         $items = @(Get-EnumerableItems -InputObject $InputObject)
         if ($props.Contains('minItems') -and $items.Count -lt [int]$props['minItems']) {
@@ -209,8 +211,10 @@
         }
         if ($props.Contains('items')) {
             $itemSchema = $props['items']
-            # Tuple validation: items - массив схем (JSON array -> System.Array).
-            # Обычный случай: items - одна схема (объект/bool).
+            <#
+            Tuple validation: items - массив схем (JSON array -> System.Array).
+            Обычный случай: items - одна схема (объект/bool).
+            #>
             $isTuple = ($itemSchema -is [System.Array])
             $itemSchemas = @($itemSchema)
             if ($isTuple) {
@@ -234,7 +238,7 @@
         }
     }
 
-    # ---- object ----
+    <# ---- object ---- #>
     if ($actualType -eq 'object') {
         $objProps = Get-ObjectPropertyTable -InputObject $InputObject
 
@@ -320,7 +324,7 @@
         }
     }
 
-    # ---- allOf / anyOf / oneOf / not / if-then-else ----
+    <# ---- allOf / anyOf / oneOf / not / if-then-else ---- #>
     if ($props.Contains('allOf')) {
         foreach ($sub in @($props['allOf'])) {
             $nested = Test-JsonSchema -InputObject $InputObject -Schema $sub -Root $Root -Path $Path

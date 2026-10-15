@@ -80,7 +80,7 @@
         $prefix = if ($tag) { "[$tag] " } else { '' }
         $line = "$prefix$Message"
 
-        # Файловый журнал пишем всегда (кроме Level=None), независимо от консольного порога.
+        <# Файловый журнал пишем всегда (кроме Level=None), независимо от консольного порога. #>
         if ($state.FilePath -and $state.Level -ne 'None') {
             $stamp = [System.DateTime]::Now.ToString('yyyy-MM-dd HH:mm:ss.fff')
             $fileLine = "$stamp [$($state.SessionId)] [$tag] $Message"
@@ -114,7 +114,7 @@
                 try {
                     Write-Host $line -ForegroundColor $color
                 } catch {
-                    # Хост без поддержки Write-Host (например ISE/некоторые CI) - не роняем шаг.
+                    <# Хост без поддержки Write-Host (например ISE/некоторые CI) - не роняем шаг. #>
                     Write-Output $line
                 }
             }

@@ -52,9 +52,11 @@
     $duration = [System.TimeSpan]::Zero
     $startedAt = $null
 
-    # ВНИМАНИЕ: [Nullable[datetime]] в PowerShell молча приводится к DateTime,
-    # поэтому $Started.Value равен $null и вычитание падает с op_Subtraction.
-    # Принимаем любой тип и приводим явно.
+    <#
+    ВНИМАНИЕ: [Nullable[datetime]] в PowerShell молча приводится к DateTime,
+    поэтому $Started.Value равен $null и вычитание падает с op_Subtraction.
+    Принимаем любой тип и приводим явно.
+    #>
     if ($null -ne $Started) {
         try {
             $startedAt = [datetime]$Started

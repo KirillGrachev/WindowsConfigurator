@@ -118,7 +118,7 @@
         return [PSCustomObject]@{ Handled = $true; Action = 'InstallSingle'; Step = $stepName; Result = $result; Message = "$appName : $($result.Message)" }
     }
 
-    # --- Обычный шаг ---
+    <# --- Обычный шаг --- #>
     $definitions = @(Get-StepDefinitions -Name $stepName)
     if ($definitions.Count -eq 0) {
         return [PSCustomObject]@{ Handled = $false; Action = 'UnknownStep'; Step = $stepName; Result = $null; Message = "Шаг '$stepName' не зарегистрирован в Get-StepDefinitions." }

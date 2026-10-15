@@ -30,7 +30,14 @@
 
     if (-not $PSCmdlet.ShouldProcess($Path, 'Записать RTF-файл')) { return $true }
 
-    $directory = Split-Path -Path $Path -Parent
+    $targetPath = $Path
+    if (Test-WCTestMode) {
+        <# Тестовый режим: RTF пишется в зеркало песочницы (см. Write-FileUtf8). #>
+        $targetPath = ConvertTo-WCTestModeSandboxPath -Path $Path
+        Write-WCTestModeJournal -Category 'File' -Action 'Write-FileRtf' -Target $Path -Details @{ SandboxPath = $targetPath }
+    }
+
+    $directory = Split-Path -Path $targetPath -Parent
     if ($directory -and -not (Test-Path -Path $directory -ErrorAction SilentlyContinue)) {
         $null = New-Item -Path $directory -ItemType Directory -Force -ErrorAction Stop
     }
@@ -39,6 +46,6 @@
     $text = $text.Replace("`r`n", "`n").Replace("`n", "`r`n")
 
     $encoding = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($Path, $text, $encoding)
+    [System.IO.File]::WriteAllText($targetPath, $text, $encoding)
     return $true
 }

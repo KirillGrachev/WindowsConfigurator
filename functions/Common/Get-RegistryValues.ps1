@@ -23,6 +23,8 @@
     $result = New-Object System.Collections.Specialized.OrderedDictionary
     $normalized = Normalize-RegistryPath -Path $Path
 
+    if (Test-WCTestMode) { return (Get-WCTestModeRegistryOverlay -Path $normalized.NativePath) }
+
     if (-not (Test-Path -Path $normalized.ProviderPath -ErrorAction SilentlyContinue)) { return $result }
 
     $item = Get-ItemProperty -Path $normalized.ProviderPath -ErrorAction SilentlyContinue

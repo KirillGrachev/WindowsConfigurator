@@ -25,8 +25,16 @@ if %ERRORLEVEL%==0 (
     set "PWSH=powershell"
 )
 
-echo [INFO] Запуск конфигуратора через %PWSH% ...
-%PWSH% -NoProfile -ExecutionPolicy Bypass -File "%ENTRY%" -Interactive %*
+REM Без аргументов - интерактивное меню; с аргументами - передаём их как есть
+REM (-Interactive с ними НЕ сочетаем: RunAll/RunSteps/Interactive - разные
+REM наборы параметров, совместная передача даёт ошибку биндинга).
+if "%~1"=="" (
+    echo [INFO] Запуск конфигуратора через %PWSH% (интерактивное меню)...
+    %PWSH% -NoProfile -ExecutionPolicy Bypass -File "%ENTRY%" -Interactive
+) else (
+    echo [INFO] Запуск конфигуратора через %PWSH% ...
+    %PWSH% -NoProfile -ExecutionPolicy Bypass -File "%ENTRY%" %*
+)
 set "RC=%ERRORLEVEL%"
 
 echo.

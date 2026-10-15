@@ -30,6 +30,15 @@
 
     $excluded = @($ExcludedDriveLetters | ForEach-Object { $_.TrimEnd(':').ToUpperInvariant() } | Where-Object { $_ })
 
+    if (Test-WCTestMode) {
+        <#
+        Тестовый режим: CIM недоступен вне Windows - возвращаем подставные
+        диски из состояния (с учётом исключений, как в реальном пути).
+        #>
+        $fakeLetters = @((Get-WCTestModeState).FakeDriveLetters | Where-Object { $excluded -notcontains $_ } | Sort-Object -Unique)
+        return [string[]]@($fakeLetters)
+    }
+
     $disks = @(Get-CimInstance -ClassName Win32_LogicalDisk -ErrorAction Stop)
     $letters = New-Object System.Collections.Generic.List[string]
 

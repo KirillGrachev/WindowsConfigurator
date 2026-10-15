@@ -38,7 +38,7 @@ foreach ($subDirectory in $loadOrder) {
     }
 }
 
-# Псевдонимы совместимости со старыми именами функций (оригинальный скрипт).
+<# Псевдонимы совместимости со старыми именами функций (оригинальный скрипт). #>
 $aliasFile = Join-Path -Path $script:WindowsConfiguratorFunctionsRoot -ChildPath 'Aliases.ps1'
 if (Test-Path -Path $aliasFile -PathType Leaf) {
     . $aliasFile

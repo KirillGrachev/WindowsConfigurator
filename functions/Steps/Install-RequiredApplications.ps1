@@ -101,7 +101,7 @@
         $attempt = 0
 
         try {
-            if ($installerPath -match '^\\\\' -and -not $whatIf -and -not (Test-Path -Path $installerPath -ErrorAction SilentlyContinue)) {
+            if ($installerPath -match '^\\\\' -and -not $whatIf -and -not (Test-WCTestMode) -and -not (Test-Path -Path $installerPath -ErrorAction SilentlyContinue)) {
                 throw "Сетевой установщик недоступен: $installerPath"
             }
 
@@ -112,9 +112,11 @@
                     if (-not $unlocked) { throw "Установщик не освободился за $lockWait сек." }
                 }
 
-                # if/elseif, а НЕ switch: в PowerShell break/continue внутри switch
-                # не относятся к внешнему циклу do/while - в режиме WhatIf установка
-                # продолжилась бы реальным запуском процесса.
+                <#
+                if/elseif, а НЕ switch: в PowerShell break/continue внутри switch
+                не относятся к внешнему циклу do/while - в режиме WhatIf установка
+                продолжилась бы реальным запуском процесса.
+                #>
                     if ($appType -eq 'MSI') {
                         $arguments = New-Object System.Collections.Generic.List[string]
                         $arguments.Add('/i') | Out-Null
@@ -123,7 +125,7 @@
 
                         $transform = if ($app.ContainsKey('TransformPath')) { [string]$app.TransformPath } else { '' }
                         if ($transform) {
-                            if ($transform -match '^\\\\' -and -not $whatIf -and -not (Test-Path -Path $transform -ErrorAction SilentlyContinue)) {
+                            if ($transform -match '^\\\\' -and -not $whatIf -and -not (Test-WCTestMode) -and -not (Test-Path -Path $transform -ErrorAction SilentlyContinue)) {
                                 throw "Файл трансформации (MST) недоступен: $transform"
                             }
                             $arguments.Add("TRANSFORMS=`"$transform`"") | Out-Null
@@ -232,7 +234,7 @@
                 throw "Ошибка установки. Код выхода: $exitCode (попыток: $attempt)"
             }
 
-            # --- PostInstall ---
+            <# --- PostInstall --- #>
             $postInstalls = @()
             if ($app.ContainsKey('PostInstall')) { $postInstalls = @($app.PostInstall) }
             foreach ($post in $postInstalls) {
@@ -253,7 +255,7 @@
                 }
             }
 
-            # --- CopyFiles ---
+            <# --- CopyFiles --- #>
             $copyFiles = @()
             if ($app.ContainsKey('CopyFiles')) { $copyFiles = @($app.CopyFiles) }
             foreach ($fileSpec in $copyFiles) {
@@ -264,6 +266,29 @@
                 $destination = (Expand-ConfigToken -InputString $destination -Tokens $tokens).Value
                 Write-Log -Message "Копирование для '$appName': $source -> $destination" -Level Debug
                 if ($whatIf) { continue }
+
+                if (Test-WCTestMode) {
+                    <#
+                    Тестовый режим: копируем внутри песочницы (источник засеян
+                    фикстурами Initialize-WCTestModeFixtures) и пишем в журнал.
+                    #>
+                    $mappedSource = ConvertTo-WCTestModeSandboxPath -Path $source
+                    $mappedDestination = ConvertTo-WCTestModeSandboxPath -Path $destination
+                    Write-WCTestModeJournal -Category 'File' -Action 'Copy' -Target "$source -> $destination" -Details @{
+                        SandboxSource      = $mappedSource
+                        SandboxDestination = $mappedDestination
+                    }
+                    if (Test-Path -Path $mappedSource -ErrorAction SilentlyContinue) {
+                        $mappedDirectory = Split-Path -Path $mappedDestination -Parent
+                        if ($mappedDirectory -and -not (Test-Path -Path $mappedDirectory -ErrorAction SilentlyContinue)) {
+                            $null = New-Item -Path $mappedDirectory -ItemType Directory -Force -ErrorAction SilentlyContinue
+                        }
+                        Copy-Item -Path $mappedSource -Destination $mappedDestination -Force -ErrorAction SilentlyContinue
+                    } else {
+                        Write-Log -Message "(ТЕСТ) Источник копирования не найден в песочнице: $mappedSource" -Level Warn
+                    }
+                    continue
+                }
 
                 if (-not (Test-Path -Path $source -ErrorAction SilentlyContinue)) {
                     Write-Log -Message "Источник для копирования не найден: $source" -Level Warn

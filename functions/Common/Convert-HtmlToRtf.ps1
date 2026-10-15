@@ -88,8 +88,10 @@
             if (-not $nameMatch.Success) { continue }
             $tagName = $nameMatch.Groups[1].Value.ToLowerInvariant()
 
-            # ВАЖНО: не switch - в PowerShell `continue` внутри switch не прерывает
-            # итерацию foreach, и тег попал бы в документ как обычный текст.
+            <#
+            ВАЖНО: не switch - в PowerShell `continue` внутри switch не прерывает
+            итерацию foreach, и тег попал бы в документ как обычный текст.
+            #>
             if ($tagName -eq 'br') {
                 $null = $builder.Append('\line ')
                 continue
@@ -121,15 +123,17 @@
                     if ([string]::IsNullOrEmpty($href)) { $href = $hrefMatch.Groups[3].Value }
                     if ([string]::IsNullOrEmpty($href)) { $href = $hrefMatch.Groups[4].Value }
                 }
-                # RTF-экранирование URL: обратный слэш удваивается, скобки и кавычка экранируются.
+                <# RTF-экранирование URL: обратный слэш удваивается, скобки и кавычка экранируются. #>
                 $escapedHref = $href.Replace('\', '\\').Replace('{', '\{').Replace('}', '\}').Replace('"', '\"')
                 $null = $builder.Append('{\field{\*\fldinst{HYPERLINK "' + $escapedHref + '"}}{\fldrslt{\cf2\ul ')
                 $linkDepth++
                 continue
             }
             if ($tagName -eq 'img') {
-                # Логотип в RTF не встраивается: Outlook берёт его из папки *_files
-                # (filelist.xml). Пробел сохраняет разбиение текста.
+                <#
+                Логотип в RTF не встраивается: Outlook берёт его из папки *_files
+                (filelist.xml). Пробел сохраняет разбиение текста.
+                #>
                 $null = $builder.Append(' ')
                 continue
             }
@@ -157,7 +161,7 @@
         $null = $builder.Append($suffix)
     }
 
-    # Гарантируем баланс групп: закрываем незакрытые поля ссылок.
+    <# Гарантируем баланс групп: закрываем незакрытые поля ссылок. #>
     while ($linkDepth -gt 0) { $null = $builder.Append('}}} '); $linkDepth-- }
     $null = $builder.Append('\par }')
 

@@ -19,9 +19,9 @@ jobs:
   # ---------------------------------------------------------------------------
   static-checks:
     name: Static checks (encoding, schema, entry point)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Проверка кодировок и окончаний строк
         shell: pwsh
@@ -104,9 +104,9 @@ jobs:
   # ---------------------------------------------------------------------------
   analyze:
     name: PSScriptAnalyzer
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Установка PSScriptAnalyzer
         shell: pwsh
@@ -143,6 +143,11 @@ jobs:
         include:
           # РЕАЛЬНЫЙ Windows PowerShell 5.1 - проверка совместимости, которую
           # невозможно выполнить на Linux (настоящие сигнатуры Appx/DISM/CIM).
+          # ubuntu-24.04 закреплён явно: ubuntu-latest с 19.10.2026 мигрирует на
+          # Ubuntu 26 - обновляем образ ОС осознанно, а не автоматически.
+          # macOS в матрице нет: не-Windows полностью покрыт ubuntu (pwsh),
+          # а macOS-specific кода в проекте нет (arm64-раннеры к тому же
+          # подолгу стоят в очереди из-за capacity constraints).
           - os: windows-latest
             shell: powershell
             pester: '5.7.1'
@@ -151,23 +156,19 @@ jobs:
             shell: pwsh
             pester: '6.2.0'
             coverage: true
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             shell: pwsh
             pester: '5.7.1'
             coverage: true
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             shell: pwsh
             pester: '6.2.0'
-            coverage: false
-          - os: macos-latest
-            shell: pwsh
-            pester: '5.7.1'
             coverage: false
     defaults:
       run:
         shell: ${{ matrix.shell }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Версия PowerShell
         run: |
@@ -187,7 +188,7 @@ jobs:
 
       - name: Публикация результатов (NUnit)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.shell }}-${{ matrix.pester }}
           path: |

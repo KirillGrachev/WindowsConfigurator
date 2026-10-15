@@ -34,13 +34,15 @@ if (Test-Path -Path $stubFile -PathType Leaf) {
     $script:WindowsStubsLoaded = $true
 }
 
-# Журнал в тестах не нужен на диске: переключаем в режим 'None' (без файла).
+<# Журнал в тестах не нужен на диске: переключаем в режим 'None' (без файла). #>
 $null = Initialize-Logging -Level 'None' -FilePath ''
 
-# ВАЖНО для тестирования функций с SupportsShouldProcess: в неинтерактивном хосте
-# (CI, pwsh -File) запрос подтверждения либо бросает NullReferenceException
-# (ConfirmImpact=High), либо молча возвращает $false. Устанавливаем None - тогда
-# ShouldProcess всегда разрешает действие, а -WhatIf продолжает работать.
+<#
+ВАЖНО для тестирования функций с SupportsShouldProcess: в неинтерактивном хосте
+(CI, pwsh -File) запрос подтверждения либо бросает NullReferenceException
+(ConfirmImpact=High), либо молча возвращает $false. Устанавливаем None - тогда
+ShouldProcess всегда разрешает действие, а -WhatIf продолжает работать.
+#>
 $ConfirmPreference = 'None'
 
 $script:TestConfigCache = $null

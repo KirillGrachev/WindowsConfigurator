@@ -126,7 +126,7 @@
         $resolved = if ($null -eq $Value) { '' } else { [string]$Value }
         $provider = 'Plain'
         if ($DefaultProvider -eq 'Environment' -and $resolved) {
-            # Plain-строка при провайдере Environment трактуется как ИМЯ переменной.
+            <# Plain-строка при провайдере Environment трактуется как ИМЯ переменной. #>
             $source = "env:$resolved"
             $fromEnv = [string][System.Environment]::GetEnvironmentVariable($resolved)
             if ([string]::IsNullOrEmpty($fromEnv)) {
@@ -146,7 +146,7 @@
         Write-Log -Message "Секрет '$FieldName' содержит ТЕСТОВОЕ значение (источник: $source). BlockTestDataSecrets=true: использование запрещено." -Level Warn
     }
 
-    # Значение секрета намеренно НЕ логируется - только источник.
+    <# Значение секрета намеренно НЕ логируется - только источник. #>
     Write-Log -Message "Секрет '$FieldName' получен (провайдер: $provider, источник: $source, длина: $($resolved.Length))." -Level Debug
 
     return [PSCustomObject]@{

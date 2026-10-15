@@ -24,5 +24,18 @@
     if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
 
     $normalized = Normalize-RegistryPath -Path $Path
+
+    if (Test-WCTestMode) {
+        $overlayState = Get-WCTestModeState
+        $overlayKey = $normalized.NativePath.ToUpperInvariant()
+        $descendantPrefix = "$overlayKey\"
+        foreach ($existingKey in $overlayState.RegistryOverlay.Keys) {
+            if ($existingKey -eq $overlayKey -or $existingKey.StartsWith($descendantPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                return $true
+            }
+        }
+        return $false
+    }
+
     return [bool](Test-Path -Path $normalized.ProviderPath -ErrorAction SilentlyContinue)
 }

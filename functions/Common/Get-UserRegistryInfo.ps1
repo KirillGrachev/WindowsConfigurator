@@ -39,6 +39,24 @@
     $profilePath = Join-Path -Path $ProfilesRoot -ChildPath $UserName
     $hivePath = Join-Path -Path $profilePath -ChildPath 'ntuser.dat'
 
+    if (Test-WCTestMode) {
+        <#
+        Тестовый режим: ntuser.dat не существует и reg load не выполняется -
+        возвращаем подставной SID и профиль в песочнице (контракт ключей тот же).
+        #>
+        $testState = Get-WCTestModeState
+        $fakeProfilePath = Get-UserProfileFolderPath -UserName $UserName
+        return @{
+            UserName     = $UserName
+            ProfilePath  = $fakeProfilePath
+            SID          = $testState.FakeSid
+            RegistryPath = "HKEY_USERS\$($testState.FakeSid)"
+            NeedToUnload = $false
+            Source       = 'TestMode'
+            HivePath     = ''
+        }
+    }
+
     if (-not (Test-Path -Path $hivePath -PathType Leaf -ErrorAction SilentlyContinue)) {
         throw "Профиль не найден для пользователя '$UserName': отсутствует $hivePath"
     }
@@ -46,7 +64,7 @@
     $sid = $null
     $source = 'None'
 
-    # 1) CIM Win32_UserProfile
+    <# 1) CIM Win32_UserProfile #>
     try {
         $filter = "LocalPath='$($profilePath.Replace("'", "\'"))'"
         $userProfile = Get-CimInstance -ClassName Win32_UserProfile -Filter $filter -ErrorAction Stop |
@@ -59,7 +77,7 @@
         Write-Log -Message "Поиск SID через Win32_UserProfile не удался: $($_.Exception.Message)" -Level Debug
     }
 
-    # 2) ProfileList
+    <# 2) ProfileList #>
     if (-not $sid) {
         $profileListPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList'
         $candidates = @(Get-ChildItem -Path $profileListPath -ErrorAction SilentlyContinue |
@@ -77,7 +95,7 @@
         }
     }
 
-    # 3) Временная загрузка куста
+    <# 3) Временная загрузка куста #>
     if (-not $sid) {
         $tempSid = "Temp_Loaded_$([guid]::NewGuid().ToString('N').Substring(0, 8))"
         $loadResult = Invoke-RegCommand -Arguments @('load', "HKU\$tempSid", $hivePath)

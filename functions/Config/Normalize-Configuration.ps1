@@ -42,7 +42,7 @@
         }
     }
 
-    # --- WindowsVersions: сортировка по убыванию MinBuild ---
+    <# --- WindowsVersions: сортировка по убыванию MinBuild --- #>
     if ($result.ContainsKey('WindowsVersions')) {
         $versions = @(Get-EnumerableItems -InputObject $result.WindowsVersions)
         $result.WindowsVersions = @($versions |
@@ -50,7 +50,7 @@
                 Sort-Object -Property @{Expression = { [int]$_['MinBuild'] } } -Descending)
     }
 
-    # --- AppsToRemove: категории + плоский список ---
+    <# --- AppsToRemove: категории + плоский список --- #>
     $byCategory = @{}
     $flat = New-Object System.Collections.Generic.List[string]
     if ($result.ContainsKey('AppsToRemove')) {
@@ -66,7 +66,7 @@
     $result.AppsToRemoveByCategory = $byCategory
     $result.AppsToRemove = @($flat.ToArray())
 
-    # --- LegacyAppsToRemove ---
+    <# --- LegacyAppsToRemove --- #>
     if ($result.ContainsKey('LegacyAppsToRemove')) {
         $legacy = @(Get-EnumerableItems -InputObject $result.LegacyAppsToRemove)
         $result.LegacyAppsToRemove = @($legacy | ForEach-Object {
@@ -82,7 +82,7 @@
             })
     }
 
-    # --- AppsToInstall: раскрытие токенов и нормализация типов ---
+    <# --- AppsToInstall: раскрытие токенов и нормализация типов --- #>
     if ($result.ContainsKey('AppsToInstall')) {
         $apps = @(Get-EnumerableItems -InputObject $result.AppsToInstall)
         $normalizedApps = New-Object System.Collections.Generic.List[object]
@@ -145,7 +145,7 @@
         $result.AppsToInstall = @($normalizedApps.ToArray())
     }
 
-    # --- AutoStartApps: значения всегда массивы строк ---
+    <# --- AutoStartApps: значения всегда массивы строк --- #>
     if ($result.ContainsKey('AutoStartApps')) {
         $groups = Get-ObjectPropertyTable -InputObject $result.AutoStartApps
         $normalizedGroups = @{}
@@ -155,7 +155,7 @@
         $result.AutoStartApps = $normalizedGroups
     }
 
-    # --- FolderRedirection.Folders: SourceFolderName по умолчанию = Name ---
+    <# --- FolderRedirection.Folders: SourceFolderName по умолчанию = Name --- #>
     if ($result.ContainsKey('FolderRedirection') -and $result.FolderRedirection -is [System.Collections.IDictionary]) {
         if ($result.FolderRedirection.ContainsKey('Folders')) {
             $folders = @(Get-EnumerableItems -InputObject $result.FolderRedirection.Folders)
@@ -171,7 +171,7 @@
         }
     }
 
-    # --- Menu.Items: hashtable'ы + сортировка по числовому Id ---
+    <# --- Menu.Items: hashtable'ы + сортировка по числовому Id --- #>
     if ($result.ContainsKey('Menu') -and $result.Menu -is [System.Collections.IDictionary]) {
         if ($result.Menu.ContainsKey('Items')) {
             $items = @(Get-EnumerableItems -InputObject $result.Menu.Items)
@@ -189,14 +189,14 @@
         }
     }
 
-    # --- General.DefaultSteps: всегда массив строк ---
+    <# --- General.DefaultSteps: всегда массив строк --- #>
     if ($result.ContainsKey('General') -and $result.General -is [System.Collections.IDictionary]) {
         if ($result.General.ContainsKey('DefaultSteps')) {
             $result.General.DefaultSteps = @(Get-EnumerableItems -InputObject $result.General.DefaultSteps | ForEach-Object { [string]$_ })
         }
     }
 
-    # --- Environment.PowerSkipComputerNamePatterns ---
+    <# --- Environment.PowerSkipComputerNamePatterns --- #>
     if ($result.ContainsKey('Environment') -and $result.Environment -is [System.Collections.IDictionary]) {
         if ($result.Environment.ContainsKey('PowerSkipComputerNamePatterns')) {
             $result.Environment.PowerSkipComputerNamePatterns = @(Get-EnumerableItems -InputObject $result.Environment.PowerSkipComputerNamePatterns | ForEach-Object { [string]$_ })

@@ -33,6 +33,18 @@
         [bool]$Validate = $true
     )
 
+    if (Test-WCTestMode) {
+        <#
+        Тестовый режим: 'профиль' живёт в песочнице и всегда существует,
+        поэтому -Validate проходит, а файлы шагов доступны для проверки.
+        #>
+        $sandboxProfile = Join-Path -Path (Join-Path -Path (Get-WCTestModeState).SandboxPath -ChildPath 'profile') -ChildPath $UserName
+        if (-not (Test-Path -Path $sandboxProfile)) {
+            $null = New-Item -Path $sandboxProfile -ItemType Directory -Force -ErrorAction Stop
+        }
+        return $sandboxProfile
+    }
+
     if ([string]::IsNullOrWhiteSpace($ProfilesRoot)) {
         $ProfilesRoot = '%SystemDrive%\Users'
     }

@@ -14,8 +14,10 @@
 #>
 
 BeforeDiscovery {
-    # TestCases вычисляются на этапе discovery, ДО BeforeAll - поэтому проект
-    # загружаем здесь и кешируем пункты меню для параметризованных тестов.
+    <#
+    TestCases вычисляются на этапе discovery, ДО BeforeAll - поэтому проект
+    загружаем здесь и кешируем пункты меню для параметризованных тестов.
+    #>
     . (Join-Path -Path $PSScriptRoot -ChildPath 'TestHelpers/ProjectLoader.ps1')
     $script:Config = Import-Configuration -Path (Get-ProjectFilePath -RelativePath 'config/config.json') -SkipLoggingInit
     $script:Items = @(Get-InteractiveMenuItems -Config $script:Config)
@@ -203,8 +205,10 @@ Describe 'Оркестратор Start-WindowsConfiguration' {
     It 'предупреждения о тестовых данных выводятся при запуске' {
         $warnings = @()
         Start-WindowsConfiguration -UserName 'test.user' -RunSteps @('Desktop') -Config $script:Config -WarningVariable warnings -WarningAction SilentlyContinue | Out-Null
-        # Write-Log пишет предупреждения в поток Warning только при Level<=Warning;
-        # проверяем, что оркестратор хотя бы не падает и возвращает сводку.
+        <#
+        Write-Log пишет предупреждения в поток Warning только при Level<=Warning;
+        проверяем, что оркестратор хотя бы не падает и возвращает сводку.
+        #>
         $warnings | Out-Null
     }
 }
@@ -421,12 +425,16 @@ Describe 'Цикл меню Start-InteractiveMenu' {
 
 Describe 'Read-MenuChoice: нормализация ввода' {
 
-    # Отдельный Describe: в блоке 'Цикл меню' сама Read-MenuChoice замокана,
-    # поэтому тест реальной функции там был бы некорректен.
+    <#
+    Отдельный Describe: в блоке 'Цикл меню' сама Read-MenuChoice замокана,
+    поэтому тест реальной функции там был бы некорректен.
+    #>
 
     It 'Read-MenuChoice нормализует ввод' {
-        # Присваивание обязательно: пустая строка, отправленная в конвейер,
-        # до Should не доходит (конвейер её отбрасывает).
+        <#
+        Присваивание обязательно: пустая строка, отправленная в конвейер,
+        до Should не доходит (конвейер её отбрасывает).
+        #>
         Mock Read-Host { return '  7  ' }
         $choice = Read-MenuChoice -Prompt 'x'
         $choice | Should -Be '7'

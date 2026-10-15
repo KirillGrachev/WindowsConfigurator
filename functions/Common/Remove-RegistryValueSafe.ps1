@@ -35,7 +35,7 @@
         Write-Log -Message "Удалено значение реестра: $target" -Level Debug
         return $true
     }
-    # Код 1 - значение/ключ не найдены: считаем успехом (идемпотентность).
+    <# Код 1 - значение/ключ не найдены: считаем успехом (идемпотентность). #>
     Write-Log -Message "Удаление значения '$target' вернуло код $($result.ExitCode): $($result.Output -join '; ')" -Level Debug
     return $false
 }

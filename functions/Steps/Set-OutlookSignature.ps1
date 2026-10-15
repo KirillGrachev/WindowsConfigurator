@@ -107,11 +107,31 @@
     if ([string]::IsNullOrWhiteSpace($templatePath)) {
         return New-StepResult -Step $stepName -Status 'Failed' -Message 'SignatureSettings.TemplatePath не задан.' -Started $started
     }
-    if (-not $whatIf -and -not (Test-Path -Path $templatePath -ErrorAction SilentlyContinue)) {
+    $effectiveTemplatePath = $templatePath
+    $demoTemplateHtml = ''
+    if (Test-WCTestMode) {
+        <#
+        Тестовый режим: шаблон ищется в зеркале песочницы; если его там нет -
+        используется встроенный демо-шаблон с плейсхолдерами конфигурации,
+        чтобы генерация подписи отрабатывала полный сценарий.
+        #>
+        $effectiveTemplatePath = ConvertTo-WCTestModeSandboxPath -Path $templatePath
+        if (-not $whatIf -and -not (Test-Path -Path $effectiveTemplatePath -ErrorAction SilentlyContinue)) {
+            $demoTemplateHtml = '<html><body>' +
+                "<p><b>$($placeholders.FullName)</b></p>" +
+                "<p>$($placeholders.JobTitle) | $($placeholders.CompanyName)</p>" +
+                "<p>$($placeholders.EmailAddress)</p>" +
+                "<p>$($placeholders.PhoneLabel) $($placeholders.PhoneNumber)</p>" +
+                "<p>$($placeholders.Regards)</p>" +
+                '</body></html>'
+            Write-WCTestModeJournal -Category 'File' -Action 'DemoTemplate' -Target $templatePath -Details @{ SandboxPath = $effectiveTemplatePath }
+            Write-Log -Message "(ТЕСТ) Шаблон '$templatePath' не найден - использую встроенный демо-шаблон." -Level Warn
+        }
+    } elseif (-not $whatIf -and -not (Test-Path -Path $templatePath -ErrorAction SilentlyContinue)) {
         return New-StepResult -Step $stepName -Status 'Failed' -Message "Шаблон подписи не найден: $templatePath" -Started $started
     }
 
-    # --- 1. Данные пользователя ---
+    <# --- 1. Данные пользователя --- #>
     $ad = $AdUserInfo
     if ($null -eq $ad -and -not $whatIf) {
         try {
@@ -157,7 +177,7 @@
 
     Write-Log -Message "Данные для подписи: $fullName / $jobTitle / $company / $email" -Level Debug
 
-    # --- 2. Каталоги ---
+    <# --- 2. Каталоги --- #>
     $signatureFolderName = $folderPattern.Replace('{UserName}', $UserName)
     $profilePath = ''
     try {
@@ -170,7 +190,10 @@
     }
 
     $rootPath = switch ($outputRoot) {
-        'Temp' { [System.IO.Path]::GetTempPath() }
+        'Temp' {
+            if (Test-WCTestMode) { Join-Path -Path (Get-WCTestModeState).SandboxPath -ChildPath 'Temp' }
+            else { [System.IO.Path]::GetTempPath() }
+        }
         'UserProfile' { $profilePath }
         default {
             if ($whatIf) { Join-Path -Path $profilePath -ChildPath 'Desktop' }
@@ -197,9 +220,9 @@
         return New-StepResult -Step $stepName -Status 'WhatIf' -Message "Подпись была бы создана в $signatureFolder" -Started $started -Data @{ Folder = $signatureFolder; Email = $email }
     }
 
-    # --- 3. Рендер шаблона ---
+    <# --- 3. Рендер шаблона --- #>
     try {
-        $html = [System.IO.File]::ReadAllText($templatePath)
+        $html = if ($demoTemplateHtml) { $demoTemplateHtml } else { [System.IO.File]::ReadAllText($effectiveTemplatePath) }
 
         $replacements = @{
             $placeholders.FullName     = $fullName
@@ -213,7 +236,7 @@
         foreach ($key in $replacements.Keys) {
             if ([string]::IsNullOrEmpty($key)) { continue }
             $pattern = [System.Text.RegularExpressions.Regex]::Escape($key)
-            # В строке замены .NET-регулярки '$' имеет особый смысл -> экранируем как '$$'.
+            <# В строке замены .NET-регулярки '$' имеет особый смысл -> экранируем как '$$'. #>
             $replacement = ([string]$replacements[$key]).Replace('$', '$$')
             $html = [System.Text.RegularExpressions.Regex]::Replace($html, $pattern, $replacement)
         }
@@ -257,7 +280,7 @@
 
         $html = $html.Replace($placeholders.LogoUrl, $logoUrl)
 
-        # --- 4. Запись файлов ---
+        <# --- 4. Запись файлов --- #>
         if (-not (Test-Path -Path $signatureFolder -ErrorAction SilentlyContinue)) {
             $null = New-Item -Path $signatureFolder -ItemType Directory -Force -ErrorAction Stop
         }
@@ -276,7 +299,7 @@
             $created.Add((Split-Path -Path $rtfFile -Leaf)) | Out-Null
         }
 
-        # --- 5. Установка подписи в профиль пользователя ---
+        <# --- 5. Установка подписи в профиль пользователя --- #>
         if ($installToUser) {
             $signaturesFolder = Join-Path -Path $profilePath -ChildPath 'AppData\Roaming\Microsoft\Signatures'
             if (-not (Test-Path -Path $signaturesFolder -ErrorAction SilentlyContinue)) {

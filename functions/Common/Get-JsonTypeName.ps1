@@ -35,7 +35,7 @@
         if ($InputObject -is [double] -or $InputObject -is [single] -or $InputObject -is [decimal]) {
             $asDouble = [double]$InputObject
             if ($asDouble -eq [Math]::Floor($asDouble) -and -not [double]::IsInfinity($asDouble)) {
-                # JSON не различает 5 и 5.0 - считаем integer, но number тоже подходит (см. Test-JsonSchema).
+                <# JSON не различает 5 и 5.0 - считаем integer, но number тоже подходит (см. Test-JsonSchema). #>
                 return 'integer'
             }
             return 'number'

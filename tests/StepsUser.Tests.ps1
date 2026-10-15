@@ -224,10 +224,12 @@ Describe 'Шаг Autostart: очистка автозагрузки (регре�
         Mock Set-RegistryValue { $script:RegWrites.Add(@{ Path = $Path; Name = $Name; Value = $Value; WhatIf = $WhatIf }) | Out-Null; return $true }
         Mock Remove-RegistryValueSafe { $script:RemovedValues.Add("$Path|$Name") | Out-Null; return $true }
         Mock Test-RegistryKeyExists { return $true }
-        # Мок БЕЗ -ParameterFilter ( default): в Pester 6 вызов, не попавший ни под
-        # один фильтр, считается ошибкой, а не проходом в реальный командлет.
-        # Возвращаем настоящие FileInfo через .NET - они корректно привязываются в
-        # Remove-Item по PSPath, поэтому удаление проверяется по-настоящему.
+        <#
+        Мок БЕЗ -ParameterFilter ( default): в Pester 6 вызов, не попавший ни под
+        один фильтр, считается ошибкой, а не проходом в реальный командлет.
+        Возвращаем настоящие FileInfo через .NET - они корректно привязываются в
+        Remove-Item по PSPath, поэтому удаление проверяется по-настоящему.
+        #>
         Mock Get-ChildItem {
             $script:ChildCalls.Add($Path) | Out-Null
             if (-not (Test-Path -Path $Path)) { return @() }
@@ -245,9 +247,11 @@ Describe 'Шаг Autostart: очистка автозагрузки (регре�
         $expectedStartup = Join-Path -Path $script:AutoProfile -ChildPath 'AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup'
         Test-Path -Path $expectedStartup | Should -BeTrue
 
-        # Сигнатура бага оригинала: ProfilePath вместо ProfilePath давал $null,
-        # и путь превращался в '\AppData\Roaming\...'. Проверяем, что такого нет
-        # и что каталог Startup искался именно внутри профиля пользователя.
+        <#
+        Сигнатура бага оригинала: ProfilePath вместо ProfilePath давал $null,
+        и путь превращался в '\AppData\Roaming\...'. Проверяем, что такого нет
+        и что каталог Startup искался именно внутри профиля пользователя.
+        #>
         @($script:ChildCalls | Where-Object { $_ -match '^[\\/]AppData' }).Count | Should -Be 0
         @($script:ChildCalls | Where-Object { $_ -like "*$($script:AutoProfile)*Startup" }).Count | Should -BeGreaterOrEqual 1
     }
@@ -261,7 +265,7 @@ Describe 'Шаг Autostart: очистка автозагрузки (регре�
 
     It 'значения Run удаляются по имени файла без расширения' {
         $values = New-Object System.Collections.Specialized.OrderedDictionary
-        # Имя файла без расширения должно совпасть со списком AutoStartApps['Test Legacy App'].
+        <# Имя файла без расширения должно совпасть со списком AutoStartApps['Test Legacy App']. #>
         $values['RunLegacy'] = 'C:\Program Files\TestLegacyApp\TestLegacyApp.exe'
         $values['Unrelated'] = 'C:\Other\other.exe'
         Mock Get-RegistryValues { return $values }
@@ -310,8 +314,10 @@ Describe 'Шаг Autostart: очистка автозагрузки (регре�
         $result = Disable-AutostartApplications -UserName 'test.user' -Config $script:Config -WhatIf -Confirm:$false
         $result.Status | Should -Be 'WhatIf'
         @(Get-ChildItem -Path $script:StartupDir -File).Count | Should -Be $before
-        # Записи в реестр в режиме WhatIf передаются примитивам с флагом -WhatIf,
-        # поэтому реальных изменений нет: проверяем именно флаг.
+        <#
+        Записи в реестр в режиме WhatIf передаются примитивам с флагом -WhatIf,
+        поэтому реальных изменений нет: проверяем именно флаг.
+        #>
         @($script:RegWrites | Where-Object { -not $_.WhatIf }).Count | Should -Be 0
     }
 }
@@ -412,7 +418,7 @@ Describe 'Шаг Power: план питания и таймауты' {
         $result = Set-PowerPlanAndTimeouts -Config $config -Confirm:$false
         $result.Status | Should -Be 'Success'
         $result.Data.Plan | Should -Be 'Power saver'
-        # Активный план уже активен - переключение не требуется.
+        <# Активный план уже активен - переключение не требуется. #>
         @($script:PowerCalls | Where-Object { $_[0] -eq '/s' }).Count | Should -Be 0
     }
 
@@ -513,13 +519,15 @@ Describe 'Шаг FolderRedirection: перенос папок профиля' {
             @{ Name = 'Documents'; RegValueName = 'Personal'; SourceFolderName = 'Documents' }
             @{ Name = 'Desktop'; RegValueName = 'Desktop'; SourceFolderName = 'Desktop' }
         )
-        # Каталог D:\ недоступен в тестах - эмулируем его через TestDrive-подобный путь.
+        <# Каталог D:\ недоступен в тестах - эмулируем его через TestDrive-подобный путь. #>
         $targetRoot = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-target-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
         $null = New-Item -Path $targetRoot -ItemType Directory -Force
         Mock Get-LocalFixedDrives { return @() }
 
-        # Проверяем поведение на недоступном диске: шаг должен корректно завершиться ошибкой,
-        # а не упасть с NullReference (регрессия [0] от строки).
+        <#
+        Проверяем поведение на недоступном диске: шаг должен корректно завершиться ошибкой,
+        а не упасть с NullReference (регрессия [0] от строки).
+        #>
         $result = Set-UserFolderRedirection -UserName 'test.user' -Config $config -Confirm:$false
         $result.Status | Should -Be 'Failed'
         Remove-Item -Path $targetRoot -Recurse -Force -ErrorAction SilentlyContinue
@@ -826,7 +834,8 @@ Describe 'Шаг ClassicContextMenu' {
     }
 
     It 'алиас Set-OldContextMenu вызывает тот же шаг' {
-        Set-OldContextMenu -UserName 'test.user' -Config $script:Config -Confirm:$false | Out-Null
+        $aliasCommand = 'Set-OldContextMenu'
+        & $aliasCommand -UserName 'test.user' -Config $script:Config -Confirm:$false | Out-Null
         $script:RegWrites.Count | Should -Be 1
     }
 

@@ -69,7 +69,7 @@
     $config = Merge-Hashtable -Base $defaults -Override $fromFile
     $config = Normalize-Configuration -Config $config
 
-    # --- Секреты ---
+    <# --- Секреты --- #>
     $secretsSection = @{}
     if ($config.ContainsKey('Secrets') -and $config.Secrets -is [System.Collections.IDictionary]) {
         $secretsSection = $config.Secrets
@@ -101,7 +101,7 @@
         }
     }
 
-    # --- Метаинформация ---
+    <# --- Метаинформация --- #>
     $config.ConfigFilePath = $resolvedPath
     $config.SchemaFilePath = $schemaInfo.SchemaPath
     $config.LoadedAt = [System.DateTime]::Now
@@ -111,7 +111,7 @@
     }
     if (-not $config.Meta.ContainsKey('IsTestData')) { $config.Meta.IsTestData = $false }
 
-    # --- Журналирование ---
+    <# --- Журналирование --- #>
     if (-not $SkipLoggingInit) {
         $loggingSection = $null
         if ($config.ContainsKey('Logging') -and $config.Logging -is [System.Collections.IDictionary]) {

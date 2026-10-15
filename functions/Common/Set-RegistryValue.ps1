@@ -52,7 +52,7 @@
     $data = ''
     if ($null -ne $Value) {
         if ($Value -is [bool]) {
-            # [string]$true даёт 'True' - для REG_DWORD это не число.
+            <# [string]$true даёт 'True' - для REG_DWORD это не число. #>
             $data = if ($Value) { '1' } else { '0' }
         } elseif ($Value -is [System.Array]) {
             $data = $Value -join [char]0

@@ -13,7 +13,7 @@
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath 'TestHelpers/ProjectLoader.ps1')
 
-    # Минимальная конфигурация: только обязательные по схеме поля.
+    <# Минимальная конфигурация: только обязательные по схеме поля. #>
     $script:MinimalJson = @'
 {
   "Meta": { "IsTestData": true },
@@ -143,7 +143,7 @@ Describe 'Импорт реальной конфигурации проекта'
 
     It 'PostInstall и CopyFiles всегда массивы (даже если в конфиге не заданы)' {
         foreach ($app in $script:Config.AppsToInstall) {
-            # Пустой массив - валидное значение (у приложения может не быть пост-установки).
+            <# Пустой массив - валидное значение (у приложения может не быть пост-установки). #>
             ($app.PostInstall -is [System.Array]) | Should -BeTrue -Because "PostInstall должен быть массивом у '$($app.Name)'"
             ($app.CopyFiles -is [System.Array]) | Should -BeTrue -Because "CopyFiles должен быть массивом у '$($app.Name)'"
         }

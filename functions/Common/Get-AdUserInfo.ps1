@@ -37,6 +37,32 @@
         [string]$SearchFilter = '(&(objectClass=user)(sAMAccountName={UserName}))'
     )
 
+    if (Test-WCTestMode) {
+        <#
+        Тестовый режим: DirectorySearcher недоступен вне домена (и на Linux),
+        поэтому возвращаем демо-атрибуты - шаги получают тот же контракт
+        (hashtable 'атрибут(нижний регистр) -> строка' + samaccountname).
+        #>
+        $demoAttributes = @{
+            displayname     = 'Иванов Иван (тестовый режим)'
+            cn              = $UserName
+            company         = 'Тестовая организация'
+            mail            = "$UserName@example.test"
+            title           = 'Ведущий специалист'
+            telephonenumber = '+79991234567'
+            mobile          = '+79997654321'
+            department      = 'Информационные технологии'
+        }
+        $demoResult = @{}
+        foreach ($requestedAttribute in $Attributes) {
+            $attributeKey = $requestedAttribute.ToLowerInvariant()
+            $demoResult[$attributeKey] = if ($demoAttributes.ContainsKey($attributeKey)) { [string]$demoAttributes[$attributeKey] } else { '' }
+        }
+        $demoResult['samaccountname'] = $UserName
+        Write-WCTestModeJournal -Category 'AdUserInfo' -Action 'Get-AdUserInfo (демо-данные)' -Target $UserName
+        return $demoResult
+    }
+
     $filter = $SearchFilter.Replace('{UserName}', $UserName)
 
     if ($SearchRoot) {

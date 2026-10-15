@@ -31,6 +31,15 @@
         Уже загруженная конфигурация (используется меню/тестами, чтобы не читать файл повторно).
     .PARAMETER StepDelaySeconds
         Пауза между шагами (переопределяет General.StepDelaySeconds).
+    .PARAMETER TestMode
+        Тестовый режим: шаги выполняются ПОЛНОСТЬЮ (вся логика, конфигурация,
+        ветвления), но побочные эффекты симулируются: reg.exe/внешние процессы
+        не запускаются, записи реестра попадают в in-memory оверлей, файлы -
+        в песочницу, операции - в журнал. Права администратора не требуются.
+        По итогам создаётся testmode-report.json (путь - в сводке выполнения).
+        Демо-данные 'чистой машины' засевает Initialize-WCTestModeFixtures.
+    .PARAMETER TestModeSandboxPath
+        Каталог песочницы тестового режима (пусто - %TEMP%\WC-TestMode-<время>).
     .EXAMPLE
         $summary = Start-WindowsConfiguration -UserName 'john.doe' -RunAll
     .EXAMPLE
@@ -62,12 +71,20 @@
         [hashtable]$Config,
 
         [ValidateRange(0, 60)]
-        [Nullable[int]]$StepDelaySeconds
+        [Nullable[int]]$StepDelaySeconds,
+
+        [switch]$TestMode,
+
+        [Parameter(ParameterSetName = 'Auto')]
+        [Parameter(ParameterSetName = 'Steps')]
+        [Parameter(ParameterSetName = 'Interactive')]
+        [AllowEmptyString()]
+        [string]$TestModeSandboxPath = ''
     )
 
     $startedAt = [System.DateTime]::Now
 
-    # --- 1. Конфигурация ---
+    <# --- 1. Конфигурация --- #>
     if ($null -eq $Config) {
         if (-not $ConfigPath) {
             $projectRoot = Split-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -Parent
@@ -88,13 +105,30 @@
         Write-Log -Message $warning -Level Warn
     }
 
-    # --- 2. Права администратора ---
+    <#
+    --- 1.5 Тестовый режим: включаем ДО проверок, чтобы подставной пользователь
+    определялся штатно (Get-ActiveInteractiveUser), а требование прав
+    администратора снималось. Демо-данные по конфигурации сеются позже -
+    после валидации шагов (см. 5.5). ---
+    #>
+    if ($TestMode) {
+        if ($UserName) { $null = Set-WCTestMode -Enabled:$true -SandboxPath $TestModeSandboxPath -FakeUserName $UserName } else { $null = Set-WCTestMode -Enabled:$true -SandboxPath $TestModeSandboxPath }
+        $loggingState = $global:WindowsConfiguratorLogging
+        if (-not ($loggingState -and $loggingState.FilePath)) {
+            <# Файловый журнал не настроен/отключён - пишем его в песочницу. #>
+            $null = Initialize-Logging -Config $null -FilePath (Join-Path -Path (Get-WCTestModeState).SandboxPath -ChildPath 'configurator-testmode.log') -Level 'Debug'
+        }
+    }
+
+    <# --- 2. Права администратора --- #>
     $requireAdmin = [bool](Get-ConfigSectionValue -Config $Config -Section 'General' -Key 'RequireAdministrator' -DefaultValue $true)
-    if ($requireAdmin -and -not (Test-IsAdministrator)) {
+    if ($TestMode) {
+        Write-Log -Message 'ТЕСТОВЫЙ РЕЖИМ: побочные эффекты симулируются - проверка прав администратора пропущена.' -Level Warn
+    } elseif ($requireAdmin -and -not (Test-IsAdministrator)) {
         throw 'Этот скрипт должен быть запущен от имени администратора (или установите General.RequireAdministrator=false для отладки).'
     }
 
-    # --- 3. Пользователь ---
+    <# --- 3. Пользователь --- #>
     if ([string]::IsNullOrWhiteSpace($UserName)) {
         Write-Log -Message 'Параметр UserName не указан - определяем активного пользователя...' -Level Info
         $UserName = Get-ActiveInteractiveUser
@@ -104,11 +138,23 @@
         Write-Log -Message "Активный пользователь: $UserName" -Level Ok
     }
 
-    # --- 4. Интерактивный режим ---
+    <# --- 4. Интерактивный режим --- #>
     if ($Interactive) {
-        # ВАЖНО: результат меню нужно погасить, иначе он попадёт в выходной поток
-        # оркестратора и вызывающий код получит массив вместо объекта-сводки.
-        $null = Start-InteractiveMenu -UserName $UserName -Config $Config
+        if ($TestMode) {
+            $null = Initialize-WCTestModeFixtures -Config $Config -UserName $UserName
+        }
+        <#
+        ВАЖНО: результат меню нужно погасить, иначе он попадёт в выходной поток
+        оркестратора и вызывающий код получит массив вместо объекта-сводки.
+        #>
+        try {
+            $null = Start-InteractiveMenu -UserName $UserName -Config $Config
+        } finally {
+            if ($TestMode) {
+                $null = Export-WCTestModeReport
+                $null = Set-WCTestMode -Enabled:$false
+            }
+        }
         return [PSCustomObject]@{
             Success       = $true
             Mode          = 'Interactive'
@@ -124,7 +170,7 @@
         }
     }
 
-    # --- 5. Список шагов ---
+    <# --- 5. Список шагов --- #>
     $definitions = @(Get-StepDefinitions)
     $requested = @()
 
@@ -149,9 +195,10 @@
         if (-not $canonical.Contains($name)) { $canonical.Add($name) }
     }
 
-    # Неизвестные шаги - критическая ошибка конфигурации (опечатка не должна молча проскакивать).
+    <# Неизвестные шаги - критическая ошибка конфигурации (опечатка не должна молча проскакивать). #>
     $unknown = @($canonical | Where-Object { $stepName = $_; -not ($definitions | Where-Object { $_.Name -eq $stepName }) })
     if ($unknown.Count -gt 0) {
+        if ($TestMode) { $null = Set-WCTestMode -Enabled:$false }
         $known = ($definitions | ForEach-Object { $_.Name }) -join ', '
         throw "Неизвестные шаги: $($unknown -join ', '). Допустимые: $known (алиас: OldContextMenu)."
     }
@@ -159,7 +206,16 @@
     $orderedSteps = @($canonical | ForEach-Object { $stepName = $_; $definitions | Where-Object { $_.Name -eq $stepName } } |
             Sort-Object -Property Order)
 
-    # --- 6. Выполнение ---
+    <#
+    --- 5.5 Тестовый режим: демо-данные 'чистой машины' по конфигурации -
+    ПОСЛЕ валидации шагов (ошибка конфигурации не должна оставлять засеянный
+    стенд) и ДО выполнения. ---
+    #>
+    if ($TestMode) {
+        $null = Initialize-WCTestModeFixtures -Config $Config -UserName $UserName
+    }
+
+    <# --- 6. Выполнение --- #>
     $delay = if ($null -ne $StepDelaySeconds) {
         [int]$StepDelaySeconds
     } elseif ($null -ne (Get-ConfigSectionValue -Config $Config -Section 'General' -Key 'StepDelaySeconds' -DefaultValue $null)) {
@@ -181,6 +237,7 @@
 
         Write-Log -Message "Выполнение шага: $($definition.Name) ($($definition.Description)) для пользователя $UserName" -Level Step
         $stepStart = [System.DateTime]::Now
+        if ($TestMode) { (Get-WCTestModeState).CurrentStep = $definition.Name }
 
         try {
             $parameters = @{}
@@ -223,7 +280,7 @@
             if ($stopOnFailure) { $aborted = $true }
         }
 
-        if ($delay -gt 0 -and -not $WhatIfPreference) { Start-Sleep -Seconds $delay }
+        if ($delay -gt 0 -and -not $WhatIfPreference -and -not (Test-WCTestMode)) { Start-Sleep -Seconds $delay }
     }
 
     $finishedAt = [System.DateTime]::Now
@@ -247,6 +304,21 @@
         Write-Log -Message "Завершено с ошибками. Не выполнились шаги: $($failedSteps -join ', ')." -Level Error
     } else {
         Write-Log -Message "Все шаги выполнены успешно для пользователя $UserName." -Level Ok
+    }
+
+    if ($TestMode) {
+        <#
+        Отчёт формируется ДО выключения режима (Export использует состояние),
+        затем состояние очищается - Test-WCTestMode снова возвращает $false.
+        #>
+        $testReport = Export-WCTestModeReport
+        $journalCount = @(Get-WCTestModeJournal).Count
+        $summary | Add-Member -NotePropertyName TestMode -NotePropertyValue $true -Force
+        $summary | Add-Member -NotePropertyName TestModeSandbox -NotePropertyValue ([string](Get-WCTestModeState).SandboxPath) -Force
+        $summary | Add-Member -NotePropertyName TestModeReport -NotePropertyValue $(if ($testReport) { [string]$testReport.ReportPath } else { '' }) -Force
+        $summary | Add-Member -NotePropertyName TestModeJournalCount -NotePropertyValue $journalCount -Force
+        Write-Log -Message "ТЕСТОВЫЙ РЕЖИМ: операций в журнале $journalCount; песочница $((Get-WCTestModeState).SandboxPath)." -Level Ok
+        $null = Set-WCTestMode -Enabled:$false
     }
 
     return $summary

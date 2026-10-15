@@ -25,6 +25,15 @@
         [bool]$Force = $true
     )
 
+    if (Test-WCTestMode) {
+        foreach ($processName in $ProcessNames) {
+            if ([string]::IsNullOrWhiteSpace($processName)) { continue }
+            Write-WCTestModeJournal -Category 'ProcessStop' -Action 'Stop-Process' -Target $processName -Details @{ Force = [bool]$Force }
+            Write-Log -Message "(ТЕСТ) Процесс '$processName' был бы завершён." -Level Info
+        }
+        return 0
+    }
+
     $stopped = 0
     foreach ($name in $ProcessNames) {
         if ([string]::IsNullOrWhiteSpace($name)) { continue }

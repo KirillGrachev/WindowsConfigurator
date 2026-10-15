@@ -31,12 +31,25 @@
 
     if (-not $PSCmdlet.ShouldProcess($Path, 'Записать файл (UTF-8 BOM)')) { return $true }
 
-    $directory = Split-Path -Path $Path -Parent
+    $targetPath = $Path
+    if (Test-WCTestMode) {
+        <#
+        Тестовый режим: файл пишется не по исходному пути, а в зеркало песочницы,
+        поэтому содержимое можно проверить, а реальная ФС не затрагивается.
+        #>
+        $targetPath = ConvertTo-WCTestModeSandboxPath -Path $Path
+        Write-WCTestModeJournal -Category 'File' -Action 'Write-FileUtf8' -Target $Path -Details @{
+            SandboxPath = $targetPath
+            Bytes       = (New-Object System.Text.UTF8Encoding($true)).GetByteCount([string]$Content)
+        }
+    }
+
+    $directory = Split-Path -Path $targetPath -Parent
     if ($directory -and -not (Test-Path -Path $directory -ErrorAction SilentlyContinue)) {
         $null = New-Item -Path $directory -ItemType Directory -Force -ErrorAction Stop
     }
 
     $encoding = New-Object System.Text.UTF8Encoding($true)
-    [System.IO.File]::WriteAllText($Path, [string]$Content, $encoding)
+    [System.IO.File]::WriteAllText($targetPath, [string]$Content, $encoding)
     return $true
 }

@@ -30,6 +30,12 @@
     Только проверить конфигурацию по схеме и выйти (код 0 или 2).
 .PARAMETER LogPath
     Переопределить путь журнала (Logging.FilePath).
+.PARAMETER TestMode
+    Тестовый режим: шаги выполняются полностью, но все побочные эффекты
+    (реестр, внешние процессы, файлы, Appx, службы, планировщик) СИМУЛИРУЮТСЯ
+    и пишутся в журнал. Файлы попадают в песочницу (%TEMP%\WC-TestMode-*),
+    по итогам создаётся testmode-report.json. Права администратора не нужны.
+    Работает с -RunAll/-RunSteps/-Interactive; с -ValidateConfig не сочетается.
 .EXAMPLE
     .\Configure-Windows.ps1 -UserName 'john.doe' -RunAll
 .EXAMPLE
@@ -38,6 +44,10 @@
     .\Configure-Windows.ps1 -Interactive
 .EXAMPLE
     .\Configure-Windows.ps1 -ValidateConfig -ConfigPath D:\cfg\prod.json
+.EXAMPLE
+    .\Configure-Windows.ps1 -TestMode -RunAll
+.EXAMPLE
+    .\Configure-Windows.ps1 -TestMode -RunSteps 'Desktop','Taskbar','Signature' -UserName john.doe
 .NOTES
     Совместимость: Windows PowerShell 5.1 и PowerShell 7+.
 #>
@@ -64,7 +74,9 @@ param(
     [switch]$ValidateConfig,
 
     [AllowEmptyString()]
-    [string]$LogPath
+    [string]$LogPath,
+
+    [switch]$TestMode
 )
 
 $ErrorActionPreference = 'Stop'
@@ -82,7 +94,7 @@ if (-not $ConfigPath) {
 }
 
 try {
-    # --- Режим проверки конфигурации (без изменений системы) ---
+    <# --- Режим проверки конфигурации (без изменений системы) --- #>
     if ($ValidateConfig) {
         $check = Test-Configuration -Path $ConfigPath
         if ($check.Valid) {
@@ -105,6 +117,7 @@ try {
     $parameters = @{ ConfigPath = $ConfigPath; Confirm = $false }
     if ($UserName) { $parameters['UserName'] = $UserName }
     if ($WhatIfPreference) { $parameters['WhatIf'] = $true }
+    if ($TestMode) { $parameters['TestMode'] = $true }
 
     switch ($PSCmdlet.ParameterSetName) {
         'Auto' { $parameters['RunAll'] = $true }
@@ -114,7 +127,7 @@ try {
 
     $summary = Start-WindowsConfiguration @parameters
 
-    # --- Сводка ---
+    <# --- Сводка --- #>
     Write-Host ''
     Write-Host '==================== ИТОГ ====================' -ForegroundColor Cyan
     Write-Host ("Пользователь : {0}" -f $summary.UserName) -ForegroundColor Gray
@@ -142,11 +155,21 @@ try {
         Write-Host ("Пропущено: {0}" -f ($summary.SkippedSteps -join ', ')) -ForegroundColor Yellow
     }
 
+    if ($summary.PSObject.Properties['TestMode'] -and $summary.TestMode) {
+        Write-Host ''
+        Write-Host '==================== ТЕСТОВЫЙ РЕЖИМ ====================' -ForegroundColor Magenta
+        Write-Host ("Изменения системы СИМУЛИРОВАНЫ. Операций в журнале: {0}" -f $summary.TestModeJournalCount) -ForegroundColor Gray
+        Write-Host ("Песочница : {0}" -f $summary.TestModeSandbox) -ForegroundColor Gray
+        Write-Host ("Отчёт     : {0}" -f $summary.TestModeReport) -ForegroundColor Gray
+        Write-Host '========================================================' -ForegroundColor Magenta
+    }
+
     Write-Host '==============================================' -ForegroundColor Cyan
 
     if ($summary.Success) { exit 0 }
     exit 1
 } catch {
+    if (Test-WCTestMode) { $null = Set-WCTestMode -Enabled:$false }
     $message = $_.Exception.Message
     Write-Log -Message "Критическая ошибка запуска: $message" -Level Fatal -ErrorAction SilentlyContinue
     Write-Host ''

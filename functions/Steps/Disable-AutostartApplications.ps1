@@ -71,6 +71,14 @@
             'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run'
         )
 
+        if (Test-WCTestMode) {
+            <#
+            Тестовый режим: папки Startup отображаются в песочницу, где
+            фикстуры засеяли демо-ярлыки (.lnk) по AutoStartApps конфигурации.
+            #>
+            $startupPaths = @($startupPaths | ForEach-Object { ConvertTo-WCTestModeSandboxPath -Path $_ })
+        }
+
         Write-Log -Message 'Отключение автозагрузки...' -Level Debug
 
         foreach ($group in $autoStartApps.Keys) {
@@ -120,7 +128,7 @@
             }
         }
 
-        # --- Твики (Adobe / Edge / любые из конфигурации) ---
+        <# --- Твики (Adobe / Edge / любые из конфигурации) --- #>
         $appliedTweaks = New-Object System.Collections.Generic.List[string]
         foreach ($tweakName in $tweaks.Keys) {
             $tweak = $tweaks[$tweakName]
@@ -143,6 +151,9 @@
             if ($servicePattern) {
                 if ($whatIf) {
                     Write-Log -Message "WHAT IF: Set-Service -StartupType Disabled для служб '$servicePattern'" -Level Info
+                } elseif (Test-WCTestMode) {
+                    Write-WCTestModeJournal -Category 'Service' -Action 'Set-Service -StartupType Disabled' -Target $servicePattern
+                    Write-Log -Message "(ТЕСТ) Службы '$servicePattern' были бы отключены." -Level Info
                 } else {
                     $services = @(Get-Service -Name $servicePattern -ErrorAction SilentlyContinue)
                     foreach ($service in $services) {
@@ -160,6 +171,9 @@
             if ($taskPattern) {
                 if ($whatIf) {
                     Write-Log -Message "WHAT IF: Disable-ScheduledTask для задач '$taskPattern'" -Level Info
+                } elseif (Test-WCTestMode) {
+                    Write-WCTestModeJournal -Category 'ScheduledTask' -Action 'Disable-ScheduledTask (по шаблону)' -Target $taskPattern
+                    Write-Log -Message "(ТЕСТ) Задачи '$taskPattern' были бы отключены." -Level Info
                 } else {
                     $tasks = @(Get-ScheduledTask -TaskName $taskPattern -ErrorAction SilentlyContinue)
                     foreach ($task in $tasks) {
@@ -177,6 +191,10 @@
             foreach ($taskName in $taskNames) {
                 if ($whatIf) {
                     Write-Log -Message "WHAT IF: Disable-ScheduledTask '$taskName'" -Level Info
+                    continue
+                }
+                if (Test-WCTestMode) {
+                    Write-WCTestModeJournal -Category 'ScheduledTask' -Action 'Disable-ScheduledTask' -Target $taskName
                     continue
                 }
                 try {
