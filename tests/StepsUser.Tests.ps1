@@ -239,10 +239,10 @@ Describe 'Шаг Autostart: очистка автозагрузки (регре�
         Mock Set-Service { $script:DisabledServices.Add($Name) | Out-Null }
         <#
         Disable-ScheduledTask -InputObject принимает только CimInstance, поэтому
-        подставная задача создаётся client-only, а не как PSCustomObject.
+        подставная задача создаётся через кроссплатформенный хелпер.
         #>
         Mock Get-ScheduledTask {
-            return @(New-CimInstance -ClassName MSFT_ScheduledTask -Namespace 'root/Microsoft/Windows/TaskScheduler' -ClientOnly -Property @{ TaskName = 'Adobe Acrobat Update Task' })
+            return @(New-TestCimInstance -ClassName MSFT_ScheduledTask -Namespace 'root/Microsoft/Windows/TaskScheduler' -Property @{ TaskName = 'Adobe Acrobat Update Task' })
         }
         Mock Disable-ScheduledTask { $script:DisabledTasks.Add($InputObject.TaskName) | Out-Null }
         Mock Start-Sleep { }
