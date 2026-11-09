@@ -1,0 +1,5 @@
+name: WindowsConfigurator CodeQL
+
+# PowerShell не поддерживается CodeQL: анализируются GitHub Actions,
+# а PowerShell проверяется PSScriptAnalyzer в tests.yml.
+# Фильтров путей намеренно нет: в область сканирования входит весь репозиторий.
