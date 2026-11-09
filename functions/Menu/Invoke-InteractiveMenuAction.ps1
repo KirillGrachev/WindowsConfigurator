@@ -97,7 +97,20 @@
         }
 
         $sub = ([string]$SubChoice).Trim()
-        if ($sub -eq '0' -or [string]::IsNullOrEmpty($sub)) {
+
+        <# --- Возврат в главное меню: X, Q или пустой ввод (Enter) --- #>
+        if ($sub -in @('', 'x', 'q')) {
+            Write-Log -Message 'Пользователь выбрал выход из подменю установки.' -Level Info
+            return [PSCustomObject]@{
+                Handled = $true
+                Action  = 'ExitSubmenu'
+                Step    = $stepName
+                Result  = $null
+                Message = 'Выход из подменю установки.'
+            }
+        }
+
+        if ($sub -eq '0') {
             if (-not $PSCmdlet.ShouldProcess('все приложения', 'Установить программное обеспечение')) {
                 return [PSCustomObject]@{ Handled = $true; Action = 'Cancelled'; Step = $stepName; Result = $null; Message = 'Отменено пользователем.' }
             }
