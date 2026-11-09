@@ -32,7 +32,7 @@
         return '"' + $sb.ToString() + '"'
     }
     if ($Value -is [int] -or $Value -is [long] -or $Value -is [double] -or $Value -is [decimal] -or
-        $Value -is [single] -or $Value -is [byte] -or $Value -is [short]) {
+        $Value -is [System.Single] -or $Value -is [byte] -or $Value -is [System.Int16]) {
         return [string]([double]$Value).ToString([System.Globalization.CultureInfo]::InvariantCulture)
     }
     if ($Value -is [System.Array] -or ($Value -is [System.Collections.IList] -and $Value -isnot [string])) {

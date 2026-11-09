@@ -29,10 +29,10 @@
         if ($InputObject -is [System.Array]) { return 'array' }
         if ($InputObject -is [System.Collections.IList]) { return 'array' }
         if ($InputObject -is [int] -or $InputObject -is [long] -or $InputObject -is [byte] -or
-            $InputObject -is [short] -or $InputObject -is [uint32] -or $InputObject -is [uint64]) {
+            $InputObject -is [System.Int16] -or $InputObject -is [System.UInt32] -or $InputObject -is [System.UInt64]) {
             return 'integer'
         }
-        if ($InputObject -is [double] -or $InputObject -is [single] -or $InputObject -is [decimal]) {
+        if ($InputObject -is [double] -or $InputObject -is [System.Single] -or $InputObject -is [decimal]) {
             $asDouble = [double]$InputObject
             if ($asDouble -eq [Math]::Floor($asDouble) -and -not [double]::IsInfinity($asDouble)) {
                 <# JSON не различает 5 и 5.0 - считаем integer, но number тоже подходит (см. Test-JsonSchema). #>

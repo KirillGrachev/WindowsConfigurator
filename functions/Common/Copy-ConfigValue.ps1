@@ -27,7 +27,7 @@
 
         if ($Value -is [string] -or $Value -is [bool] -or $Value -is [int] -or
             $Value -is [long] -or $Value -is [double] -or $Value -is [decimal] -or
-            $Value -is [single] -or $Value -is [byte]) {
+            $Value -is [System.Single] -or $Value -is [byte]) {
             return $Value
         }
 

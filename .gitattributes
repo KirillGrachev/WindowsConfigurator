@@ -12,6 +12,10 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
+# Служебные файлы Git: LF даже при core.autocrlf=true
+.gitignore     text eol=lf
+.gitattributes text eol=lf
+
 # Лицензия (файл без расширения)
 LICENSE text eol=lf
 
