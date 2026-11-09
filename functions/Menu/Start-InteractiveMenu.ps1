@@ -93,6 +93,9 @@
 
         if ($outcome.Action -eq 'Exit') { break }
 
+        <# --- Выход из подменю установки: сразу перерисовать главное меню --- #>
+        if ($outcome.Action -eq 'ExitSubmenu') { continue }
+
         if (-not $ChoiceProvider) {
             $null = Read-Host -Prompt $continuePrompt
         }

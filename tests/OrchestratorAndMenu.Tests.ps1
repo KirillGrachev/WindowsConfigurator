@@ -275,6 +275,11 @@ Describe 'Интерактивное меню: данные и отрисовк�
         ($lines -join "`n") | Should -Match '0\. Установить все'
         ($lines -join "`n") | Should -Match 'MSI'
     }
+
+    It 'подменю установки подсказывает, как вернуться в главное меню' {
+        $lines = @(Show-InstallationSubmenu -Apps $script:Config.AppsToInstall)
+        ($lines -join "`n") | Should -Match '\[X\].*Назад'
+    }
 }
 
 Describe 'Интерактивное меню: диспетчеризация КАЖДОГО пункта' {
@@ -331,6 +336,29 @@ Describe 'Интерактивное меню: диспетчеризация К
         $result = Invoke-InteractiveMenuAction -Choice $installItem.Id -Items $script:Items -UserName 'test.user' -Config $script:Config -SubChoice '999'
         $result.Handled | Should -BeFalse
         $result.Action | Should -Be 'InvalidSubChoice'
+        Should -Invoke Install-Software -Times 0
+    }
+
+    It 'подменю установки: ввод "<Value>" возвращает в главное меню без установки' -TestCases @(
+        @{ Value = 'X' }
+        @{ Value = 'x' }
+        @{ Value = 'Q' }
+        @{ Value = 'q' }
+        @{ Value = '  X  ' }
+    ) {
+        $installItem = $script:Items | Where-Object { $_.HasSubmenu } | Select-Object -First 1
+        $result = Invoke-InteractiveMenuAction -Choice $installItem.Id -Items $script:Items -UserName 'test.user' -Config $script:Config -SubChoice $Value
+        $result.Handled | Should -BeTrue
+        $result.Action | Should -Be 'ExitSubmenu'
+        Should -Invoke Install-Software -Times 0
+    }
+
+    It 'подменю установки: Enter (пустой ввод) возвращает в главное меню без установки' {
+        Mock Read-MenuChoice { return '' }
+        $installItem = $script:Items | Where-Object { $_.HasSubmenu } | Select-Object -First 1
+        $result = Invoke-InteractiveMenuAction -Choice $installItem.Id -Items $script:Items -UserName 'test.user' -Config $script:Config
+        $result.Handled | Should -BeTrue
+        $result.Action | Should -Be 'ExitSubmenu'
         Should -Invoke Install-Software -Times 0
     }
 
@@ -461,7 +489,7 @@ Describe 'Точка входа Configure-Windows.ps1: коды возврата
 
     BeforeAll {
         $script:EntryPath = Get-ProjectFilePath -RelativePath 'Configure-Windows.ps1'
-        $script:PwshExe = if ($PSVersionTable.PSEdition -eq 'Core') { (Get-Process -Id $PID).Path } else { 'powershell.exe' }
+        $script:PwshExe = (Get-Process -Id $PID).Path
         if (-not (Test-Path -Path $script:PwshExe)) { $script:PwshExe = 'pwsh' }
     }
 
@@ -480,6 +508,8 @@ Describe 'Точка входа Configure-Windows.ps1: коды возврата
 
     It 'несуществующая конфигурация возвращает 2' {
         $missing = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'no-such-config.json'
+        <# Ожидаем stderr от дочернего процесса: при EAP=Stop его нельзя превращать в исключение. #>
+        $ErrorActionPreference = 'Continue'
         & $script:PwshExe -NoProfile -File $script:EntryPath -ValidateConfig -ConfigPath $missing 2>&1 | Out-Null
         $LASTEXITCODE | Should -Be 2
     }
