@@ -50,6 +50,17 @@ Describe 'Импорт реальной конфигурации проекта'
         $script:Config.Activation.KmsKeyProvider | Should -Be 'Plain'
     }
 
+    It 'AutostartTweaks принимает произвольные группы, а не только Adobe и Edge' {
+        $path = New-TestConfigFile -Override @{
+            AutostartTweaks = @{
+                'Custom Group' = @{ Enabled = $true; TriggerKey = 'Custom Group'; ScheduledTasks = @('CustomTask') }
+            }
+        }
+        $config = Import-Configuration -Path $path -SkipLoggingInit
+        $config.AutostartTweaks.ContainsKey('Custom Group') | Should -BeTrue -Because 'схема должна разрешать ключ группы из AutoStartApps'
+        @($config.AutostartTweaks['Custom Group'].ScheduledTasks) | Should -Contain 'CustomTask'
+    }
+
     It 'служебная метаинформация о загрузке присутствует' {
         $script:Config.ConfigFilePath | Should -Not -BeNullOrEmpty
         $script:Config.SchemaFilePath | Should -Not -BeNullOrEmpty
