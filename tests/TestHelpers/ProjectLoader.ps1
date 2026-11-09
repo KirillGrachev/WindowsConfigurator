@@ -230,6 +230,45 @@ function Get-ProjectRootPath {
     return $script:ProjectRoot
 }
 
+function New-TestCimInstance {
+    <#
+    .SYNOPSIS
+        Создаёт подставной CIM-объект, совместимый с Windows и Linux.
+    .DESCRIPTION
+        На Windows командлеты Invoke-CimMethod/Disable-ScheduledTask принимают
+        только Microsoft.Management.Infrastructure.CimInstance, поэтому нужен
+        настоящий client-only объект. На Linux CimCmdlets отсутствует, а
+        одноимённые команды заменены тестовыми заглушками, которым достаточно
+        PSCustomObject.
+    .PARAMETER ClassName
+        Имя CIM-класса.
+    .PARAMETER Namespace
+        Пространство имён CIM.
+    .PARAMETER Property
+        Свойства создаваемого объекта.
+    .EXAMPLE
+        $process = New-TestCimInstance -ClassName Win32_Process -Property @{ ProcessId = 4242 }
+    .OUTPUTS
+        System.Object
+    #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Тестовый хелпер создаёт объект в памяти и не меняет состояние системы.')]
+    [CmdletBinding()]
+    [OutputType([object])]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$ClassName,
+
+        [string]$Namespace = 'root/cimv2',
+
+        [hashtable]$Property = @{}
+    )
+
+    if (Get-Command -Name 'New-CimInstance' -ErrorAction SilentlyContinue) {
+        return New-CimInstance -ClassName $ClassName -Namespace $Namespace -ClientOnly -Property $Property
+    }
+    return [PSCustomObject]$Property
+}
+
 function Get-ProjectFilePath {
     <#
     .SYNOPSIS

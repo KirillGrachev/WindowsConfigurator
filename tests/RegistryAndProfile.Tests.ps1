@@ -292,9 +292,9 @@ Describe 'Get-ActiveInteractiveUser (регрессия GetOwner у объект
     It 'пользователь определяется через Invoke-CimMethod GetOwner' {
         <#
         Invoke-CimMethod -InputObject принимает только CimInstance, поэтому
-        подставной процесс создаётся как client-only CIM-объект, а не PSCustomObject.
+        подставной процесс создаётся через кроссплатформенный хелпер.
         #>
-        $fakeProcess = New-CimInstance -ClassName Win32_Process -ClientOnly -Property @{
+        $fakeProcess = New-TestCimInstance -ClassName Win32_Process -Property @{
             ProcessId = 4242
             SessionId = 1
             Name      = 'explorer.exe'
