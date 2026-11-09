@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package and publish
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag matches config version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $config = Get-Content ./config/config.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          $expected = "v$($config.Meta.Version)"
+          if ($expected -ne "${{ github.ref_name }}") {
+            throw "Tag ${{ github.ref_name }} does not match Meta.Version $($config.Meta.Version)"
+          }
+          Write-Host "Version $expected matches the tag."
+
+      - name: Generate release notes
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $previous = git describe --tags --abbrev=0 "$tag^" 2>$null
+          $range = if ($LASTEXITCODE -eq 0 -and $previous) { "$previous..$tag" } else { $tag }
+          $repo = "${{ github.repository }}"
+
+          $categories = [ordered]@{
+            feat     = 'Features'
+            fix      = 'Fixes'
+            perf     = 'Performance'
+            docs     = 'Documentation'
+            ci       = 'Build and CI'
+            build    = 'Build and CI'
+            test     = 'Tests'
+            refactor = 'Refactoring'
+            chore    = 'Internal'
+          }
+          $groups = [ordered]@{}
+          foreach ($name in $categories.Values) { if (-not $groups.Contains($name)) { $groups[$name] = New-Object System.Collections.Generic.List[string] } }
+          $groups['Other'] = New-Object System.Collections.Generic.List[string]
+
+          foreach ($line in @(git log $range --pretty=format:'%h%x09%s')) {
+            if (-not $line) { continue }
+            $hash, $subject = $line -split "`t", 2
+            $type = 'other'
+            $text = $subject
+            $scope = ''
+            if ($subject -match '^(?<type>[a-z]+)(?:\((?<scope>[^)]+)\))?!?:\s*(?<text>.+)$') {
+              $type = $Matches['type']
+              $scope = $Matches['scope']
+              $text = $Matches['text']
+            }
+            $group = if ($categories.Contains($type)) { $categories[$type] } else { 'Other' }
+            $label = if ($scope) { "**$($scope):** $text" } else { $text }
+            $entry = "- $label ([$hash](https://github.com/$repo/commit/$hash))"
+            $groups[$group].Add($entry) | Out-Null
+          }
+
+          $md = New-Object System.Collections.Generic.List[string]
+          $md.Add('## What changed') | Out-Null
+          $md.Add('') | Out-Null
+          foreach ($name in $groups.Keys) {
+            if ($groups[$name].Count -eq 0) { continue }
+            $md.Add("### $name") | Out-Null
+            $md.Add('') | Out-Null
+            foreach ($entry in $groups[$name]) { $md.Add($entry) | Out-Null }
+            $md.Add('') | Out-Null
+          }
+          if ($previous) {
+            $md.Add("**Full Changelog**: https://github.com/$repo/compare/$previous...$tag") | Out-Null
+          } else {
+            $md.Add("**Full Changelog**: https://github.com/$repo/commits/$tag") | Out-Null
+          }
+          Set-Content -Path release-notes.md -Value ($md -join "`n") -Encoding utf8
+
+      - name: Build the distribution archive
+        shell: pwsh
+        run: |
+          $config = Get-Content ./config/config.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          $version = $config.Meta.Version
+          $stage = "artifacts/WindowsConfigurator-$version"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+
+          Copy-Item ./Configure-Windows.ps1, ./Run_Windows11Setup.cmd, ./LICENSE, ./README.md, ./SECURITY.md -Destination $stage -Force
+          Copy-Item ./config, ./functions, ./tools, ./docs -Destination $stage -Recurse -Force
+
+          $zip = "artifacts/WindowsConfigurator-$version.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path "$stage/*" -DestinationPath $zip -CompressionLevel Optimal
+
+          $hash = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path -Path $zip -Leaf)" | Set-Content -Path artifacts/SHA256SUMS.txt -Encoding ascii
+          Write-Host "Built $zip ($hash)"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: release-assets
+          path: artifacts/WindowsConfigurator-*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@5113cdc90fd4d541c801c55356214017bf5ae34b # v3
+        with:
+          files: |
+            artifacts/WindowsConfigurator-*.zip
+            artifacts/SHA256SUMS.txt
+          body_path: release-notes.md
+          generate_release_notes: false

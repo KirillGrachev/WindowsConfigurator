@@ -1,0 +1,54 @@
+name: Bug report
+description: Сообщить об ошибке в конфигураторе
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за отчёт. Не прикладывайте боевые конфигурации, KMS-ключи и UNC-пути.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Что произошло
+      description: Краткое описание ошибки и ожидаемого поведения.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      placeholder: |
+        1. Запустить ...
+        2. Выбрать ...
+        3. Получить ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Версия
+      description: Тег или коммит, например v2.1.0.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Окружение
+      description: Windows 10/11, сборка, Windows PowerShell 5.1 или PowerShell 7.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Журнал
+      description: Фрагмент журнала с удалёнными секретами и путями.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Проверки
+      options:
+        - label: Я проверил(а), что в отчёте нет секретов и корпоративных данных.
+          required: true
+        - label: Ошибка воспроизводится в тестовом режиме (`-TestMode`), если это возможно.

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/KirillGrachev/WindowsConfigurator/security/advisories/new
+    about: Уязвимости и утечки секретов — только приватно, не в issue.
+  - name: Documentation
+    url: https://github.com/KirillGrachev/WindowsConfigurator#readme
+    about: Быстрый старт, конфигурация и тестовый режим.
