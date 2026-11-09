@@ -176,10 +176,9 @@
     },
     "AutostartTweaks": {
       "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "Adobe": { "$ref": "#/definitions/autostartTweak" },
-        "Edge": { "$ref": "#/definitions/autostartTweak" }
+      "description": "Твики автозагрузки. Ключ - произвольное имя группы (должно совпадать с ключом в AutoStartApps). Значение - параметры отключения служб/задач/политик.",
+      "additionalProperties": {
+        "$ref": "#/definitions/autostartTweak"
       },
       "default": {}
     },
