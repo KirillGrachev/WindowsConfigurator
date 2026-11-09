@@ -1,122 +1,34 @@
-<h1 align="center">WindowsConfigurator</h1>
+# WindowsConfigurator
 
-<p align="center">
-  <b>Одноразовая настройка Windows 10/11 из одного JSON-файла.</b><br>
-  Активация, удаление встроенного ПО, приложения, политики, автозагрузка, питание и профиль пользователя.
-</p>
+Одноразовая настройка Windows 10/11 из одного JSON-файла: активация, удаление
+встроенного ПО, установка приложений, политики, автозагрузка, питание, NumLock,
+перенаправление папок и подпись Outlook.
 
-<p align="center">
-  <img alt="Windows 10 / 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-2f7bf5?style=flat-square&logo=windows&logoColor=white">
-  <img alt="PowerShell 5.1 and 7+" src="https://img.shields.io/badge/PowerShell-5.1%20and%207%2B-5391FE?style=flat-square&logo=powershell&logoColor=white">
-  <img alt="JSON config with schema" src="https://img.shields.io/badge/config-JSON%20with%20schema-6b7280?style=flat-square">
-  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-3a3a3a?style=flat-square">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-504%20passed-2ea043?style=flat-square">
-</p>
+Конфигурация проверяется по JSON Schema до первого изменения системы, а тестовый
+режим позволяет прогнать полный сценарий без прав администратора и без реальных
+изменений.
 
-```text
-PS C:\Tools\WindowsConfigurator> .\Configure-Windows.ps1 -Interactive
+[![tests](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/tests.yml/badge.svg)](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/tests.yml)
+[![CodeQL](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/codeql.yml/badge.svg)](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-=========> Windows 11 Конфигуратор <=========
-Пользователь: john.doe
+## Возможности
 
-1.  Активация Windows (KMS)
-2.  Удаление встроенных приложений
-3.  Установка приложений
-4.  Показ значков рабочего стола
-5.  Настройка панели задач
-6.  Отключение автозагрузки
-7.  Настройка планов питания
-8.  Перенаправление пользовательских папок
-9.  Включить NumLock при запуске
-10. Создать подпись для почты
-11. Вернуть контекстное меню Windows 10
-12. Выключить NumLock при запуске
-13. Запустить все эти шаги
-0.  Выход
+- **Один конфиг** — `config/config.json` с валидацией по `config/config.schema.json`.
+- **Интерактивное меню** — пошаговый выбор действий с подменю установки приложений.
+- **Пакетный режим** — `-RunAll` или выбранные шаги через `-RunSteps`.
+- **Идемпотентность** — уже установленные приложения пропускаются, повторный запуск безопасен.
+- **Секреты** — ссылки `env:`, `file:` и `dpapi:` вместо открытых ключей в JSON.
+- **Тестовый режим** — реестр, процессы, файлы и Appx симулируются в песочнице.
+- **Подпись Outlook** — HTML/RTF/TXT из данных AD, шаблона и логотипа.
+- **Кроссплатформенные тесты** — Pester 5/6, Windows PowerShell 5.1 и PowerShell 7.
 
-Выберите действие:
-```
+## Требования
 
-<h3 align="center">Default run order</h3>
-
-<table align="center">
-  <tr>
-    <td align="center" width="12%">○<br><b>Activation</b></td>
-    <td align="center" width="12%">○<br><b>AppRemoval</b></td>
-    <td align="center" width="12%">○<br><b>Installation</b></td>
-    <td align="center" width="12%">○<br><b>Desktop</b></td>
-    <td align="center" width="12%">○<br><b>Taskbar</b></td>
-    <td align="center" width="12%">○<br><b>Autostart</b></td>
-    <td align="center" width="12%">○<br><b>Power</b></td>
-    <td align="center" width="12%">○<br><b>NumLock</b></td>
-  </tr>
-</table>
-
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <h3>config</h3>
-      <ul>
-        <li>JSON проверяется по схеме</li>
-        <li>Значения по умолчанию и предупреждения</li>
-        <li>Секреты: environment или DPAPI</li>
-      </ul>
-    </td>
-    <td width="33%" valign="top">
-      <h3>safety</h3>
-      <ul>
-        <li>Сухой прогон с <code>-WhatIf</code></li>
-        <li>Коды возврата 0, 1 и 2</li>
-        <li>Права администратора только для реального запуска</li>
-      </ul>
-    </td>
-    <td width="33%" valign="top">
-      <h3>output</h3>
-      <ul>
-        <li>Журнал в файл и консоль</li>
-        <li>Хранение журнала 30 дней</li>
-        <li>Сводка по шагам после запуска</li>
-      </ul>
-    </td>
-  </tr>
-</table>
-
-<table align="center">
-  <tr>
-    <td align="center" width="25%"><h2>12</h2><sub>шагов конфигурации</sub></td>
-    <td align="center" width="25%"><h2>504</h2><sub>теста Pester</sub></td>
-    <td align="center" width="25%"><h2>19045</h2><sub>минимальная сборка Windows</sub></td>
-    <td align="center" width="25%"><h2>0</h2><sub>внешних зависимостей</sub></td>
-  </tr>
-</table>
-
-```powershell
-.\Configure-Windows.ps1 -RunSteps Desktop,Taskbar -WhatIf
-```
-
----
-
-## Что делает
-
-- **Активация Windows** — KMS-ключ, сервер и порт из конфигурации; защита от тестового GVLK.
-- **Удаление встроенного ПО** — Appx и provisioned-пакеты по категориям, классические приложения с деинсталляторами.
-- **Установка приложений** — MSI, EXE, Batch и DISM; проверка идемпотентности, повторы, пост-установка и копирование файлов.
-- **Рабочий стол и панель задач** — значки, Task View, виджеты, перезапуск Explorer.
-- **Автозагрузка** — ярлыки, Run-значения, службы, задачи планировщика и политики для произвольных групп.
-- **Питание и NumLock** — план питания, таймауты, состояние NumLock при входе.
-- **Профиль пользователя** — перенаправление папок и подпись Outlook из данных AD.
-- **Меню и пакетный режим** — интерактивный выбор шагов, `-RunAll` или `-RunSteps`.
-- **Тестовый режим** — полный прогон без прав администратора и без изменений системы.
-
-## Скриншоты
-
-Главное меню (тестовый режим, без прав администратора):
-
-![Главное меню](docs/screenshots/main-menu.png)
-
-Подменю установки; `X`, `Q` или `Enter` возвращают в главное меню:
-
-![Подменю установки](docs/screenshots/install-submenu.png)
+- Windows 10 19045+ или Windows 11;
+- права администратора для реального применения (в тестовом режиме не нужны);
+- Windows PowerShell 5.1 или PowerShell 7+;
+- `Run_Windows11Setup.cmd` запускает конфигуратор через `pwsh.exe` (PowerShell 7).
 
 ## Быстрый старт
 
@@ -124,21 +36,48 @@ PS C:\Tools\WindowsConfigurator> .\Configure-Windows.ps1 -Interactive
 git clone https://github.com/KirillGrachev/WindowsConfigurator.git
 cd WindowsConfigurator
 
-# 1. Проверить конфигурацию по схеме
+# Проверить конфигурацию по схеме
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Configure-Windows.ps1 -ValidateConfig
 
-# 2. Прогнать всё в тестовом режиме (ничего не меняет)
+# Прогнать всё в тестовом режиме (ничего не меняет)
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Configure-Windows.ps1 -TestMode -RunAll -UserName demo.user
 
-# 3. Интерактивное меню
+# Интерактивное меню
 .\Run_Windows11Setup.cmd
 ```
 
-Коды возврата: `0` — успех, `1` — часть шагов завершилась ошибкой, `2` — критическая ошибка запуска или невалидная конфигурация.
+Или напрямую:
+
+```powershell
+# все шаги из General.DefaultSteps
+.\Configure-Windows.ps1 -RunAll -UserName 'john.doe'
+
+# только выбранные шаги
+.\Configure-Windows.ps1 -RunSteps 'Desktop','Taskbar','NumLock' -UserName 'john.doe'
+
+# интерактивное меню
+.\Configure-Windows.ps1 -Interactive
+```
+
+Коды возврата: `0` — успех, `1` — часть шагов завершилась ошибкой, `2` —
+критическая ошибка запуска или невалидная конфигурация.
+
+## Скриншоты
+
+Главное меню (тестовый режим, без прав администратора):
+
+![Главное меню](docs/screenshots/main-menu.png)
+
+Подменю установки приложений; `X`, `Q` или `Enter` возвращают в главное меню:
+
+![Подменю установки](docs/screenshots/install-submenu.png)
 
 ## Конфигурация
 
-Поставляемый `config/config.json` — тестовая конфигурация с заглушками (`Meta.IsTestData = true`). Перед боевым применением замените значения и поставьте `IsTestData: false`; конфигуратор предупредит об оставшихся тестовых данных.
+Поставляемый `config/config.json` — **тестовая** конфигурация с заглушками
+(`Meta.IsTestData = true`). Перед боевым применением замените значения и
+поставьте `IsTestData: false`; конфигуратор предупредит об оставшихся тестовых
+данных.
 
 | Раздел | Назначение |
 | --- | --- |
@@ -167,13 +106,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Configure-Windows.ps1 -Tes
 
 ### Секреты
 
-Не храните боевые ключи открытым текстом:
+Не храните боевые ключи открытым текстом. Вместо значения можно указать ссылку:
 
 ```json
 "KmsClientKey": { "$secret": "env:WC_KMS_KEY" }
 ```
 
-Поддерживаются `env:`, `file:` и `dpapi:` (см. `tools/New-EncryptedSecret.ps1`). Журнал маскирует значения секретов, а приватные конфигурации (`config/*.local.json`, `config/prod.json`, `secrets/`, `*.bin`) исключены через `.gitignore`.
+Поддерживаются `env:`, `file:` и `dpapi:` (см. `tools/New-EncryptedSecret.ps1`).
+Журнал маскирует значения секретов. Приватные конфигурации (`config/*.local.json`,
+`config/prod.json`, `secrets/`, `*.bin`) исключены через `.gitignore`.
 
 ## Тестовый режим
 
@@ -182,15 +123,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Configure-Windows.ps1 -Tes
 .\Configure-Windows.ps1 -TestMode -RunSteps 'Installation','Desktop','NumLock' -UserName demo.user
 ```
 
-В тестовом режиме права администратора не проверяются, реестр пишется в оверлей, процессы и Appx симулируются, файлы попадают в `%TEMP%\WC-TestMode-*`, а по завершении создаётся `testmode-report.json`. Подробнее — [docs/test-mode.md](docs/test-mode.md).
+В тестовом режиме:
 
-## Проверки и безопасность
+- права администратора не проверяются;
+- реестр пишется в оверлей, процессы и Appx симулируются;
+- файлы попадают в `%TEMP%\WC-TestMode-*`;
+- по завершении создаётся `testmode-report.json` с журналом операций.
 
-- **CI** — матрица Windows PowerShell 5.1 / PowerShell 7, Pester 5.7.1 / 6.2.0, Linux и Windows, покрытие не ниже 80%.
-- **PSScriptAnalyzer** — 0 замечаний с профилем `ScriptAnalyzerSettings.psd1`.
-- **CodeQL** — анализ GitHub Actions.
-- **Статические проверки** — кодировки, CRLF/BOM, валидация схемы, отсутствие корпоративных данных в коде.
-- **Релизы** — подписанные теги `v*`, ZIP-архив и `SHA256SUMS`.
+Подробнее — [docs/test-mode.md](docs/test-mode.md).
 
 ## Структура
 
@@ -202,8 +142,18 @@ config/config.schema.json    JSON Schema с дефолтами и правила
 functions/                   шаги, меню, общие функции
 tools/                       проверка кодировок, секреты, запуск
 tests/                       Pester-тесты и тестовые хелперы
-docs/                        документация
+docs/                        документация и скриншоты
 ```
+
+## Проверки и безопасность
+
+- **CI** — матрица Windows PowerShell 5.1 / PowerShell 7, Pester 5.7.1 / 6.2.0,
+  Linux и Windows, покрытие не ниже 80%.
+- **PSScriptAnalyzer** — 0 замечаний с профилем `ScriptAnalyzerSettings.psd1`.
+- **CodeQL** — анализ GitHub Actions.
+- **Статические проверки** — кодировки, CRLF/BOM, валидация схемы, отсутствие
+  корпоративных данных в коде.
+- **Релизы** — теги `v*`, ZIP-архив и `SHA256SUMS`.
 
 ## Разработка
 
@@ -215,7 +165,8 @@ docs/                        документация
 .\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 80 -WithAnalyzer
 ```
 
-Правила участия — [CONTRIBUTING.md](CONTRIBUTING.md), уязвимости — [SECURITY.md](SECURITY.md).
+Правила участия — [CONTRIBUTING.md](CONTRIBUTING.md), уязвимости —
+[SECURITY.md](SECURITY.md).
 
 ## Лицензия
 
