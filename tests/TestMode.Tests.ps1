@@ -107,7 +107,7 @@ Describe 'Тестовый режим: оверлей реестра' {
         (Get-RegistryValues -Path 'hklm:\software\wctest\demo')['Flag'] | Should -Be '1'
         $journal = @(Get-WCTestModeJournal -Category 'Registry')
         $journal.Count | Should -BeGreaterThan 0
-        ($journal | Where-Object { $_.Action -eq 'reg add' }).Count | Should -BeGreaterThan 0
+        @($journal | Where-Object { $_.Action -eq 'reg add' }).Count | Should -BeGreaterThan 0
     }
 
     It 'Test-RegistryKeyExists видит ключ и потомков из оверлея' {
@@ -365,7 +365,7 @@ Describe 'Тестовый режим: сквозной прогон оркес�
         <# Реестр: NumLock записал InitialKeyboardIndicators в куст подставного пользователя #>
         $registryEntries = @($report.Journal | Where-Object { $_.Category -eq 'Registry' })
         $registryEntries.Count | Should -BeGreaterThan 0
-        ($registryEntries | Where-Object { $_.Target -match 'InitialKeyboardIndicators' }).Count | Should -BeGreaterThan 0
+        @($registryEntries | Where-Object { $_.Target -match 'InitialKeyboardIndicators' }).Count | Should -BeGreaterThan 0
 
         <# Appx: пакеты 'удалены' (журнал), provisioned - тоже; фильтры WebExperience - тоже. #>
         $appxEntries = @($report.Journal | Where-Object { $_.Category -eq 'Appx' })
@@ -373,7 +373,7 @@ Describe 'Тестовый режим: сквозной прогон оркес�
 
         <# Установка: msiexec 'запускался' через синтетический Start-ProcessAndWait #>
         $processEntries = @($report.Journal | Where-Object { $_.Category -eq 'Process' })
-        ($processEntries | Where-Object { $_.Target -match 'msiexec' }).Count | Should -BeGreaterThan 0
+        @($processEntries | Where-Object { $_.Target -match 'msiexec' }).Count | Should -BeGreaterThan 0
 
         <# Автозагрузка: службы и задачи журнала, Run-значения удалены из оверлея #>
         (@($report.Journal | Where-Object { $_.Category -eq 'Service' })).Count | Should -BeGreaterThan 0
@@ -422,9 +422,9 @@ Describe 'Тестовый режим: сквозной прогон оркес�
         $slmgrCalls = @($report.Journal | Where-Object { $_.Category -eq 'Process' -and $_.Target -match 'slmgr' })
         <# /ipk <key>, /skms <server:port>, /ato #>
         $slmgrCalls.Count | Should -Be 3
-        ($slmgrCalls | Where-Object { $_.Target -match '/ipk' }).Count | Should -Be 1
-        ($slmgrCalls | Where-Object { $_.Target -match '/skms' }).Count | Should -Be 1
-        ($slmgrCalls | Where-Object { $_.Target -match '/ato' }).Count | Should -Be 1
+        @($slmgrCalls | Where-Object { $_.Target -match '/ipk' }).Count | Should -Be 1
+        @($slmgrCalls | Where-Object { $_.Target -match '/skms' }).Count | Should -Be 1
+        @($slmgrCalls | Where-Object { $_.Target -match '/ato' }).Count | Should -Be 1
     }
 
     It '-TestMode без -UserName: активный пользователь определяется как подставной' {
@@ -436,7 +436,7 @@ Describe 'Тестовый режим: сквозной прогон оркес�
 
     It 'точка входа: -TestMode возвращает 0 и печатает сводку тестового режима' {
         $entryPath = Get-ProjectFilePath -RelativePath 'Configure-Windows.ps1'
-        $pwshExe = if ($PSVersionTable.PSEdition -eq 'Core') { (Get-Process -Id $PID).Path } else { 'powershell.exe' }
+        $pwshExe = (Get-Process -Id $PID).Path
         if (-not (Test-Path -Path $pwshExe)) { $pwshExe = 'pwsh' }
         $output = & $pwshExe -NoProfile -File $entryPath -TestMode -RunSteps 'NumLock' -UserName 'it.user' 2>&1
         $exitCode = $LASTEXITCODE

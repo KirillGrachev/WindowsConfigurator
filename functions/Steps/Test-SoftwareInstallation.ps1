@@ -64,6 +64,15 @@
                     Write-Log -Message 'Модуль Dism недоступен - проверка компонента пропущена.' -Level Warn
                     return $false
                 }
+                <#
+                Get-WindowsOptionalFeature -Online требует прав администратора, а
+                тестовый режим обещает работать без них. Считаем компонент
+                неустановленным - так сквозной прогон проверяет ветку установки.
+                #>
+                if (Test-WCTestMode) {
+                    Write-Log -Message "(ТЕСТ) Компонент $featureName считается неустановленным." -Level Debug
+                    return $false
+                }
                 $feature = Get-WindowsOptionalFeature -Online -FeatureName $featureName -ErrorAction SilentlyContinue
                 $enabled = ($null -ne $feature -and [string]$feature.State -eq 'Enabled')
                 Write-Log -Message "Компонент ${featureName}: $(if ($enabled) { 'включён' } else { 'не включён' })" -Level Debug

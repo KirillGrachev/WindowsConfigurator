@@ -290,9 +290,16 @@ Describe 'Remove-UserRegistryHive (алиас Unload-UserHiveIfNecessary)' {
 Describe 'Get-ActiveInteractiveUser (регрессия GetOwner у объекта Process)' {
 
     It 'пользователь определяется через Invoke-CimMethod GetOwner' {
-        Mock Get-CimInstance {
-            return @([PSCustomObject]@{ ProcessId = 4242; SessionId = 1; Name = 'explorer.exe' })
+        <#
+        Invoke-CimMethod -InputObject принимает только CimInstance, поэтому
+        подставной процесс создаётся как client-only CIM-объект, а не PSCustomObject.
+        #>
+        $fakeProcess = New-CimInstance -ClassName Win32_Process -ClientOnly -Property @{
+            ProcessId = 4242
+            SessionId = 1
+            Name      = 'explorer.exe'
         }
+        Mock Get-CimInstance { return @($fakeProcess) }
         Mock Invoke-CimMethod { return [PSCustomObject]@{ Domain = 'CORP'; User = 'john.doe' } }
 
         Get-ActiveInteractiveUser | Should -Be 'john.doe'
