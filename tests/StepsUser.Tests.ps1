@@ -237,7 +237,13 @@ Describe 'Шаг Autostart: очистка автозагрузки (регре�
         }
         Mock Get-Service { return @([PSCustomObject]@{ Name = 'AdobeARMservice'; Status = 'Running' }) }
         Mock Set-Service { $script:DisabledServices.Add($Name) | Out-Null }
-        Mock Get-ScheduledTask { return @([PSCustomObject]@{ TaskName = 'Adobe Acrobat Update Task' }) }
+        <#
+        Disable-ScheduledTask -InputObject принимает только CimInstance, поэтому
+        подставная задача создаётся client-only, а не как PSCustomObject.
+        #>
+        Mock Get-ScheduledTask {
+            return @(New-CimInstance -ClassName MSFT_ScheduledTask -Namespace 'root/Microsoft/Windows/TaskScheduler' -ClientOnly -Property @{ TaskName = 'Adobe Acrobat Update Task' })
+        }
         Mock Disable-ScheduledTask { $script:DisabledTasks.Add($InputObject.TaskName) | Out-Null }
         Mock Start-Sleep { }
     }

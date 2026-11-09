@@ -192,7 +192,9 @@ if ($needRestart -or ($explicitVersionRequested -and -not $env:WC_PESTER_CHILD))
     if ($Tag.Count -gt 0) { foreach ($t in $Tag) { $childArgs.Add('-Tag') | Out-Null; $childArgs.Add($t) | Out-Null } }
     if ($ExcludeTag.Count -gt 0) { foreach ($t in $ExcludeTag) { $childArgs.Add('-ExcludeTag') | Out-Null; $childArgs.Add($t) | Out-Null } }
 
-    $exe = if ($PSVersionTable.PSEdition -eq 'Core') { (Get-Process -Id $PID).Path } else { 'powershell.exe' }
+    # Путь к текущему хосту: 'powershell.exe' как относительный путь не проходит
+    # Test-Path и раньше приводил к ложному фолбэку на отсутствующий pwsh.
+    $exe = (Get-Process -Id $PID).Path
     if (-not (Test-Path -Path $exe -ErrorAction SilentlyContinue)) { $exe = 'pwsh' }
 
     Write-Host "[INFO] Pester $($pester.Version): перезапуск в изолированном процессе ($exe)..." -ForegroundColor DarkGray
