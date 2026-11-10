@@ -76,7 +76,9 @@ param(
     [AllowEmptyString()]
     [string]$LogPath,
 
-    [switch]$TestMode
+    [switch]$TestMode,
+
+    [switch]$NoBackup
 )
 
 $ErrorActionPreference = 'Stop'
@@ -112,6 +114,17 @@ try {
 
     if ($LogPath) {
         Initialize-Logging -Config $null -FilePath $LogPath | Out-Null
+    }
+
+    <# --- Резервная копия реестра (кроме TestMode/WhatIf/NoBackup) --- #>
+    $backupState = $null
+    if (-not $TestMode -and -not $WhatIfPreference -and -not $NoBackup) {
+        try {
+            $backupState = Initialize-WCBackup
+            Write-Host "[INFO] Резервная копия реестра: $($backupState.Root)" -ForegroundColor Gray
+        } catch {
+            Write-Host "[WARN] Не удалось создать резервную копию реестра: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
     }
 
     $parameters = @{ ConfigPath = $ConfigPath; Confirm = $false }
@@ -165,6 +178,10 @@ try {
     }
 
     Write-Host '==============================================' -ForegroundColor Cyan
+
+    if ($backupState) {
+        Write-Host ("[INFO] Откат реестра: .\tools\Restore-Backup.ps1 -Root '{0}'" -f $backupState.Root) -ForegroundColor Gray
+    }
 
     if ($summary.Success) { exit 0 }
     exit 1
