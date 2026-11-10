@@ -20,10 +20,10 @@ Requirements:
 
 - Pester: all tests pass, coverage is at least **80%**;
 - PSScriptAnalyzer: **0** findings with `ScriptAnalyzerSettings.psd1`;
-- encodings: `.ps1/.psd1/.psm1` are UTF-8 **with BOM** and CRLF; `.json/.md/.yml`
+- Encodings: `.ps1/.psd1/.psm1` are UTF-8 **with BOM** and CRLF; `.json/.md/.yml`
   are LF; `.cmd/.bat` are CRLF without BOM;
-- no tabs and no trailing whitespace;
-- the configuration passes `-ValidateConfig`.
+- No tabs and no trailing whitespace;
+- The configuration passes `-ValidateConfig`.
 
 ## What not to do
 

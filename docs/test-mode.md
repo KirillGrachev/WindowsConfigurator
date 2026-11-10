@@ -60,10 +60,10 @@ manually.
 
 By default, TestMode uses:
 
-- user `demo.user` (or `test.user` when `-UserName` is omitted);
+- User `demo.user` (or `test.user` when `-UserName` is omitted);
 - SID `S-1-5-21-TESTMODE-1001`;
 - Windows build `26100`;
-- drives `C` and `D`.
+- Drives `C` and `D`.
 
 Some data is seeded from the configuration: Appx packages from `AppsToRemove`,
 autostart shortcuts from `AutoStartApps`, `powercfg /l` output from

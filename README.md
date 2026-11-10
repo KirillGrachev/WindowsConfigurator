@@ -26,7 +26,7 @@ changes.
 ## Requirements
 
 - Windows 10 19045+ or Windows 11;
-- administrator rights for real runs (TestMode does not require them);
+- Administrator rights for real runs (TestMode does not require them);
 - Windows PowerShell 5.1 (built into Windows) or PowerShell 7+;
 - `Run_Windows11Setup.cmd` uses Windows PowerShell 5.1, so `pwsh.exe` is not required.
 
@@ -125,10 +125,10 @@ are excluded by `.gitignore`.
 
 In TestMode:
 
-- administrator rights are not checked;
-- registry writes go to an in-memory overlay; processes and Appx operations are simulated;
-- files are written to `%TEMP%\WC-TestMode-*`;
-- `testmode-report.json` is created with the operation journal.
+- Administrator rights are not checked;
+- Registry writes go to an in-memory overlay; processes and Appx operations are simulated;
+- Files are written to `%TEMP%\WC-TestMode-*`;
+- The `testmode-report.json` report is created with the operation journal.
 
 See [docs/test-mode.md](docs/test-mode.md) for details.
 
