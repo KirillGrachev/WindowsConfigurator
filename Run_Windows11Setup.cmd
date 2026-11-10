@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableDelayedExpansion
 
 :: Заголовок
-title Windows 10/11 Configuration Launcher (PowerShell 7)
+title Windows 10/11 Configuration Launcher (PowerShell 5.1)
 color 0F
 
 :: Проверка прав администратора
@@ -15,18 +15,9 @@ if %errorLevel% neq 0 (
     exit /b
 )
 
-:: PowerShell 7 обязателен: нужен pwsh.exe
-where pwsh.exe >nul 2>&1
-if errorlevel 1 (
-    echo [!] PowerShell 7 не найден: pwsh.exe
-    echo [*] Установите: winget install --id Microsoft.PowerShell --source winget
-    pause
-    exit /b 1
-)
-
 :: Автоопределение активного пользователя
 set "DETECTED_USER="
-for /f "delims=" %%i in ('pwsh -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $u = (Get-CimInstance Win32_Process -Filter \"Name='explorer.exe'\").GetOwner() | Where-Object { $_.User -ne $null } | Select-Object -First 1 -ExpandProperty User; if($u){Write-Output $u}" 2^>nul') do (
+for /f "delims=" %%i in ('powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $u = (Get-CimInstance Win32_Process -Filter \"Name='explorer.exe'\").GetOwner() | Where-Object { $_.User -ne $null } | Select-Object -First 1 -ExpandProperty User; if($u){Write-Output $u}" 2^>nul') do (
     set "RAW=%%i"
     set "RAW=!RAW:"=!"
     set "RAW=!RAW:>=!"
@@ -81,13 +72,11 @@ if not exist "!ENTRY_POINT!" (
 
 echo.
 echo [*] Конфигурация для: !USER_NAME!
-echo [*] Используем PowerShell 7 (pwsh)
+echo [*] Используем Windows PowerShell (v5.1)
 echo.
 
-:: ЗАПУСК ЧЕРЕЗ PWSH.EXE
-:: Важно: используем & для выполнения скрипта, а не Import-Module,
-:: если это обычный .ps1 файл с функциями в глобальной области.
-pwsh.exe -NoProfile -ExecutionPolicy Bypass -Command "& '!ENTRY_POINT!' -UserName '!USER_NAME!' -Interactive -Verbose"
+:: ЗАПУСК ЧЕРЕЗ POWERSHELL.EXE
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '!ENTRY_POINT!' -UserName '!USER_NAME!' -Interactive -Verbose"
 
 echo.
 echo [*] Скрипт завершил работу.
