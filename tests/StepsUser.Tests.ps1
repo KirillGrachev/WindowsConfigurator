@@ -576,6 +576,43 @@ Describe 'Шаг FolderRedirection: перенос папок профиля' {
     }
 }
 
+Describe 'Move-ProfileFolderContent: безопасный перенос' {
+
+    It 'переносит новые элементы и не перезаписывает существующие' {
+        $root = Join-Path -Path $TestDrive -ChildPath ("wc-move-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $source = Join-Path -Path $root -ChildPath 'source'
+        $destination = Join-Path -Path $root -ChildPath 'destination'
+        $null = New-Item -Path $source -ItemType Directory -Force
+        $null = New-Item -Path $destination -ItemType Directory -Force
+        $utf8 = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText((Join-Path $source 'new.txt'), 'new', $utf8)
+        [System.IO.File]::WriteAllText((Join-Path $source 'conflict.txt'), 'source', $utf8)
+        [System.IO.File]::WriteAllText((Join-Path $destination 'conflict.txt'), 'destination', $utf8)
+
+        $problems = New-Object System.Collections.Generic.List[string]
+        $moved = Move-ProfileFolderContent -Source $source -Destination $destination -Problems $problems -Label 'Documents'
+
+        $moved | Should -Be 1
+        (Get-Content -Path (Join-Path $destination 'new.txt') -Raw) | Should -Be 'new'
+        (Get-Content -Path (Join-Path $destination 'conflict.txt') -Raw) | Should -Be 'destination'
+        Test-Path -Path (Join-Path $source 'new.txt') | Should -BeFalse
+        $problems.Count | Should -Be 1
+        ($problems -join ' ') | Should -Match 'уже существует'
+    }
+
+    It 'отсутствующая исходная папка не считается ошибкой' {
+        $root = Join-Path -Path $TestDrive -ChildPath ("wc-move-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $destination = Join-Path -Path $root -ChildPath 'destination'
+        $null = New-Item -Path $destination -ItemType Directory -Force
+        $problems = New-Object System.Collections.Generic.List[string]
+
+        $moved = Move-ProfileFolderContent -Source (Join-Path $root 'missing') -Destination $destination -Problems $problems -Label 'Documents'
+
+        $moved | Should -Be 0
+        $problems.Count | Should -Be 0
+    }
+}
+
 Describe 'Шаг Signature: подпись Outlook из AD' {
 
     BeforeAll {
