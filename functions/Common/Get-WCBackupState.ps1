@@ -10,7 +10,7 @@
         System.Collections.IDictionary или $null
     #>
     [CmdletBinding()]
-    [OutputType([System.Collections.IDictionary])]
+    [OutputType([System.Collections.Specialized.OrderedDictionary])]
     param()
 
     return (Get-Variable -Name 'WindowsConfiguratorBackup' -Scope Global -ValueOnly -ErrorAction SilentlyContinue)
