@@ -107,6 +107,18 @@ Describe 'Синтаксис и структура проекта' {
         $content | Should -Match 'exit 1'
         $content | Should -Match 'exit 2'
     }
+
+    It 'Лаунчер использует Windows PowerShell 5.1 и безопасную передачу аргументов' {
+        $launcher = Get-ProjectFilePath -RelativePath 'Run_Windows11Setup.cmd'
+        Test-Path -Path $launcher | Should -BeTrue
+        $content = [System.IO.File]::ReadAllText($launcher)
+        $content | Should -Match 'fltmc'
+        $content | Should -Match 'powershell\.exe'
+        $content | Should -Match '-File'
+        $content | Should -Not -Match 'pwsh'
+        $content | Should -Not -Match 'openfiles'
+        $content | Should -Not -Match '-Command\s+"&'
+    }
 }
 
 Describe 'Кодировки и окончания строк' {
