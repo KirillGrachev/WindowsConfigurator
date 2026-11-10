@@ -15,7 +15,7 @@ BeforeAll {
 
     $script:RunningOnWindows = (-not $PSVersionTable.Platform) -or ($PSVersionTable.Platform -eq 'Win32NT')
     $script:TestKeyPattern = 'TEST1-TEST2-TEST3-TEST4-TEST5'
-    $script:RealKey = 'W269N-WFGWX-YVC9B-4J6C9-T83GX'
+    $script:RealKey = 'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE'
 }
 
 Describe 'Resolve-ConfigSecret: провайдеры' {

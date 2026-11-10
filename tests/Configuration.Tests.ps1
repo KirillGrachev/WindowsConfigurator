@@ -96,7 +96,7 @@ Describe 'Импорт реальной конфигурации проекта'
             Deployment = @{ AppsRepositoryRoot = '\\files.corp.example\Deploy$\Apps' }
             SignatureSettings = @{ TemplatePath = '\\files.corp.example\Templates\sig.htm'; FallbackEmailDomain = 'corp.example' }
         }
-        $env:WC_KMS_KEY = 'W269N-WFGWX-YVC9B-4J6C9-T83GX'
+        $env:WC_KMS_KEY = 'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE'
         try {
             $config = Import-Configuration -Path $path -SkipLoggingInit
             $config.Meta.IsTestData | Should -BeFalse

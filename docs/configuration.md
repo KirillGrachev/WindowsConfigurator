@@ -21,7 +21,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.1",
+  "Version": "2.1.2",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -66,7 +66,7 @@ masked in the log.
 
 ```json
 "Environment": {
-  "PowerSkipComputerNamePatterns": ["^KMA-W\\d+$"],
+  "PowerSkipComputerNamePatterns": ["^PC-W\\d+$"],
   "MinimumSupportedBuild": 19045,
   "UserProfilesRoot": "%SystemDrive%\\Users"
 }

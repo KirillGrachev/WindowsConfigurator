@@ -13,7 +13,7 @@
           3. папка создавалась на рабочем столе АДМИНИСТРАТОРА
              ([Environment]::GetFolderPath('Desktop')) -> теперь рабочий стол
              ЦЕЛЕВОГО пользователя (SignatureSettings.OutputRoot);
-          4. плейсхолдеры, тексты фолбэков ('Company Name', 'domain.com',
+          4. плейсхолдеры, тексты фолбэков ('Example Company', 'example.com',
              'С уважением,'), имя папки, код/имя шрифта и версия Office были
              захардкожены -> SignatureSettings.* (Placeholders, Fallback*, RegardsText,
              FolderNamePattern, OfficeVersion, RtfCodePage, RtfFontName);

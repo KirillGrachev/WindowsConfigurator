@@ -83,7 +83,12 @@ jobs:
           # инфраструктуры заказчика не должны присутствовать в репозитории даже
           # в комментариях.
           $ErrorActionPreference = 'Continue'
-          $forbidden = @('W269N-WFGWX-YVC9B-4J6C9-T83GX', 'kma-fs03', 'KMA-CLINICNOUT')
+          # Приватные идентификаторы передаются через WC_FORBIDDEN_PATTERNS
+          # (разделитель ';'), чтобы не хранить их в репозитории.
+          $forbidden = @('domain.com', 'Company Name')
+          if ($env:WC_FORBIDDEN_PATTERNS) {
+            $forbidden += @($env:WC_FORBIDDEN_PATTERNS -split ';')
+          }
           $hits = @()
           Get-ChildItem ./functions, ./tools, ./Configure-Windows.ps1 -Recurse -Filter *.ps1 |
             ForEach-Object {
@@ -91,6 +96,11 @@ jobs:
               foreach ($pattern in $forbidden) {
                 if ($text -match [regex]::Escape($pattern)) { $hits += "$($_.Name): $pattern" }
               }
+              # Любое значение формата XXXXX-XXXXX-XXXXX-XXXXX-XXXXX в
+              # поставляемом коде считается утечкой KMS-ключа. Известный
+              # тестовый шаблон исключается.
+              $textForKeys = $text -replace 'TEST1-TEST2-TEST3-TEST4-TEST5', ''
+              if ($textForKeys -match '\b[A-Z0-9]{5}(?:-[A-Z0-9]{5}){4}\b') { $hits += "$($_.Name): key-like value" }
             }
           if ($hits.Count -gt 0) {
             $hits | ForEach-Object { Write-Host "::error::Захардкоженные корпоративные данные: $_" }

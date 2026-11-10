@@ -15,7 +15,7 @@
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath 'TestHelpers/ProjectLoader.ps1')
     $script:Config = Import-Configuration -Path (Get-ProjectFilePath -RelativePath 'config/config.json') -SkipLoggingInit
-    $script:RealKey = 'W269N-WFGWX-YVC9B-4J6C9-T83GX'
+    $script:RealKey = 'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE'
 }
 
 Describe 'Шаг Activation: KMS-активация' {
@@ -189,8 +189,8 @@ Describe 'Invoke-Slmgr: формирование командной строки
             $script:CapturedArgs = @($Arguments)
             return [PSCustomObject]@{ ExitCode = 0; StandardOutput = ''; StandardError = ''; FilePath = ''; ArgumentString = '' }
         }
-        Invoke-Slmgr -SlmgrArguments @('/ipk', 'W269N-WFGWX-YVC9B-4J6C9-T83GX') -SlmgrPath 'C:\W\slmgr.vbs' | Out-Null
-        $script:CapturedArgs | Should -Contain 'W269N-WFGWX-YVC9B-4J6C9-T83GX'
+        Invoke-Slmgr -SlmgrArguments @('/ipk', 'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE') -SlmgrPath 'C:\W\slmgr.vbs' | Out-Null
+        $script:CapturedArgs | Should -Contain 'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE'
         $script:CapturedArgs.Count | Should -Be 4
     }
 
