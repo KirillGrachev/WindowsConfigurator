@@ -1,39 +1,39 @@
-# Конфигурация
+# Configuration
 
-Конфигуратор читает `config/config.json` и проверяет его по
-`config/config.schema.json` **до** любых изменений системы. Схема — единственный
-источник значений по умолчанию: минимальный конфиг может содержать только
-обязательные разделы.
+The configurator reads `config/config.json` and validates it against
+`config/config.schema.json` **before** any system change. The schema is the only
+source of defaults: a minimal configuration can contain just the required
+sections.
 
-Обязательные разделы: `Meta`, `Activation`, `AppsToInstall`,
-`SignatureSettings`.
+Required sections: `Meta`, `Activation`, `AppsToInstall`, `SignatureSettings`.
 
-Проверка:
+Validate a configuration with:
 
 ```powershell
 .\Configure-Windows.ps1 -ValidateConfig
 .\Configure-Windows.ps1 -ValidateConfig -ConfigPath D:\cfg\prod.json
 ```
 
-Коды возврата: `0` — валидна, `2` — ошибки схемы (с указанием путей и правил).
+Exit codes: `0` — valid, `2` — schema errors (the message includes the field path
+and the failed rule).
 
-## Метаданные
+## Metadata
 
 ```json
 "Meta": {
-  "Version": "2.1.0",
+  "Version": "2.1.1",
   "IsTestData": false,
   "Environment": "PROD",
-  "CompanyName": "ООО «Компания»",
+  "CompanyName": "Example Company",
   "Maintainer": "it@example.com",
-  "Description": "Базовая настройка Windows 10/11"
+  "Description": "Base Windows 10/11 setup"
 }
 ```
 
-`IsTestData: true` включает предупреждения и запрещает активацию тестовым GVLK.
-`Environment: TEST` дополнительно помечает конфигурацию как небоевую.
+`IsTestData: true` enables warnings and blocks activation with a test GVLK key.
+`Environment: TEST` additionally marks the configuration as non-production.
 
-## Общие параметры
+## General
 
 ```json
 "General": {
@@ -45,10 +45,10 @@
 }
 ```
 
-`DefaultSteps` используется режимом `-RunAll`. `StopOnFirstFailure: true`
-прерывает выполнение после первой ошибки.
+`DefaultSteps` is used by `-RunAll`. `StopOnFirstFailure: true` stops the run
+after the first failed step.
 
-## Журнал
+## Logging
 
 ```json
 "Logging": {
@@ -59,10 +59,10 @@
 }
 ```
 
-Уровни: `Debug`, `Info`, `Warn`, `Error`, `Fatal`, `None`. Значения секретов в
-журнале маскируются.
+Levels: `Debug`, `Info`, `Warn`, `Error`, `Fatal`, `None`. Secret values are
+masked in the log.
 
-## Окружение
+## Environment
 
 ```json
 "Environment": {
@@ -72,11 +72,11 @@
 }
 ```
 
-`PowerSkipComputerNamePatterns` — regex-шаблоны имён ПК, на которых шаг питания
-пропускается. `MinimumSupportedBuild` защищает от запуска на неподдерживаемой
-сборке. `UserProfilesRoot` используется для поиска профиля целевого пользователя.
+`PowerSkipComputerNamePatterns` contains regex patterns for computers where the
+power step is skipped. `MinimumSupportedBuild` prevents running on an unsupported
+Windows build. `UserProfilesRoot` is used to locate the target user profile.
 
-## Секреты
+## Secrets
 
 ```json
 "Secrets": {
@@ -87,21 +87,22 @@
 }
 ```
 
-Провайдеры:
+Providers:
 
-- `Plain` — значение хранится в JSON (только для несекретных данных);
-- `Environment` — значение берётся из переменной окружения с префиксом;
-- `Dpapi` — значение расшифровывается из файла, созданного
-  `tools/New-EncryptedSecret.ps1` (привязка к пользователю/машине).
+- `Plain` — the value is stored in JSON (only for non-secret data);
+- `Environment` — the value is read from an environment variable with the
+  configured prefix;
+- `Dpapi` — the value is decrypted from a file created by
+  `tools/New-EncryptedSecret.ps1` (bound to the user or machine).
 
-Ссылка на секрет:
+A secret reference:
 
 ```json
 "KmsClientKey": { "$secret": "env:WC_KMS_KEY" }
 "KmsClientKey": { "$secret": "dpapi:C:\\Secrets\\kms.bin" }
 ```
 
-## Активация
+## Activation
 
 ```json
 "Activation": {
@@ -118,10 +119,10 @@
 }
 ```
 
-Шаг выполняет `slmgr /ipk`, `/skms`, `/ato`. При `BlockTestDataKey: true`
-тестовый GVLK-ключ отклоняется, даже в тестовом режиме.
+The step runs `slmgr /ipk`, `/skms` and `/ato`. With `BlockTestDataKey: true`, a
+test GVLK key is rejected even in TestMode.
 
-## Развёртывание приложений
+## Application deployment
 
 ```json
 "Deployment": {
@@ -139,14 +140,14 @@
 }
 ```
 
-Токены путей:
+Path tokens:
 
-- `{AppsRepositoryRoot}` — корень репозитория приложений;
-- `{VersionLabel}` — метка версии Windows из `WindowsVersions`;
-- `{InstallPath}` — путь установки приложения;
-- `{UserName}` — целевой пользователь.
+- `{AppsRepositoryRoot}` — the application repository root;
+- `{VersionLabel}` — the Windows version label from `WindowsVersions`;
+- `{InstallPath}` — the application installation path;
+- `{UserName}` — the target user name.
 
-## Удаление встроенного ПО
+## Built-in application removal
 
 ```json
 "AppsToRemove": {
@@ -157,11 +158,11 @@
 "RemoveWebExperience": true
 ```
 
-`AppsToRemove` — плоский список или категории; категории сохраняются в
-`AppsToRemoveByCategory`. `ProvisionedAppFilters` удаляет provisioned-пакеты.
-`RemoveWebExperience` убирает компоненты Windows Web Experience.
+`AppsToRemove` can be a flat list or categories; categories are also exposed as
+`AppsToRemoveByCategory`. `ProvisionedAppFilters` removes provisioned packages.
+`RemoveWebExperience` removes Windows Web Experience components.
 
-Классические приложения:
+Classic applications:
 
 ```json
 "LegacyAppsToRemove": [
@@ -176,7 +177,7 @@
 ]
 ```
 
-## Установка приложений
+## Application installation
 
 ```json
 "AppsToInstall": [
@@ -199,20 +200,20 @@
 ]
 ```
 
-Типы:
+Types:
 
-| `Type` | Установка | Обязательные поля |
+| `Type` | Installation | Required fields |
 | --- | --- | --- |
-| `MSI` | `msiexec /i` + аргументы | `InstallerPath` |
-| `Executable` | прямой запуск EXE | `InstallerPath` |
+| `MSI` | `msiexec /i` plus arguments | `InstallerPath` |
+| `Executable` | direct EXE launch | `InstallerPath` |
 | `Batch` | `cmd /c` | `InstallerPath` |
 | `DISM` | `dism /Enable-Feature` | `FeatureName` |
 
-`ProductCode`/`UninstallKey` и `InstallPath` используются для проверки
-идемпотентности. `PostInstall` выполняется после установки, `CopyFiles`
-копирует файлы с подстановкой `{InstallPath}`.
+`ProductCode`/`UninstallKey` and `InstallPath` are used for idempotency checks.
+`PostInstall` runs after installation; `CopyFiles` copies files with
+`{InstallPath}` substitution.
 
-## Автозагрузка и твики
+## Autostart and tweaks
 
 ```json
 "AutoStartApps": {
@@ -231,18 +232,18 @@
 }
 ```
 
-Ключ группы в `AutostartTweaks` — произвольное имя; `TriggerKey` должен
-совпадать с ключом `AutoStartApps`, иначе твик пропускается. Поддерживаются
-шаблоны служб, шаблоны задач, точные имена задач и значения политики.
+A group key in `AutostartTweaks` is arbitrary; `TriggerKey` must match an
+`AutoStartApps` key, otherwise the tweak is skipped. Service patterns, task
+patterns, exact task names and registry policy values are supported.
 
-## Рабочий стол и панель задач
+## Desktop and taskbar
 
 ```json
 "DesktopSettings": {
   "RestartExplorer": true,
   "RegistrySubPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\HideDesktopIcons\\NewStartPanel",
   "Icons": [
-    { "Clsid": "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "Name": "Этот компьютер", "Hidden": false }
+    { "Clsid": "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "Name": "This PC", "Hidden": false }
   ]
 },
 "TaskbarSettings": {
@@ -252,14 +253,14 @@
 }
 ```
 
-## Питание и NumLock
+## Power and NumLock
 
 ```json
 "PowerSettings": {
-  "DesiredPlan": "Высокая производительность",
+  "DesiredPlan": "High performance",
   "SetActiveAfterChanges": true,
   "Settings": [
-    { "Label": "Отключение дисплея", "SubGroupGuid": "238c9fa8-0aad-41ed-83f4-97be242c8f20", "SettingGuid": "29f6c1db-86da-48c5-9fdb-f2b67b1f44da", "Minutes": 45, "Target": "Both" }
+    { "Label": "Turn off display", "SubGroupGuid": "238c9fa8-0aad-41ed-83f4-97be242c8f20", "SettingGuid": "29f6c1db-86da-48c5-9fdb-f2b67b1f44da", "Minutes": 45, "Target": "Both" }
   ]
 },
 "NumLock": {
@@ -269,10 +270,10 @@
 }
 ```
 
-`Target`: `AC`, `DC` или `Both`. `NumLock.EnabledValue`: `2` — включён,
-`DisabledValue`: `0` — выключен.
+`Target`: `AC`, `DC` or `Both`. `NumLock.EnabledValue`: `2` enables NumLock;
+`DisabledValue`: `0` disables it.
 
-## Перенаправление папок
+## Folder redirection
 
 ```json
 "FolderRedirection": {
@@ -287,18 +288,17 @@
 }
 ```
 
-`Name` — имя папки на целевом диске, `RegValueName` — значение в
-`User Shell Folders`. `AllowedDriveTypes`: `3` — локальный фиксированный диск,
-`4` — сетевой, `5` — CD/DVD. При отсутствии подходящего диска шаг завершается
-ошибкой.
+`Name` is the folder name on the target drive; `RegValueName` is the value in
+`User Shell Folders`. `AllowedDriveTypes`: `3` — local fixed disk, `4` — network
+drive, `5` — CD/DVD. If no suitable drive exists, the step fails.
 
-## Подпись Outlook
+## Outlook signature
 
 ```json
 "SignatureSettings": {
   "TemplatePath": "\\\\fileserver.example.local\\Deploy$\\Templates\\signature-template.htm",
   "LogoSource": "\\\\fileserver.example.local\\Deploy$\\Templates\\logo.jpg",
-  "FallbackCompany": "ООО «Компания»",
+  "FallbackCompany": "Example Company",
   "FallbackEmailDomain": "example.com",
   "OutputRoot": "Desktop",
   "GenerateRtf": true,
@@ -306,10 +306,10 @@
 }
 ```
 
-Плейсхолдеры заполняются данными AD; при пустых атрибутах используются
-фолбэки. `OutputRoot`: `Desktop` или `Temp`.
+Placeholders are filled from AD data; fallbacks are used for empty attributes.
+`OutputRoot`: `Desktop` or `Temp`.
 
-## Контекстное меню и меню
+## Context menu and interactive menu
 
 ```json
 "ContextMenu": {
@@ -317,23 +317,23 @@
   "RestartExplorer": true
 },
 "Menu": {
-  "Title": "Windows 11 Конфигуратор",
+  "Title": "Windows 11 Configurator",
   "ExitChoice": "0",
-  "RunAllLabel": "Запустить все эти шаги",
-  "ContinuePrompt": "Нажмите Enter для продолжения",
-  "InvalidChoiceMessage": "Неправильный выбор",
+  "RunAllLabel": "Run all these steps",
+  "ContinuePrompt": "Press Enter to continue",
+  "InvalidChoiceMessage": "Invalid choice",
   "InvalidChoiceDelaySeconds": 1,
   "Items": [
-    { "Id": "1", "Label": "Активация Windows (KMS)", "Step": "Activation", "Color": "White", "RequiresUser": false },
-    { "Id": "3", "Label": "Установка приложений", "Step": "InstallSubmenu", "Color": "White", "RequiresUser": true, "HasSubmenu": true }
+    { "Id": "1", "Label": "Activate Windows (KMS)", "Step": "Activation", "Color": "White", "RequiresUser": false },
+    { "Id": "3", "Label": "Install applications", "Step": "InstallSubmenu", "Color": "White", "RequiresUser": true, "HasSubmenu": true }
   ]
 }
 ```
 
-`Step` должен совпадать с именем шага из `Get-StepDefinitions` (алиасы
-приводятся к каноническому имени) либо быть `RunAll`/`InstallSubmenu`.
+`Step` must match a step name from `Get-StepDefinitions` (aliases are normalized),
+or be `RunAll`/`InstallSubmenu`.
 
-## Версии Windows
+## Windows versions
 
 ```json
 "WindowsVersions": [
@@ -342,15 +342,14 @@
 ]
 ```
 
-Список сортируется по убыванию сборки; метка используется в токене
-`{VersionLabel}`.
+The list is sorted by build number in descending order; the label is used by the
+`{VersionLabel}` token.
 
-## Приватные конфигурации
+## Private configurations
 
-Не коммитьте боевые значения. `.gitignore` исключает:
+Do not commit production values. `.gitignore` excludes:
 
 - `config/config.local.json`, `config/*.local.json`, `config/prod.json`;
-- `secrets/`, `vault/`, `*.bin` (DPAPI-конверты).
+- `secrets/`, `vault/`, `*.bin` (DPAPI blobs).
 
-CI дополнительно проверяет, что в коде нет известных корпоративных
-идентификаторов.
+CI also checks that known corporate identifiers do not appear in code.

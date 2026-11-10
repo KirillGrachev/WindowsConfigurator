@@ -1,173 +1,173 @@
 # WindowsConfigurator
 
-Одноразовая настройка Windows 10/11 из одного JSON-файла: активация, удаление
-встроенного ПО, установка приложений, политики, автозагрузка, питание, NumLock,
-перенаправление папок и подпись Outlook.
+Base Windows 10/11 setup from a single JSON file: activation, built-in app
+removal, software installation, policies, autostart, power, NumLock, folder
+redirection and Outlook signature.
 
-Конфигурация проверяется по JSON Schema до первого изменения системы, а тестовый
-режим позволяет прогнать полный сценарий без прав администратора и без реальных
-изменений.
+The configuration is validated against JSON Schema before any system change, and
+TestMode runs the full scenario without administrator rights and without real
+changes.
 
 [![tests](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/tests.yml/badge.svg)](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/codeql.yml/badge.svg)](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Возможности
+## Features
 
-- **Один конфиг** — `config/config.json` с валидацией по `config/config.schema.json`.
-- **Интерактивное меню** — пошаговый выбор действий с подменю установки приложений.
-- **Пакетный режим** — `-RunAll` или выбранные шаги через `-RunSteps`.
-- **Идемпотентность** — уже установленные приложения пропускаются, повторный запуск безопасен.
-- **Секреты** — ссылки `env:`, `file:` и `dpapi:` вместо открытых ключей в JSON.
-- **Тестовый режим** — реестр, процессы, файлы и Appx симулируются в песочнице.
-- **Подпись Outlook** — HTML/RTF/TXT из данных AD, шаблона и логотипа.
-- **Кроссплатформенные тесты** — Pester 5/6, Windows PowerShell 5.1 и PowerShell 7.
+- **One config** — `config/config.json`, validated against `config/config.schema.json`.
+- **Interactive menu** — pick steps one by one, with a submenu for application installation.
+- **Batch mode** — run everything with `-RunAll` or selected steps with `-RunSteps`.
+- **Idempotent** — already installed applications are skipped; repeated runs are safe.
+- **Secrets** — `env:`, `file:` and `dpapi:` references instead of plaintext keys in JSON.
+- **TestMode** — registry, processes, files and Appx operations are simulated in a sandbox.
+- **Outlook signature** — HTML/RTF/TXT generated from AD data, a template and a logo.
+- **Cross-platform tests** — Pester 5/6, Windows PowerShell 5.1 and PowerShell 7.
 
-## Требования
+## Requirements
 
-- Windows 10 19045+ или Windows 11;
-- права администратора для реального применения (в тестовом режиме не нужны);
-- Windows PowerShell 5.1 или PowerShell 7+;
-- `Run_Windows11Setup.cmd` запускает конфигуратор через `pwsh.exe` (PowerShell 7).
+- Windows 10 19045+ or Windows 11;
+- administrator rights for real runs (TestMode does not require them);
+- Windows PowerShell 5.1 (built into Windows) or PowerShell 7+;
+- `Run_Windows11Setup.cmd` uses Windows PowerShell 5.1, so `pwsh.exe` is not required.
 
-## Быстрый старт
+## Quick start
 
 ```powershell
 git clone https://github.com/KirillGrachev/WindowsConfigurator.git
 cd WindowsConfigurator
 
-# Проверить конфигурацию по схеме
+# Validate the configuration against the schema
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Configure-Windows.ps1 -ValidateConfig
 
-# Прогнать всё в тестовом режиме (ничего не меняет)
+# Run everything in TestMode (no changes are made)
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Configure-Windows.ps1 -TestMode -RunAll -UserName demo.user
 
-# Интерактивное меню
+# Interactive menu
 .\Run_Windows11Setup.cmd
 ```
 
-Или напрямую:
+Or directly:
 
 ```powershell
-# все шаги из General.DefaultSteps
+# all steps from General.DefaultSteps
 .\Configure-Windows.ps1 -RunAll -UserName 'john.doe'
 
-# только выбранные шаги
+# selected steps only
 .\Configure-Windows.ps1 -RunSteps 'Desktop','Taskbar','NumLock' -UserName 'john.doe'
 
-# интерактивное меню
+# interactive menu
 .\Configure-Windows.ps1 -Interactive
 ```
 
-Коды возврата: `0` — успех, `1` — часть шагов завершилась ошибкой, `2` —
-критическая ошибка запуска или невалидная конфигурация.
+Exit codes: `0` — success, `1` — some steps failed, `2` — fatal startup error
+or invalid configuration.
 
-## Скриншоты
+## Screenshots
 
-Главное меню (тестовый режим, без прав администратора):
+Main menu (TestMode, no administrator rights):
 
-![Главное меню](docs/screenshots/main-menu.png)
+![Main menu](docs/screenshots/main-menu.png)
 
-Подменю установки приложений; `X`, `Q` или `Enter` возвращают в главное меню:
+Application installation submenu; `X`, `Q` or `Enter` returns to the main menu:
 
-![Подменю установки](docs/screenshots/install-submenu.png)
+![Installation submenu](docs/screenshots/install-submenu.png)
 
-## Конфигурация
+## Configuration
 
-Поставляемый `config/config.json` — **тестовая** конфигурация с заглушками
-(`Meta.IsTestData = true`). Перед боевым применением замените значения и
-поставьте `IsTestData: false`; конфигуратор предупредит об оставшихся тестовых
-данных.
+The shipped `config/config.json` is a **test** configuration with placeholders
+(`Meta.IsTestData = true`). Before a production run, replace the values and set
+`IsTestData: false`; the configurator warns about remaining test data.
 
-| Раздел | Назначение |
+| Section | Purpose |
 | --- | --- |
-| `Meta` | Версия, компания, сопровождение, признак тестовых данных |
-| `General` | Шаги по умолчанию, задержки, поведение при ошибках |
-| `Logging` | Уровень, путь и срок хранения журнала |
-| `Environment` | Поддерживаемые сборки Windows, шаблоны имён ПК |
-| `Secrets` | Провайдер секретов (`Plain`/`Environment`/`Dpapi`) |
-| `Activation` | KMS-ключ, сервер, порт, защита от тестовых ключей |
-| `Deployment` | Корень репозитория приложений, коды возврата, повторы |
-| `AppsToRemove` | Appx-пакеты по категориям |
-| `LegacyAppsToRemove` | Классические приложения и их деинсталляторы |
-| `AppsToInstall` | MSI/EXE/Batch/DISM-приложения, пост-установка и копирование |
-| `AutoStartApps` | Группы автозагрузки по именам ярлыков и процессов |
-| `AutostartTweaks` | Твики служб, задач и политик для групп автозагрузки |
-| `DesktopSettings`, `TaskbarSettings` | Значки рабочего стола и политики панели задач |
-| `PowerSettings` | План питания и таймауты |
-| `NumLock` | Состояние NumLock при входе |
-| `FolderRedirection` | Перенос папок профиля на несистемный диск |
-| `SignatureSettings` | Шаблон, логотип и фолбэки подписи Outlook |
-| `ContextMenu` | Классическое контекстное меню Windows 10 |
-| `Menu` | Заголовок и пункты интерактивного меню |
-| `WindowsVersions` | Метки версий Windows по номеру сборки |
+| `Meta` | Version, company, maintainer, test-data flag |
+| `General` | Default steps, delays, failure handling |
+| `Logging` | Log level, path and retention |
+| `Environment` | Supported Windows builds, computer-name patterns |
+| `Secrets` | Secret provider (`Plain`/`Environment`/`Dpapi`) |
+| `Activation` | KMS key, server, port, test-key protection |
+| `Deployment` | Application repository root, exit codes, retries |
+| `AppsToRemove` | Appx packages grouped by category |
+| `LegacyAppsToRemove` | Classic applications and their uninstallers |
+| `AppsToInstall` | MSI/EXE/Batch/DISM applications, post-install and file copy |
+| `AutoStartApps` | Autostart groups by shortcut or process name |
+| `AutostartTweaks` | Service, scheduled-task and policy tweaks per group |
+| `DesktopSettings`, `TaskbarSettings` | Desktop icons and taskbar policies |
+| `PowerSettings` | Power plan and timeouts |
+| `NumLock` | NumLock state at sign-in |
+| `FolderRedirection` | Move profile folders to a non-system drive |
+| `SignatureSettings` | Outlook signature template, logo and fallbacks |
+| `ContextMenu` | Classic Windows 10 context menu |
+| `Menu` | Interactive menu title and items |
+| `WindowsVersions` | Windows version labels by build number |
 
-Подробнее — [docs/configuration.md](docs/configuration.md).
+See [docs/configuration.md](docs/configuration.md) for details.
 
-### Секреты
+### Secrets
 
-Не храните боевые ключи открытым текстом. Вместо значения можно указать ссылку:
+Do not store production keys in plaintext. Reference a secret instead:
 
 ```json
 "KmsClientKey": { "$secret": "env:WC_KMS_KEY" }
 ```
 
-Поддерживаются `env:`, `file:` и `dpapi:` (см. `tools/New-EncryptedSecret.ps1`).
-Журнал маскирует значения секретов. Приватные конфигурации (`config/*.local.json`,
-`config/prod.json`, `secrets/`, `*.bin`) исключены через `.gitignore`.
+`env:`, `file:` and `dpapi:` references are supported (see
+`tools/New-EncryptedSecret.ps1`). The log masks secret values. Private
+configurations (`config/*.local.json`, `config/prod.json`, `secrets/`, `*.bin`)
+are excluded by `.gitignore`.
 
-## Тестовый режим
+## TestMode
 
 ```powershell
 .\Configure-Windows.ps1 -TestMode -Interactive
 .\Configure-Windows.ps1 -TestMode -RunSteps 'Installation','Desktop','NumLock' -UserName demo.user
 ```
 
-В тестовом режиме:
+In TestMode:
 
-- права администратора не проверяются;
-- реестр пишется в оверлей, процессы и Appx симулируются;
-- файлы попадают в `%TEMP%\WC-TestMode-*`;
-- по завершении создаётся `testmode-report.json` с журналом операций.
+- administrator rights are not checked;
+- registry writes go to an in-memory overlay; processes and Appx operations are simulated;
+- files are written to `%TEMP%\WC-TestMode-*`;
+- `testmode-report.json` is created with the operation journal.
 
-Подробнее — [docs/test-mode.md](docs/test-mode.md).
+See [docs/test-mode.md](docs/test-mode.md) for details.
 
-## Структура
+## Project structure
 
 ```text
-Configure-Windows.ps1        точка входа и коды возврата
-Run_Windows11Setup.cmd       launcher: администратор + pwsh + интерактивное меню
-config/config.json           конфигурация (в поставке — тестовая)
-config/config.schema.json    JSON Schema с дефолтами и правилами
-functions/                   шаги, меню, общие функции
-tools/                       проверка кодировок, секреты, запуск
-tests/                       Pester-тесты и тестовые хелперы
-docs/                        документация и скриншоты
+Configure-Windows.ps1        entry point and exit codes
+Run_Windows11Setup.cmd       launcher: elevation + Windows PowerShell 5.1 + interactive menu
+config/config.json           configuration (test data in the repository)
+config/config.schema.json    JSON Schema with defaults and rules
+functions/                   steps, menu and shared functions
+tools/                       encoding checks, secrets, test runner
+tests/                       Pester tests and test helpers
+docs/                        documentation and screenshots
 ```
 
-## Проверки и безопасность
+## Checks and security
 
-- **CI** — матрица Windows PowerShell 5.1 / PowerShell 7, Pester 5.7.1 / 6.2.0,
-  Linux и Windows, покрытие не ниже 80%.
-- **PSScriptAnalyzer** — 0 замечаний с профилем `ScriptAnalyzerSettings.psd1`.
-- **CodeQL** — анализ GitHub Actions.
-- **Статические проверки** — кодировки, CRLF/BOM, валидация схемы, отсутствие
-  корпоративных данных в коде.
-- **Релизы** — теги `v*`, ZIP-архив и `SHA256SUMS`.
+- **CI** — Windows PowerShell 5.1 / PowerShell 7, Pester 5.7.1 / 6.2.0,
+  Linux and Windows, with an 80% coverage threshold.
+- **PSScriptAnalyzer** — 0 findings with the `ScriptAnalyzerSettings.psd1` profile.
+- **CodeQL** — GitHub Actions analysis.
+- **Static checks** — encodings, CRLF/BOM, schema validation and no corporate
+  data in code.
+- **Releases** — `v*` tags, ZIP archive and `SHA256SUMS`.
 
-## Разработка
+## Development
 
 ```powershell
-# тесты (Pester установится в локальный кэш)
+# tests (Pester is installed into a local cache)
 .\tests\Run-Tests.ps1 -PesterVersion 5.7.1
 
-# тесты + покрытие + анализатор
+# tests + coverage + analyzer
 .\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 80 -WithAnalyzer
 ```
 
-Правила участия — [CONTRIBUTING.md](CONTRIBUTING.md), уязвимости —
+Contribution rules — [CONTRIBUTING.md](CONTRIBUTING.md); vulnerabilities —
 [SECURITY.md](SECURITY.md).
 
-## Лицензия
+## License
 
-MIT — см. [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).

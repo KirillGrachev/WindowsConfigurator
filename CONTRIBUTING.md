@@ -1,39 +1,40 @@
 # Contributing
 
-Спасибо за интерес к проекту. Ниже — минимальные правила, которые проверяет CI.
+Thanks for your interest in the project. These are the minimum rules enforced by CI.
 
-## Ветки и коммиты
+## Branches and commits
 
-- Основная ветка — `main`; изменения — через отдельную ветку и pull request.
-- Сообщения коммитов — [Conventional Commits](https://www.conventionalcommits.org/):
+- The main branch is `main`; make changes in a separate branch and open a pull request.
+- Use [Conventional Commits](https://www.conventionalcommits.org/):
   `feat:`, `fix:`, `docs:`, `test:`, `ci:`, `build:`, `perf:`, `refactor:`, `chore:`.
-- Коммиты и теги должны быть подписаны (GitHub покажет Verified).
+- Commits and tags must be signed (GitHub shows them as Verified).
 
-## Перед pull request
+## Before a pull request
 
 ```powershell
 .\tools\Set-ProjectEncoding.ps1
 .\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 80 -WithAnalyzer
 ```
 
-Требования:
+Requirements:
 
-- Pester: все тесты зелёные, покрытие не ниже **80%**;
-- PSScriptAnalyzer: **0** замечаний с `ScriptAnalyzerSettings.psd1`;
-- кодировки: `.ps1/.psd1/.psm1` — UTF-8 **с BOM** и CRLF; `.json/.md/.yml` — LF;
-  `.cmd/.bat` — CRLF без BOM;
-- никаких табов и лишних пробелов в конце строк;
-- конфигурация проходит `-ValidateConfig`.
+- Pester: all tests pass, coverage is at least **80%**;
+- PSScriptAnalyzer: **0** findings with `ScriptAnalyzerSettings.psd1`;
+- encodings: `.ps1/.psd1/.psm1` are UTF-8 **with BOM** and CRLF; `.json/.md/.yml`
+  are LF; `.cmd/.bat` are CRLF without BOM;
+- no tabs and no trailing whitespace;
+- the configuration passes `-ValidateConfig`.
 
-## Чего не делать
+## What not to do
 
-- Не коммитить боевые `config.json`, KMS-ключи, UNC-пути и учётные данные.
-- Не добавлять зависимости без необходимости: проект должен работать на
-  Windows PowerShell 5.1 «из коробки».
-- Не менять формат конфигурации без обновления `config.schema.json` и тестов.
-- Не добавлять `Write-Host` в тестируемые функции: используйте `Write-Log`.
+- Do not commit production `config.json` files, KMS keys, UNC paths or credentials.
+- Do not add dependencies without a strong reason: the project must work on
+  Windows PowerShell 5.1 out of the box.
+- Do not change the configuration format without updating `config.schema.json`
+  and the tests.
+- Do not add `Write-Host` to testable functions; use `Write-Log`.
 
-## Документация
+## Documentation
 
-Пользовательские изменения отражайте в `README.md` и `docs/`. Скриншоты —
-в `docs/screenshots/` (PNG, без приватных данных).
+Reflect user-facing changes in `README.md` and `docs/`. Screenshots belong in
+`docs/screenshots/` (PNG, no private data).
