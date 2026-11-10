@@ -84,6 +84,9 @@
     $target = "$($normalized.NativePath)\$Name = $data ($Type)"
     if (-not $PSCmdlet.ShouldProcess($target, 'Установить значение реестра')) { return $true }
 
+    <# Сохраняем ключ один раз за сессию, если резервное копирование включено. #>
+    if (Get-WCBackupState) { $null = Backup-RegistryKey -Path $normalized.NativePath }
+
     if (-not (Test-RegistryKeyExists -Path $normalized.NativePath)) {
         $null = New-RegistryKeyIfMissing -Path $normalized.NativePath -MaxRetries $MaxRetries -RetryDelaySeconds $RetryDelaySeconds -Confirm:$false
     }

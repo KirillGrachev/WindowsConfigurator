@@ -132,6 +132,26 @@ In TestMode:
 
 See [docs/test-mode.md](docs/test-mode.md) for details.
 
+## Backup and rollback
+
+When the configurator is started through `Configure-Windows.ps1` in a real run
+(not TestMode and not `-WhatIf`), it creates a registry backup session under
+`%TEMP%\WindowsConfigurator\Backup-<timestamp>` before the first change.
+
+- Every registry key is exported once, before its first modification.
+- Keys that did not exist are recorded and deleted on rollback.
+- The journal is written to `backup.json` after each change.
+
+Restore the registry from a backup session with:
+
+```powershell
+.\tools\Restore-Backup.ps1 -Root "$env:TEMP\WindowsConfigurator\Backup-20261110-230000"
+```
+
+Use `-NoBackup` to skip the backup session. The current rollback covers only the
+registry; application installs/removals, file moves and Outlook signature files
+are not rolled back yet.
+
 ## Project structure
 
 ```text
