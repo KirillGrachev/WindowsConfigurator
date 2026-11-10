@@ -414,6 +414,34 @@ Describe 'Test-SoftwareInstallation: определение установлен
         } finally { Remove-Item -Path $dir -Recurse -Force }
     }
 
+    It 'InstallPath-файл не считается установленным каталогом' {
+        Mock Test-RegistryKeyExists { return $false }
+        $file = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-installed-{0}.txt" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
+        [System.IO.File]::WriteAllText($file, 'x')
+        try {
+            Test-SoftwareInstallation -App @{ Name = 'X'; Type = 'Executable'; InstallPath = $file } | Should -BeFalse
+        } finally { Remove-Item -Path $file -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'однозначный wildcard InstallPath считается установленным' {
+        Mock Test-RegistryKeyExists { return $false }
+        $root = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-installed-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
+        $null = New-Item -Path (Join-Path $root 'App 1') -ItemType Directory -Force
+        try {
+            Test-SoftwareInstallation -App @{ Name = 'X'; Type = 'MSI'; InstallPath = (Join-Path $root 'App*') } | Should -BeTrue
+        } finally { Remove-Item -Path $root -Recurse -Force }
+    }
+
+    It 'неоднозначный wildcard InstallPath не считается установленным' {
+        Mock Test-RegistryKeyExists { return $false }
+        $root = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-installed-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
+        $null = New-Item -Path (Join-Path $root 'App 1') -ItemType Directory -Force
+        $null = New-Item -Path (Join-Path $root 'App 2') -ItemType Directory -Force
+        try {
+            Test-SoftwareInstallation -App @{ Name = 'X'; Type = 'MSI'; InstallPath = (Join-Path $root 'App*') } | Should -BeFalse
+        } finally { Remove-Item -Path $root -Recurse -Force }
+    }
+
     It 'ничего не найдено -> $false' {
         Mock Test-RegistryKeyExists { return $false }
         Test-SoftwareInstallation -App @{ Name = 'X'; Type = 'MSI'; ProductCode = '{none}'; InstallPath = '/definitely/not/here' } | Should -BeFalse
