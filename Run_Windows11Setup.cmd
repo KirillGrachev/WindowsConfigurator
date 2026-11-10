@@ -7,7 +7,7 @@ title Windows 10/11 Configuration Launcher (PowerShell 5.1)
 color 0F
 
 :: Проверка прав администратора
-openfiles >nul 2>&1
+fltmc >nul 2>&1
 if %errorLevel% neq 0 (
     echo [!] Требуются права администратора.
     echo [*] Перезапуск от имени администратора...
@@ -26,7 +26,7 @@ for /f "delims=" %%i in ('powershell -NoProfile -Command "$ErrorActionPreference
 )
 
 if "!DETECTED_USER!"=="" (
-    for /f "tokens=1" %%a in ('query user 2^>nul ^| findstr /I "Active"') do (
+    for /f "tokens=1" %%a in ('query user 2^>nul ^| findstr /C:">"') do (
         set "DETECTED_USER=%%a"
         set "DETECTED_USER=!DETECTED_USER:>=!"
     )
@@ -36,7 +36,7 @@ if "!DETECTED_USER!"=="" (
 :input
 cls
 echo ==================================================
-echo            Настройка Windows 11
+echo            Настройка Windows 10/11
 echo ==================================================
 echo.
 
@@ -59,7 +59,7 @@ if "!USERNAME_INPUT!"=="" (
 
 :: Очистка ввода
 set "CLEAN_INPUT=!USERNAME_INPUT:>=!"
-set "USER_NAME=!CLEAN_INPUT:"='!"
+set "USER_NAME=!CLEAN_INPUT:"=!"
 
 :: ПУТЬ К ГЛАВНОМУ СКРИПТУ
 set "ENTRY_POINT=%~dp0Configure-Windows.ps1"
@@ -76,7 +76,9 @@ echo [*] Используем Windows PowerShell (v5.1)
 echo.
 
 :: ЗАПУСК ЧЕРЕЗ POWERSHELL.EXE
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '!ENTRY_POINT!' -UserName '!USER_NAME!' -Interactive -Verbose"
+:: -File передаёт аргументы без склейки в -Command, поэтому имя пользователя
+:: не может превратиться в PowerShell-код.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "!ENTRY_POINT!" -UserName "!USER_NAME!" -Interactive -Verbose
 
 echo.
 echo [*] Скрипт завершил работу.
