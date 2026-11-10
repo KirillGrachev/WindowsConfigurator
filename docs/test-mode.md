@@ -1,46 +1,44 @@
-# Тестовый режим
+# TestMode
 
-Тестовый режим (`-TestMode`) прогоняет шаги конфигуратора целиком, но
-**симулирует** все побочные эффекты. Он нужен, чтобы проверить конфигурацию,
-меню и порядок шагов на любой машине — без прав администратора и без риска
-что-то сломать.
+TestMode (`-TestMode`) runs the full configurator flow while **simulating** every
+side effect. It is intended for checking a configuration, the menu and step order
+on any machine without administrator rights and without risk.
 
 ```powershell
-# интерактивное меню в песочнице
+# interactive menu in a sandbox
 .\Configure-Windows.ps1 -TestMode -Interactive
 
-# отдельные шаги
+# selected steps
 .\Configure-Windows.ps1 -TestMode -RunSteps 'Installation','Desktop' -UserName demo.user
 
-# весь сценарий
+# the whole scenario
 .\Configure-Windows.ps1 -TestMode -RunAll -UserName demo.user
 ```
 
-## Что симулируется
+## What is simulated
 
-| Подсистема | Поведение в тестовом режиме |
+| Subsystem | Behaviour in TestMode |
 | --- | --- |
-| Реестр | Запись и чтение идут в оверлей в памяти; реальный реестр не меняется |
-| Процессы | `Start-ProcessAndWait`, `Stop-Process`, `Restart-ExplorerProcess` только журналируются |
-| Файлы | Пути отображаются в песочницу `%TEMP%\WC-TestMode-*` |
-| Appx / provisioned | Пакеты «удаляются» из фикстур, реальные `Remove-AppxPackage` не вызываются |
-| Службы и задачи | `Set-Service` и `Disable-ScheduledTask` только журналируются |
-| `powercfg`, `slmgr`, `reg`, `dism` | Команды подменяются синтетическим выводом |
-| AD | Возвращаются демо-атрибуты пользователя |
-| Диски | Подставные буквы дисков из конфигурации |
+| Registry | Writes and reads go to an in-memory overlay; the real registry is untouched |
+| Processes | `Start-ProcessAndWait`, `Stop-Process` and `Restart-ExplorerProcess` are only journaled |
+| Files | Paths are redirected to the sandbox `%TEMP%\WC-TestMode-*` |
+| Appx / provisioned | Packages are "removed" from fixtures; real `Remove-AppxPackage` is not called |
+| Services and tasks | `Set-Service` and `Disable-ScheduledTask` are only journaled |
+| `powercfg`, `slmgr`, `reg`, `dism` | Commands are replaced with synthetic output |
+| AD | Demo user attributes are returned |
+| Drives | Fake drive letters from the configuration |
 
-Права администратора не проверяются: тестовый режим предназначен для обычного
-пользователя.
+Administrator rights are not checked: TestMode is designed for a regular user.
 
-## Песочница и отчёт
+## Sandbox and report
 
-При старте создаётся каталог вида:
+On start, a directory like this is created:
 
 ```text
 %TEMP%\WC-TestMode-20261109-224645-263
 ```
 
-В нём лежат файлы, которые «записал» бы конфигуратор, и
+It contains the files the configurator would have written and
 `testmode-report.json`:
 
 ```json
@@ -54,35 +52,37 @@
 }
 ```
 
-В консоли выводится сводка: количество операций, путь к песочнице и отчёту.
-Песочница не удаляется автоматически — её можно изучить и удалить вручную.
+The console shows a summary with the operation count, the sandbox path and the
+report path. The sandbox is not deleted automatically; inspect it and remove it
+manually.
 
-## Подставные данные
+## Fake data
 
-По умолчанию используются:
+By default, TestMode uses:
 
-- пользователь `demo.user` (если `-UserName` не указан — `test.user`);
+- user `demo.user` (or `test.user` when `-UserName` is omitted);
 - SID `S-1-5-21-TESTMODE-1001`;
-- сборка Windows `26100`;
-- диски `C`, `D`.
+- Windows build `26100`;
+- drives `C` and `D`.
 
-Часть данных засевается из конфигурации: Appx-пакеты по `AppsToRemove`,
-ярлыки автозагрузки по `AutoStartApps`, вывод `powercfg /l` по
-`PowerSettings.DesiredPlan`, маркеры приложений по `LegacyAppsToRemove`.
+Some data is seeded from the configuration: Appx packages from `AppsToRemove`,
+autostart shortcuts from `AutoStartApps`, `powercfg /l` output from
+`PowerSettings.DesiredPlan`, and legacy application markers from
+`LegacyAppsToRemove`.
 
-## Ограничения
+## Limitations
 
-- Установщики не запускаются: проверяется только логика выбора и аргументов.
-- `Get-WindowsOptionalFeature` требует прав администратора, поэтому в тестовом
-  режиме DISM-компонент считается неустановленным.
-- Тестовый режим не заменяет проверку на реальной машине: он не подтверждает,
-  что установщик, сетевой путь или лицензия действительно работают.
-- `-TestMode` не сочетается с `-ValidateConfig`; для проверки схемы используйте
-  отдельный запуск.
+- Installers are not launched: only step selection and argument construction are checked.
+- `Get-WindowsOptionalFeature` requires administrator rights, so a DISM component
+  is treated as not installed in TestMode.
+- TestMode does not replace a real-machine check: it cannot prove that an
+  installer, network path or license actually works.
+- `-TestMode` cannot be combined with `-ValidateConfig`; validate the schema in a
+  separate run.
 
-## Безопасность
+## Safety
 
-Тестовый режим включается только на время выполнения и выключается в
-`finally`/`AfterEach`, поэтому глобальное состояние не остаётся включённым.
-Однако не запускайте его одновременно с реальным применением в одном процессе:
-это разные режимы одного и того же конфигуратора.
+TestMode is enabled only for the duration of the run and is disabled in
+`finally`/`AfterEach`, so the global state does not stay enabled. Do not run it
+at the same time as a real deployment in the same process: these are two modes of
+the same configurator.

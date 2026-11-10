@@ -1,20 +1,20 @@
-## Что изменилось
+## What changed
 
-<!-- Кратко: проблема, решение, влияние на пользователей. -->
+<!-- Briefly: the problem, the solution and the user-facing impact. -->
 
-## Тип изменения
+## Change type
 
-- [ ] `feat` — новая возможность
-- [ ] `fix` — исправление
-- [ ] `docs` — документация
-- [ ] `test` — тесты
-- [ ] `ci` / `build` — сборка и CI
-- [ ] `refactor` / `perf` / `chore` — внутреннее
+- [ ] `feat` — new feature
+- [ ] `fix` — bug fix
+- [ ] `docs` — documentation
+- [ ] `test` — tests
+- [ ] `ci` / `build` — build and CI
+- [ ] `refactor` / `perf` / `chore` — internal
 
-## Проверки
+## Checks
 
-- [ ] `.\tools\Set-ProjectEncoding.ps1 -Check` проходит
-- [ ] `.\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 80 -WithAnalyzer` проходит
-- [ ] `.\Configure-Windows.ps1 -ValidateConfig` проходит
-- [ ] В диффе нет секретов, боевых конфигураций и корпоративных путей
-- [ ] Документация обновлена (если менялось поведение или конфигурация)
+- [ ] `.\tools\Set-ProjectEncoding.ps1 -Check` passes
+- [ ] `.\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 80 -WithAnalyzer` passes
+- [ ] `.\Configure-Windows.ps1 -ValidateConfig` passes
+- [ ] The diff contains no secrets, production configurations or corporate paths
+- [ ] Documentation is updated if behaviour or configuration changed

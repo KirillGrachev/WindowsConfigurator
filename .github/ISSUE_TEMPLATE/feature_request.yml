@@ -1,34 +1,34 @@
 name: Feature request
-description: Предложить улучшение
+description: Suggest an improvement
 title: "feat: "
 labels: ["enhancement"]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Задача
-      description: Какую проблему должно решить изменение?
+      label: Problem
+      description: What problem should the change solve?
     validations:
       required: true
   - type: textarea
     id: solution
     attributes:
-      label: Предлагаемое решение
-      description: Как это должно работать? Если меняется конфигурация — опишите новые поля.
+      label: Proposed solution
+      description: How should it work? If the configuration changes, describe the new fields.
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Альтернативы
-      description: Что ещё рассматривали и почему это не подходит.
+      label: Alternatives
+      description: What else did you consider, and why is it not a good fit?
   - type: checkboxes
     id: scope
     attributes:
-      label: Область
+      label: Scope
       options:
-        - label: Конфигурация / JSON Schema
-        - label: Установка приложений
-        - label: Политики и реестр
-        - label: Меню и UX
-        - label: CI / документация
+        - label: Configuration / JSON Schema
+        - label: Application installation
+        - label: Policies and registry
+        - label: Menu and UX
+        - label: CI / documentation

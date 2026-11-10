@@ -1,54 +1,54 @@
 name: Bug report
-description: Сообщить об ошибке в конфигураторе
+description: Report a problem with the configurator
 title: "fix: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Спасибо за отчёт. Не прикладывайте боевые конфигурации, KMS-ключи и UNC-пути.
+        Thanks for the report. Do not attach production configurations, KMS keys or UNC paths.
   - type: textarea
     id: what-happened
     attributes:
-      label: Что произошло
-      description: Краткое описание ошибки и ожидаемого поведения.
+      label: What happened
+      description: A short description of the problem and the expected behaviour.
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Шаги воспроизведения
+      label: Steps to reproduce
       placeholder: |
-        1. Запустить ...
-        2. Выбрать ...
-        3. Получить ...
+        1. Run ...
+        2. Select ...
+        3. Observe ...
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Версия
-      description: Тег или коммит, например v2.1.0.
+      label: Version
+      description: Tag or commit, for example v2.1.0.
     validations:
       required: true
   - type: input
     id: environment
     attributes:
-      label: Окружение
-      description: Windows 10/11, сборка, Windows PowerShell 5.1 или PowerShell 7.
+      label: Environment
+      description: Windows 10/11, build, Windows PowerShell 5.1 or PowerShell 7.
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Журнал
-      description: Фрагмент журнала с удалёнными секретами и путями.
+      label: Log
+      description: A log excerpt with secrets and paths removed.
       render: text
   - type: checkboxes
     id: checks
     attributes:
-      label: Проверки
+      label: Checks
       options:
-        - label: Я проверил(а), что в отчёте нет секретов и корпоративных данных.
+        - label: I confirmed that this report contains no secrets or corporate data.
           required: true
-        - label: Ошибка воспроизводится в тестовом режиме (`-TestMode`), если это возможно.
+        - label: The problem reproduces in TestMode (`-TestMode`) when possible.
