@@ -48,9 +48,25 @@
                         }
                     }
                 }
-                if ($installPath -and (Test-Path -Path $installPath -ErrorAction SilentlyContinue)) {
-                    Write-Log -Message "Приложение '$($App.Name)' найдено по InstallPath: $installPath" -Level Debug
-                    return $true
+                if ($installPath) {
+                    if ($installPath -match '[*?]') {
+                        <#
+                        Wildcard InstallPath is kept for products such as Office, but an
+                        ambiguous match must not be treated as "already installed".
+                        #>
+                        $pathMatches = @(Get-Item -Path $installPath -ErrorAction SilentlyContinue |
+                                Where-Object { $_.PSIsContainer })
+                        if ($pathMatches.Count -eq 1) {
+                            Write-Log -Message "Приложение '$($App.Name)' найдено по InstallPath: $($pathMatches[0].FullName)" -Level Debug
+                            return $true
+                        }
+                        if ($pathMatches.Count -gt 1) {
+                            Write-Log -Message "InstallPath '$installPath' неоднозначен ($($pathMatches.Count) совпадений) - приложение считается неустановленным." -Level Warn
+                        }
+                    } elseif ([System.IO.Directory]::Exists($installPath)) {
+                        Write-Log -Message "Приложение '$($App.Name)' найдено по InstallPath: $installPath" -Level Debug
+                        return $true
+                    }
                 }
                 return $false
             }
