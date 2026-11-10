@@ -417,6 +417,15 @@ Describe 'Шаг Power: план питания и таймауты' {
         @($script:PowerCalls | Where-Object { $_[0] -eq '/s' }).Count | Should -Be 1
     }
 
+    It 'выбирает план по GUID и не зависит от локализованного имени' {
+        $config = Copy-ConfigValue -Value $script:Config
+        $config.PowerSettings.DesiredPlan = '381b4222-f694-41f0-9685-ff5bb260df2e'
+        $result = Set-PowerPlanAndTimeouts -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $result.Data.Plan | Should -Be 'Test Balanced Plan'
+        $result.Data.PlanGuid | Should -Be '381b4222-f694-41f0-9685-ff5bb260df2e'
+    }
+
     It 'при отсутствии нужного плана используется активный (регрессия: активным считались все)' {
         $config = Copy-ConfigValue -Value $script:Config
         $config.PowerSettings.DesiredPlan = 'Несуществующий план'

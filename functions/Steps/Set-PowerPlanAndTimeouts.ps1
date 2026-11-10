@@ -16,7 +16,9 @@
           4. powercfg вызывался напрямую, $LASTEXITCODE проверялся не везде ->
              Invoke-PowerCfg + явная обработка кодов;
           5. план активировался дважды (/s и /SetActive) безусловно ->
-             PowerSettings.SetActiveAfterChanges.
+             PowerSettings.SetActiveAfterChanges;
+          6. план искался только по локализованному имени -> PowerSettings.DesiredPlan
+             принимает GUID (предпочтительно) или имя для обратной совместимости.
     .PARAMETER Config
         Конфигурация проекта (PowerSettings, Environment).
     .PARAMETER ComputerName
@@ -56,6 +58,11 @@
     }
 
     $desiredPlan = [string](Get-ConfigSectionValue -Config $Config -Section 'PowerSettings' -Key 'DesiredPlan' -DefaultValue '')
+    $desiredPlanGuid = [guid]::Empty
+    $desiredPlanIsGuid = $false
+    if ($desiredPlan) {
+        $desiredPlanIsGuid = [guid]::TryParse($desiredPlan, [ref]$desiredPlanGuid)
+    }
     $settings = @(Get-ConfigSectionValue -Config $Config -Section 'PowerSettings' -Key 'Settings' -DefaultValue @())
     $setActiveAfter = [bool](Get-ConfigSectionValue -Config $Config -Section 'PowerSettings' -Key 'SetActiveAfterChanges' -DefaultValue $true)
 
@@ -72,7 +79,10 @@
 
     $target = $null
     if (-not $whatIf) {
-        if ($desiredPlan) {
+        if ($desiredPlanIsGuid) {
+            <# GUID не зависит от языка Windows и переименования плана. #>
+            $target = $plans | Where-Object { $_.Guid -eq $desiredPlanGuid.ToString() } | Select-Object -First 1
+        } elseif ($desiredPlan) {
             $target = $plans | Where-Object { $_.Name -eq $desiredPlan } | Select-Object -First 1
         }
         if (-not $target) {

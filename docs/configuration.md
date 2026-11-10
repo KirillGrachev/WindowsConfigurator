@@ -257,7 +257,7 @@ patterns, exact task names and registry policy values are supported.
 
 ```json
 "PowerSettings": {
-  "DesiredPlan": "High performance",
+  "DesiredPlan": "381b4222-f694-41f0-9685-ff5bb260df2e",
   "SetActiveAfterChanges": true,
   "Settings": [
     { "Label": "Turn off display", "SubGroupGuid": "238c9fa8-0aad-41ed-83f4-97be242c8f20", "SettingGuid": "29f6c1db-86da-48c5-9fdb-f2b67b1f44da", "Minutes": 45, "Target": "Both" }
@@ -270,8 +270,9 @@ patterns, exact task names and registry policy values are supported.
 }
 ```
 
-`Target`: `AC`, `DC` or `Both`. `NumLock.EnabledValue`: `2` enables NumLock;
-`DisabledValue`: `0` disables it.
+`DesiredPlan` accepts a power-plan GUID (recommended, locale-independent) or a
+display name for backward compatibility. `Target`: `AC`, `DC` or `Both`.
+`NumLock.EnabledValue`: `2` enables NumLock; `DisabledValue`: `0` disables it.
 
 ## Folder redirection
 
