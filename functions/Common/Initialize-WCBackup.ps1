@@ -11,10 +11,10 @@
     .EXAMPLE
         $backup = Initialize-WCBackup
     .OUTPUTS
-        System.Collections.IDictionary
+        System.Collections.Specialized.OrderedDictionary
     #>
     [CmdletBinding()]
-    [OutputType([System.Collections.IDictionary])]
+    [OutputType([System.Collections.Specialized.OrderedDictionary])]
     param(
         [AllowEmptyString()]
         [string]$Root = ''
