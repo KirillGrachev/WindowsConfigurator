@@ -209,19 +209,30 @@ Describe 'Отсутствие захардкоженных корпоратив
 
     It 'В functions/ нет корпоративных значений оригинального скрипта' {
         $forbidden = @(
-            'W269N-WFGWX-YVC9B-4J6C9-T83GX',
-            'kma-fs03',
-            'KMA-N\\d',
-            'KMA-CLINICNOUT',
-            '\\\\kma-',
             'domain\.com',
             'Company Name'
         )
+        <#
+        Приватные идентификаторы передаются CI через WC_FORBIDDEN_PATTERNS
+        (разделитель ';'), чтобы не хранить их в репозитории.
+        #>
+        if ($env:WC_FORBIDDEN_PATTERNS) {
+            $forbidden += @($env:WC_FORBIDDEN_PATTERNS -split ';')
+        }
         foreach ($file in $script:FunctionFiles) {
             $content = Get-ScriptCodeWithoutComments -Path $file.FullName
             foreach ($pattern in $forbidden) {
                 $content | Should -Not -Match $pattern -Because "в '$($file.Name)' захардкожены корпоративные данные: $pattern"
             }
+        }
+    }
+
+    It 'В functions/ нет KMS-ключей в открытом виде' {
+        $keyPattern = '\b[A-Z0-9]{5}(?:-[A-Z0-9]{5}){4}\b'
+        foreach ($file in $script:FunctionFiles) {
+            $content = Get-ScriptCodeWithoutComments -Path $file.FullName
+            $content = $content -replace 'TEST1-TEST2-TEST3-TEST4-TEST5', ''
+            $content | Should -Not -Match $keyPattern -Because "в '$($file.Name)' найден KMS-ключ в открытом виде"
         }
     }
 
