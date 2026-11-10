@@ -21,7 +21,7 @@ jobs:
     name: Static checks (encoding, schema, entry point)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Проверка кодировок и окончаний строк
         shell: pwsh
@@ -77,6 +77,8 @@ jobs:
 
       - name: Отсутствие захардкоженных корпоративных данных в коде
         shell: pwsh
+        env:
+          WC_FORBIDDEN_PATTERNS: ${{ vars.WC_FORBIDDEN_PATTERNS }}
         run: |
           # Проверка намеренно строже юнит-теста ProjectStructure.Tests.ps1:
           # сканируется ВЕСЬ текст файла, включая comment-based help. Идентификаторы
@@ -116,13 +118,13 @@ jobs:
     name: PSScriptAnalyzer
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Установка PSScriptAnalyzer
         shell: pwsh
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Force -SkipPublisherCheck
 
       - name: Анализ поставляемого кода
         shell: pwsh
@@ -178,7 +180,7 @@ jobs:
       run:
         shell: ${{ matrix.shell }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Версия PowerShell
         run: |
@@ -198,7 +200,7 @@ jobs:
 
       - name: Публикация результатов (NUnit)
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.shell }}-${{ matrix.pester }}
           path: |
