@@ -47,7 +47,13 @@
         [switch]$SkipLoggingInit
     )
 
-    $resolvedPath = (Resolve-Path -Path $Path -ErrorAction Stop).Path
+    # Resolve-Path may return a provider-qualified path on Windows PowerShell 5.1
+    # (for example "Microsoft.PowerShell.Core\FileSystem::\\server\share\config.json").
+    # Strip the provider prefix and use ProviderPath so UNC paths reach the
+    # filesystem cmdlets unchanged.
+    $pathToResolve = $Path -replace '^Microsoft\.PowerShell\.Core\\FileSystem::', ''
+    $pathToResolve = $pathToResolve -replace '^FileSystem::', ''
+    $resolvedPath = (Resolve-Path -LiteralPath $pathToResolve -ErrorAction Stop).ProviderPath
     $json = Get-JsonFileContent -Path $resolvedPath
 
     $schemaInfo = Get-ConfigurationSchema -ConfigPath $resolvedPath -SchemaPath $SchemaPath

@@ -68,6 +68,19 @@ Describe 'Импорт реальной конфигурации проекта'
         $script:Config.SecretFields.ContainsKey('Activation.KmsClientKey') | Should -BeTrue
     }
 
+    It 'принимает путь с префиксом FileSystem-провайдера (UNC-совместимость)' {
+        <#
+        На Windows PowerShell 5.1 Resolve-Path для UNC может вернуть
+        "Microsoft.PowerShell.Core\FileSystem::\\server\share\...". Импорт
+        должен снять префикс и вернуть провайдерный путь без него.
+        #>
+        $path = New-TestConfigFile -Override @{ Meta = @{ IsTestData = $true } }
+        $prefixed = "Microsoft.PowerShell.Core\FileSystem::$path"
+        $config = Import-Configuration -Path $prefixed -SkipLoggingInit
+        $expected = (Resolve-Path -LiteralPath $path).ProviderPath
+        $config.ConfigFilePath | Should -Be $expected
+    }
+
     It 'предупреждения о тестовых данных выдаются' {
         $warnings = @(Get-ConfigurationWarnings -Config $script:Config)
         $warnings.Count | Should -BeGreaterOrEqual 3
