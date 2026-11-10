@@ -131,17 +131,29 @@
             $source = Join-Path -Path $profilePath -ChildPath $sourceName
             $destination = $userBase + [System.IO.Path]::DirectorySeparatorChar + $folderName
 
-            if (-not (Test-Path -Path $destination -ErrorAction SilentlyContinue)) {
-                $null = New-Item -Path $destination -ItemType Directory -Force -ErrorAction SilentlyContinue
-                if (Test-Path -Path $source -ErrorAction SilentlyContinue) {
-                    try {
-                        Move-Item -Path (Join-Path -Path $source -ChildPath '*') -Destination $destination -Force -ErrorAction Stop
-                        Write-Log -Message "Содержимое '$source' перенесено в '$destination'." -Level Debug
-                    } catch {
-                        $problems.Add("${folderName}: перенос содержимого - $($_.Exception.Message)")
-                        Write-Log -Message "Не удалось перенести содержимое '$source': $($_.Exception.Message)" -Level Warn
-                    }
+            try {
+                if (-not (Test-Path -LiteralPath $destination -ErrorAction SilentlyContinue)) {
+                    $null = New-Item -Path $destination -ItemType Directory -Force -ErrorAction Stop
                 }
+            } catch {
+                $problems.Add("${folderName}: не удалось создать '$destination' - $($_.Exception.Message)") | Out-Null
+                Write-Log -Message "Не удалось создать '$destination': $($_.Exception.Message)" -Level Warn
+                continue
+            }
+
+            if (Test-Path -LiteralPath $source -ErrorAction SilentlyContinue) {
+                <# Preflight: не начинаем перенос, если на целевом диске заведомо нет места. #>
+                $drive = Get-PSDrive -Name $targetDrive -ErrorAction SilentlyContinue
+                $sourceBytes = [long]((Get-ChildItem -LiteralPath $source -Recurse -File -ErrorAction SilentlyContinue |
+                            Measure-Object -Property Length -Sum).Sum)
+                if ($drive -and $sourceBytes -gt $drive.Free) {
+                    $problems.Add("${folderName}: недостаточно места на ${targetDrive}: (нужно $sourceBytes байт, свободно $($drive.Free)).") | Out-Null
+                    Write-Log -Message "Перенос '$folderName' пропущен: недостаточно места на ${targetDrive}:." -Level Warn
+                    continue
+                }
+
+                $movedCount = Move-ProfileFolderContent -Source $source -Destination $destination -Problems $problems -Label $folderName
+                Write-Log -Message "Перенесено элементов '$folderName': $movedCount." -Level Debug
             }
 
             if (Test-Path -Path $destination -ErrorAction SilentlyContinue) {
