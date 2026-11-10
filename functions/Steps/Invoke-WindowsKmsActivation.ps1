@@ -82,20 +82,25 @@
 
         foreach ($command in $commands) {
             $description = [string]$command.Description
+            <# Не пишем KMS-ключ в журнал и в результат шага. #>
+            $displayArguments = @($command.Arguments | ForEach-Object { if ($_ -ceq $key) { '***' } else { $_ } })
+            $displayCommand = "slmgr.vbs $($displayArguments -join ' ')"
             if ($whatIf) {
-                Write-Log -Message "WHAT IF: slmgr.vbs $($command.Arguments -join ' ') ($description)" -Level Info
-                $executed.Add("whatif: $($command.Arguments -join ' ')")
+                Write-Log -Message "WHAT IF: $displayCommand ($description)" -Level Info
+                $executed.Add("whatif: $displayCommand")
                 continue
             }
 
-            Write-Log -Message "slmgr.vbs $($command.Arguments -join ' ') - $description" -Level Debug
+            Write-Log -Message "$displayCommand - $description" -Level Debug
             $result = Invoke-Slmgr -SlmgrArguments @($command.Arguments) -SlmgrPath $slmgrPath -ScriptHost $scriptHost
 
             if ($result.ExitCode -ne 0) {
-                $failure = "$description завершился с кодом $($result.ExitCode): $(($result.Output | Select-Object -First 3) -join '; ')"
+                $outputText = (($result.Output | Select-Object -First 3) -join '; ')
+                if ($key) { $outputText = $outputText -replace [regex]::Escape($key), '***' }
+                $failure = "$description завершился с кодом $($result.ExitCode): $outputText"
                 break
             }
-            $executed.Add("$($command.Arguments -join ' ') -> exit $($result.ExitCode)")
+            $executed.Add("$displayCommand -> exit $($result.ExitCode)")
 
             if ($delay -gt 0 -and $command -ne $commands[$commands.Count - 1]) {
                 Start-Sleep -Seconds $delay

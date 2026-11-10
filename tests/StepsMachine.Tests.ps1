@@ -50,6 +50,26 @@ Describe 'Шаг Activation: KMS-активация' {
         $script:SlmgrCalls[1][0] | Should -Be '/ato'
     }
 
+    It 'не пишет KMS-ключ в журнал' {
+        $logDir = Join-Path -Path $TestDrive -ChildPath ("wc-kms-log-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $logFile = Join-Path -Path $logDir -ChildPath 'activation.log'
+        $null = Initialize-Logging -Level 'Debug' -FilePath $logFile
+        try {
+            $config = Copy-ConfigValue -Value $script:Config
+            $config.Activation.KmsClientKey = $script:RealKey
+            $config.Activation.KmsKeyIsTestData = $false
+            $config.Activation.KmsServer = ''
+
+            Invoke-WindowsKmsActivation -Config $config -Confirm:$false | Out-Null
+            $content = [System.IO.File]::ReadAllText($logFile)
+            $content | Should -Not -Match [regex]::Escape($script:RealKey)
+            $content | Should -Match '\*\*\*'
+        } finally {
+            $null = Initialize-Logging -Level 'None' -FilePath ''
+            Remove-Item -Path $logDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
     It 'KmsServer добавляет вызов /skms с портом, отличным от стандартного' {
         $config = Copy-ConfigValue -Value $script:Config
         $config.Activation.KmsClientKey = $script:RealKey
