@@ -108,8 +108,6 @@
         switch ($Level) {
             'Debug' { Write-Verbose $Message }
             'Warn' { Write-Warning $Message }
-            'Error' { Write-Error -Message $line -ErrorAction Continue }
-            'Fatal' { Write-Error -Message $line -ErrorAction Continue }
             default {
                 try {
                     Write-Host $line -ForegroundColor $color

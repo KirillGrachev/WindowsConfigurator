@@ -221,14 +221,16 @@ Describe 'Журналирование: Initialize-Logging и Write-Log' {
         }
     }
 
-    It 'WARN уходит в поток предупреждений, ERROR - в поток ошибок (без прерывания)' {
+    It 'WARN уходит в поток предупреждений, ERROR - в консоль (без прерывания)' {
         $null = Initialize-Logging -Level 'Info' -FilePath $script:LogFile
 
         $warnings = & { Write-Log -Message 'предупреждение' -Level Warn } 3>&1
         ($warnings -join ' ') | Should -Match 'предупреждение'
 
+        $console = & { Write-Log -Message 'ошибка' -Level Error } 6>&1
+        ($console -join ' ') | Should -Match '\[ERROR\] ошибка'
         $errors = & { Write-Log -Message 'ошибка' -Level Error } 2>&1
-        ($errors -join ' ') | Should -Match '\[ERROR\] ошибка'
+        @($errors).Count | Should -Be 0
     }
 
     It 'DEBUG уходит в поток Verbose и не виден без -Verbose' {
