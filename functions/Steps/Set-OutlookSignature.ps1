@@ -251,16 +251,16 @@
             if (-not (Test-Path -Path $signatureFolder -ErrorAction SilentlyContinue)) {
                 $null = New-Item -Path $signatureFolder -ItemType Directory -Force -ErrorAction Stop
             }
-            Copy-Item -Path $logoSource -Destination $localLogo -Force -ErrorAction Stop
+            $null = Copy-Item -Path $logoSource -Destination $localLogo -Force -ErrorAction Stop
 
             if (-not (Test-Path -Path $filesFolder -ErrorAction SilentlyContinue)) {
                 $null = New-Item -Path $filesFolder -ItemType Directory -Force -ErrorAction Stop
             }
-            Copy-Item -Path $logoSource -Destination (Join-Path -Path $filesFolder -ChildPath $logoImageName) -Force -ErrorAction Stop
+            $null = Copy-Item -Path $logoSource -Destination (Join-Path -Path $filesFolder -ChildPath $logoImageName) -Force -ErrorAction Stop
 
             if ($writeFileList) {
                 $fileListXml = "<?xml version=`"1.0`" encoding=`"UTF-8`"?>`r`n<xml><file href=`"$logoImageName`" /></xml>"
-                Write-FileUtf8 -Path (Join-Path -Path $filesFolder -ChildPath 'filelist.xml') -Content $fileListXml
+                $null = Write-FileUtf8 -Path (Join-Path -Path $filesFolder -ChildPath 'filelist.xml') -Content $fileListXml
             }
             if ($writeColorScheme) {
                 $scheme = $colorSchemeXml
@@ -268,7 +268,7 @@
                     $scheme = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + "`r`n" +
                         '<a:clrMap xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>'
                 }
-                Write-FileUtf8 -Path (Join-Path -Path $filesFolder -ChildPath 'colorschememapping.xml') -Content $scheme
+                $null = Write-FileUtf8 -Path (Join-Path -Path $filesFolder -ChildPath 'colorschememapping.xml') -Content $scheme
             }
 
             $logoUrl = 'file:///' + ($localLogo -replace '\\', '/')
@@ -286,16 +286,16 @@
         }
 
         if ($generateHtml) {
-            Write-FileUtf8 -Path $htmFile -Content $html
+            $null = Write-FileUtf8 -Path $htmFile -Content $html
             $created.Add((Split-Path -Path $htmFile -Leaf)) | Out-Null
         }
         if ($generateText) {
-            Write-FileUtf8 -Path $txtFile -Content (Convert-HtmlToPlainText -Html $html)
+            $null = Write-FileUtf8 -Path $txtFile -Content (Convert-HtmlToPlainText -Html $html)
             $created.Add((Split-Path -Path $txtFile -Leaf)) | Out-Null
         }
         if ($generateRtf) {
             $rtf = Convert-HtmlToRtf -Html $html -CodePage $rtfCodePage -FontName $rtfFont -FontSizeHalfPoints $rtfFontSize
-            Write-FileRtf -Path $rtfFile -Content $rtf
+            $null = Write-FileRtf -Path $rtfFile -Content $rtf
             $created.Add((Split-Path -Path $rtfFile -Leaf)) | Out-Null
         }
 
@@ -308,12 +308,12 @@
             $targetHtm = Join-Path -Path $signaturesFolder -ChildPath "$signatureName.htm"
             $targetTxt = Join-Path -Path $signaturesFolder -ChildPath "$signatureName.txt"
             $targetRtf = Join-Path -Path $signaturesFolder -ChildPath "$signatureName.rtf"
-            if ($generateHtml -and (Test-Path -Path $htmFile)) { Copy-Item -Path $htmFile -Destination $targetHtm -Force -ErrorAction SilentlyContinue }
-            if ($generateText -and (Test-Path -Path $txtFile)) { Copy-Item -Path $txtFile -Destination $targetTxt -Force -ErrorAction SilentlyContinue }
-            if ($generateRtf -and (Test-Path -Path $rtfFile)) { Copy-Item -Path $rtfFile -Destination $targetRtf -Force -ErrorAction SilentlyContinue }
+            if ($generateHtml -and (Test-Path -Path $htmFile)) { $null = Copy-Item -Path $htmFile -Destination $targetHtm -Force -ErrorAction SilentlyContinue }
+            if ($generateText -and (Test-Path -Path $txtFile)) { $null = Copy-Item -Path $txtFile -Destination $targetTxt -Force -ErrorAction SilentlyContinue }
+            if ($generateRtf -and (Test-Path -Path $rtfFile)) { $null = Copy-Item -Path $rtfFile -Destination $targetRtf -Force -ErrorAction SilentlyContinue }
             if (Test-Path -Path $filesFolder -ErrorAction SilentlyContinue) {
                 $targetFiles = Join-Path -Path $signaturesFolder -ChildPath "${signatureName}_files"
-                Copy-Item -Path $filesFolder -Destination $targetFiles -Recurse -Force -ErrorAction SilentlyContinue
+                $null = Copy-Item -Path $filesFolder -Destination $targetFiles -Recurse -Force -ErrorAction SilentlyContinue
             }
             $created.Add("Signatures\$signatureName.*") | Out-Null
 

@@ -64,14 +64,14 @@ Describe 'Тестовый режим: отображение путей в пе
         $script:Separator = [System.IO.Path]::DirectorySeparatorChar
     }
 
-    It 'путь с буквой диска отображается в files\<буква>\...' {
+    It 'путь с буквой диска отображается в files\X\...' {
         $mapped = ConvertTo-WCTestModeSandboxPath -Path 'C:\Windows\System32\test.dll'
         $expected = Join-Path -Path (Join-Path -Path $script:Sandbox -ChildPath 'files') -ChildPath 'C'
         $expected = Join-Path -Path $expected -ChildPath (Join-Path -Path 'Windows' -ChildPath (Join-Path -Path 'System32' -ChildPath 'test.dll'))
         $mapped | Should -Be $expected
     }
 
-    It 'UNC-путь отображается в files\UNC\<сервер>\<шару>\...' {
+    It 'UNC-путь отображается в files\UNC\server\share\...' {
         $mapped = ConvertTo-WCTestModeSandboxPath -Path '\\fileserver01.test.local\Deploy$\Apps\app.msi'
         $mapped | Should -Match ([regex]::Escape("files$($script:Separator)UNC$($script:Separator)fileserver01.test.local$($script:Separator)Deploy`$"))
         $mapped | Should -Match "app\.msi$"

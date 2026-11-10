@@ -96,7 +96,7 @@
             if (-not (Test-Path -Path $resolvedPath)) {
                 $null = New-Item -Path $resolvedPath -ItemType File -Force -ErrorAction Stop
             }
-            Remove-ExpiredLogFiles -Path $resolvedPath -RetentionDays $retention -ErrorAction SilentlyContinue
+            $null = Remove-ExpiredLogFiles -Path $resolvedPath -RetentionDays $retention -ErrorAction SilentlyContinue
         } catch {
             $state.FileError = $_.Exception.Message
             $state.FilePath = ''

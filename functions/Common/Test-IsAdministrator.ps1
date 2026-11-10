@@ -15,7 +15,7 @@
     [OutputType([bool])]
     param()
 
-    if ($PSVersionTable.Platform -and $PSVersionTable.Platform -ne 'Win32NT') {
+    if ($PSVersionTable.ContainsKey('Platform') -and $PSVersionTable.Platform -and $PSVersionTable.Platform -ne 'Win32NT') {
         try {
             if ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Unix) {
                 $idResult = & id -u 2>$null

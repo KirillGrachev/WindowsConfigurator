@@ -1,4 +1,5 @@
 ﻿#Requires -Version 5.1
+Set-StrictMode -Version 2.0
 <#
 .SYNOPSIS
     Загрузчик функций проекта (dot-sourcing каталогов Common/Config/Steps/Menu).
@@ -17,6 +18,14 @@
 
 $script:WindowsConfiguratorFunctionsRoot = $PSScriptRoot
 $script:WindowsConfiguratorProjectRoot = Split-Path -Path $PSScriptRoot -Parent
+
+<#
+Глобальное состояние инициализируется явно: иначе чтение переменной до первого
+Set-* падает при Set-StrictMode и зависит от порядка тестов.
+#>
+$global:WindowsConfiguratorLogging = $null
+$global:WindowsConfiguratorTestMode = $null
+$global:WindowsConfiguratorBackup = $null
 
 $loadOrder = @('Common', 'Config', 'Steps', 'Menu')
 $loadedFiles = New-Object System.Collections.Generic.List[string]

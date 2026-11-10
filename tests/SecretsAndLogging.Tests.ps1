@@ -13,7 +13,7 @@
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath 'TestHelpers/ProjectLoader.ps1')
 
-    $script:RunningOnWindows = (-not $PSVersionTable.Platform) -or ($PSVersionTable.Platform -eq 'Win32NT')
+    $script:RunningOnWindows = (-not $PSVersionTable.ContainsKey('Platform')) -or ($PSVersionTable.Platform -eq 'Win32NT')
     $script:TestKeyPattern = 'TEST1-TEST2-TEST3-TEST4-TEST5'
     $script:RealKey = 'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE'
 }
