@@ -85,7 +85,8 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = $PSScriptRoot
 
 try {
-    . (Join-Path -Path $projectRoot -ChildPath 'functions/Load-ProjectFunctions.ps1') | Out-Null
+    $loaderPath = Join-Path -Path $projectRoot -ChildPath 'functions/Load-ProjectFunctions.ps1'
+    . $loaderPath -IncludeTestMode:$TestMode | Out-Null
 } catch {
     Write-Host "[FATAL] Не удалось загрузить функции проекта: $($_.Exception.Message)" -ForegroundColor Red
     exit 2

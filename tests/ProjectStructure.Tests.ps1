@@ -128,6 +128,16 @@ Describe 'Синтаксис и структура проекта' {
             $content | Should -Match ([regex]::Escape("`$global:$name = `$null"))
         }
     }
+
+    It 'Функции TestMode вынесены и загружаются только по флагу' {
+        $testModeDir = Get-ProjectFilePath -RelativePath 'functions/TestMode'
+        Test-Path -Path (Join-Path $testModeDir 'Set-WCTestMode.ps1') | Should -BeTrue
+        Test-Path -Path (Join-Path $testModeDir 'Initialize-WCTestModeFixtures.ps1') | Should -BeTrue
+        Test-Path -Path (Join-Path $testModeDir '..\Common\Set-WCTestMode.ps1') | Should -BeFalse
+        $loader = Get-ProjectFilePath -RelativePath 'functions/Load-ProjectFunctions.ps1'
+        $content = [System.IO.File]::ReadAllText($loader)
+        $content | Should -Match 'if \(\$IncludeTestMode\)'
+    }
 }
 
 Describe 'Кодировки и окончания строк' {

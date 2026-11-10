@@ -84,6 +84,10 @@
 
     $startedAt = [System.DateTime]::Now
 
+    if ($TestMode -and -not (Get-Command -Name 'Initialize-WCTestModeFixtures' -ErrorAction SilentlyContinue)) {
+        throw "Функции тестового режима не загружены. Загрузите functions/Load-ProjectFunctions.ps1 с -IncludeTestMode."
+    }
+
     <# --- 1. Конфигурация --- #>
     if ($null -eq $Config) {
         if (-not $ConfigPath) {
