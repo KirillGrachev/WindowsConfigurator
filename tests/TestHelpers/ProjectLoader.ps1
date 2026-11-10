@@ -22,7 +22,7 @@
 $script:TestsRoot = Split-Path -Path $PSScriptRoot -Parent
 $script:ProjectRoot = Split-Path -Path $script:TestsRoot -Parent
 
-. (Join-Path -Path $script:ProjectRoot -ChildPath 'functions/Load-ProjectFunctions.ps1') | Out-Null
+. (Join-Path -Path $script:ProjectRoot -ChildPath 'functions/Load-ProjectFunctions.ps1') -IncludeTestMode | Out-Null
 
 $script:ConfigPath = Join-Path -Path $script:ProjectRoot -ChildPath 'config/config.json'
 $script:SchemaPath = Join-Path -Path $script:ProjectRoot -ChildPath 'config/config.schema.json'

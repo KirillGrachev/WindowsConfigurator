@@ -1,20 +1,30 @@
 ﻿#Requires -Version 5.1
-Set-StrictMode -Version 2.0
 <#
 .SYNOPSIS
-    Загрузчик функций проекта (dot-sourcing каталогов Common/Config/Steps/Menu).
+    Загрузчик функций проекта (dot-sourcing каталогов Common/TestMode/Config/Steps/Menu).
 .DESCRIPTION
     Точка входа и тесты dot-source'ят ЭТОТ файл. Порядок загрузки:
-      Common -> Config -> Steps -> Menu, внутри каталога - по алфавиту.
-    Порядок не критичен (тела функций разрешают имена при вызове), но фиксирован
-    для воспроизводимости. Файл идемпотентен: повторная загрузка просто
-    переопределяет функции.
+      Common -> TestMode (только с -IncludeTestMode) -> Config -> Steps -> Menu,
+    внутри каталога - по алфавиту. Порядок не критичен (тела функций разрешают
+    имена при вызове), но фиксирован для воспроизводимости. Файл идемпотентен:
+    повторная загрузка просто переопределяет функции.
     Совместимость: Windows PowerShell 5.1 и PowerShell 7+ (Windows/Linux/macOS).
+.PARAMETER IncludeTestMode
+    Загрузить функции тестового режима из functions/TestMode. Нужен для
+    -TestMode и для тестов; обычный боевой запуск их не загружает.
 .OUTPUTS
     System.Collections.Hashtable - @{ ProjectRoot; LoadedFiles; LoadedFunctions }
 .EXAMPLE
     . "$PSScriptRoot\functions\Load-ProjectFunctions.ps1"
+.EXAMPLE
+    . "$PSScriptRoot\functions\Load-ProjectFunctions.ps1" -IncludeTestMode
 #>
+[CmdletBinding()]
+param(
+    [switch]$IncludeTestMode
+)
+
+Set-StrictMode -Version 2.0
 
 $script:WindowsConfiguratorFunctionsRoot = $PSScriptRoot
 $script:WindowsConfiguratorProjectRoot = Split-Path -Path $PSScriptRoot -Parent
@@ -27,7 +37,9 @@ $global:WindowsConfiguratorLogging = $null
 $global:WindowsConfiguratorTestMode = $null
 $global:WindowsConfiguratorBackup = $null
 
-$loadOrder = @('Common', 'Config', 'Steps', 'Menu')
+$loadOrder = @('Common')
+if ($IncludeTestMode) { $loadOrder += 'TestMode' }
+$loadOrder += @('Config', 'Steps', 'Menu')
 $loadedFiles = New-Object System.Collections.Generic.List[string]
 
 foreach ($subDirectory in $loadOrder) {
