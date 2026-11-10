@@ -245,7 +245,7 @@ Describe 'ConvertTo-RtfEscapedText' {
         (ConvertTo-RtfEscapedText -Text "a`tb") | Should -Be 'a\tab b'
     }
 
-    It 'управляющие символы (< 32) отбрасываются' {
+    It 'управляющие символы (меньше 32) отбрасываются' {
         (ConvertTo-RtfEscapedText -Text "a$([char]1)b") | Should -Be 'ab'
     }
 
@@ -278,7 +278,7 @@ Describe 'Convert-HtmlToRtf: честная конвертация (регрес
         $open | Should -Be $close
     }
 
-    It 'блочная структура превращается в \par, <br> - в \line' {
+    It 'блочная структура превращается в \par, br - в \line' {
         $rtf = Convert-HtmlToRtf -Html '<p>Первый</p><p>Второй<br>Третий</p>'
         ([regex]::Matches($rtf, '\\par')).Count | Should -BeGreaterOrEqual 3
         $rtf | Should -Match '\\line'
@@ -381,7 +381,7 @@ Describe 'ConvertFrom-PowerCfgPlans (регрессия: -like ''* '' был и�
         ($plans | Where-Object { $_.Active }).Name | Should -Be 'Экономия энергии'
     }
 
-    It 'форма "Схема питания (активная): <guid>" распознаётся' {
+    It 'форма "Схема питания (активная): GUID" распознаётся' {
         $plans = @(ConvertFrom-PowerCfgPlans -Lines $script:RussianActiveFirst)
         ($plans | Where-Object { $_.Active }).Guid | Should -Be '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
     }

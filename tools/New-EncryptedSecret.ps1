@@ -45,7 +45,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$runningOnWindows = (-not $PSVersionTable.Platform) -or ($PSVersionTable.Platform -eq 'Win32NT')
+$runningOnWindows = (-not $PSVersionTable.ContainsKey('Platform')) -or ($PSVersionTable.Platform -eq 'Win32NT')
 if (-not $runningOnWindows) {
     throw 'DPAPI доступен только в Windows. На других платформах используйте провайдеры env: или file:.'
 }

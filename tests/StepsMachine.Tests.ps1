@@ -189,7 +189,7 @@ Describe 'Шаг Activation: KMS-активация' {
 
 Describe 'Invoke-Slmgr: формирование командной строки' {
 
-    It 'аргументы собираются как cscript //Nologo <slmgr.vbs> <команда>' {
+    It 'аргументы собираются как cscript //Nologo slmgr.vbs и команда' {
         $captured = $null
         Mock Start-ProcessAndWait {
             $script:Captured = @{ FilePath = $FilePath; Arguments = @($Arguments) }

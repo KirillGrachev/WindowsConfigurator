@@ -119,6 +119,15 @@ Describe 'Синтаксис и структура проекта' {
         $content | Should -Not -Match 'openfiles'
         $content | Should -Not -Match '-Command\s+"&'
     }
+
+    It 'Загрузчик включает StrictMode и инициализирует глобальное состояние' {
+        $loader = Get-ProjectFilePath -RelativePath 'functions/Load-ProjectFunctions.ps1'
+        $content = [System.IO.File]::ReadAllText($loader)
+        $content | Should -Match 'Set-StrictMode -Version 2\.0'
+        foreach ($name in @('WindowsConfiguratorLogging', 'WindowsConfiguratorTestMode', 'WindowsConfiguratorBackup')) {
+            $content | Should -Match ([regex]::Escape("`$global:$name = `$null"))
+        }
+    }
 }
 
 Describe 'Кодировки и окончания строк' {
