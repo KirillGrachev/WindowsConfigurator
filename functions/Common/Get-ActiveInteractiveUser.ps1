@@ -8,6 +8,7 @@
         определение всегда падало в catch и возвращало $null. Корректный способ -
         Invoke-CimMethod GetOwner для Win32_Process. Цепочка фолбэков:
           1. владелец explorer.exe в сессии != 0 (CIM Win32_Process + GetOwner);
+             при нескольких сессиях предпочитается консольная, иначе меньший SessionId;
           2. Win32_ComputerSystem.UserName;
           3. $null (вызывающий код требует -UserName явно).
     .EXAMPLE
@@ -31,20 +32,47 @@
         $explorer = @(Get-CimInstance -ClassName Win32_Process -Filter "Name='explorer.exe'" -ErrorAction Stop |
                 Where-Object { [int]$_.SessionId -ne 0 })
 
-        foreach ($process in $explorer) {
+        $candidates = New-Object System.Collections.Generic.List[object]
+        foreach ($process in @($explorer | Sort-Object -Property SessionId, ProcessId)) {
             try {
                 $owner = Invoke-CimMethod -InputObject $process -MethodName GetOwner -ErrorAction Stop
                 if ($owner -and $owner.User) {
-                    Write-Log -Message "Активный пользователь определён через владельца explorer.exe: $($owner.User)" -Level Debug
-                    return [string]$owner.User
+                    $candidates.Add([PSCustomObject]@{
+                            User      = [string]$owner.User
+                            SessionId = [int]$process.SessionId
+                        }) | Out-Null
                 }
             } catch {
                 Write-Log -Message "GetOwner для PID $($process.ProcessId) не удался: $($_.Exception.Message)" -Level Debug
             }
         }
 
-        $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue |
-            Select-Object -First 1
+        <# Несколько сессий: предпочитаем консольную, иначе - меньший SessionId. #>
+        $computerSystem = $null
+        if ($candidates.Count -ne 1) {
+            $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+        }
+
+        if ($candidates.Count -gt 0) {
+            if ($candidates.Count -eq 1) {
+                Write-Log -Message "Активный пользователь определён через владельца explorer.exe: $($candidates[0].User)" -Level Debug
+                return [string]$candidates[0].User
+            }
+
+            if ($computerSystem -and $computerSystem.UserName) {
+                $consoleName = [string]([string]$computerSystem.UserName -split '\\')[-1]
+                $consoleCandidate = $candidates | Where-Object { $_.User -eq $consoleName } | Select-Object -First 1
+                if ($consoleCandidate) {
+                    Write-Log -Message "Активный пользователь определён по консольной сессии: $($consoleCandidate.User)" -Level Debug
+                    return [string]$consoleCandidate.User
+                }
+            }
+
+            Write-Log -Message "Несколько интерактивных сессий - выбран пользователь $($candidates[0].User) (SessionId $($candidates[0].SessionId))." -Level Debug
+            return [string]$candidates[0].User
+        }
+
         if ($computerSystem -and $computerSystem.UserName) {
             $name = ([string]$computerSystem.UserName -split '\\')[-1]
             Write-Log -Message "Пользователь определён через Win32_ComputerSystem: $name" -Level Debug
