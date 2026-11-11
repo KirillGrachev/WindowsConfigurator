@@ -22,6 +22,18 @@ The check:
 The key and the temporary backup directory are removed in `finally`. A
 successful run prints `PASS registry backup/restore`.
 
+## UNC configuration import
+
+```powershell
+# Run from an elevated Windows PowerShell 5.1 session
+.\tests\integration\UncConfiguration.Integration.ps1
+```
+
+The check creates a temporary SMB share, copies `config.json` and
+`config.schema.json` into it, imports the configuration through
+`\\<computer>\<share>\config.json`, verifies `Meta.Version`, and removes the
+share in `finally`. A successful run prints `PASS UNC configuration import`.
+
 ## Adding checks
 
 Keep each check self-contained, use a unique key or directory, clean up in
