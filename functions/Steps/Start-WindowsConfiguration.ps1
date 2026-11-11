@@ -88,6 +88,8 @@
         throw "Функции тестового режима не загружены. Загрузите functions/Load-ProjectFunctions.ps1 с -IncludeTestMode."
     }
 
+    $null = Initialize-WCRunCache
+
     <# --- 1. Конфигурация --- #>
     if ($null -eq $Config) {
         if (-not $ConfigPath) {
@@ -304,5 +306,6 @@
         $null = Set-WCTestMode -Enabled:$false
     }
 
+    Clear-WCRunCache
     return $summary
 }
