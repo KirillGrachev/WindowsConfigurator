@@ -33,10 +33,12 @@ $script:WindowsConfiguratorProjectRoot = Split-Path -Path $PSScriptRoot -Parent
 Глобальное состояние инициализируется явно: иначе чтение переменной до первого
 Set-* падает при Set-StrictMode и зависит от порядка тестов.
 #>
-$global:WindowsConfiguratorLogging = $null
-$global:WindowsConfiguratorTestMode = $null
-$global:WindowsConfiguratorBackup = $null
-$global:WindowsConfiguratorRunCache = $null
+$global:WindowsConfiguratorState = @{
+    Logging  = $null
+    TestMode = $null
+    Backup   = $null
+    RunCache = $null
+}
 
 $loadOrder = @('Common')
 if ($IncludeTestMode) { $loadOrder += 'TestMode' }

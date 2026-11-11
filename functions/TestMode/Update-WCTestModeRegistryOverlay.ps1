@@ -25,7 +25,7 @@
         [string[]]$Arguments
     )
 
-    $state = $global:WindowsConfiguratorTestMode
+    $state = $global:WindowsConfiguratorState.TestMode
     if ($null -eq $state -or -not $state.Enabled) { return $false }
 
     if ($Arguments.Count -lt 2) {

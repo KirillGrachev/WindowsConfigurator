@@ -3,7 +3,7 @@
     .SYNOPSIS
         Включает или выключает тестовый режим конфигуратора (симуляция системных операций).
     .DESCRIPTION
-        При включении создаёт состояние $global:WindowsConfiguratorTestMode и
+        При включении создаёт состояние $global:WindowsConfiguratorState.TestMode и
         песочницу - каталог, в который попадают все 'системные' операции:
           files\   - зеркало файловой системы (см. ConvertTo-WCTestModeSandboxPath);
           profile\ - 'профиль' тестового пользователя (Desktop и др.);
@@ -58,11 +58,11 @@
     )
 
     if (-not $Enabled) {
-        $previous = $global:WindowsConfiguratorTestMode
+        $previous = $global:WindowsConfiguratorState.TestMode
         if ($previous) {
             Write-Log -Message "Тестовый режим выключен. Песочница: $($previous.SandboxPath)" -Level Info
         }
-        $global:WindowsConfiguratorTestMode = $null
+        $global:WindowsConfiguratorState.TestMode = $null
         return $null
     }
 
@@ -102,7 +102,7 @@
         Journal                 = (New-Object System.Collections.Generic.List[object])
         CurrentStep             = ''
     }
-    $global:WindowsConfiguratorTestMode = $state
+    $global:WindowsConfiguratorState.TestMode = $state
 
     $readmePath = Join-Path -Path $root -ChildPath 'README.txt'
     if (-not (Test-Path -Path $readmePath)) {

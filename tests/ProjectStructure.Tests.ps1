@@ -124,8 +124,9 @@ Describe 'Синтаксис и структура проекта' {
         $loader = Get-ProjectFilePath -RelativePath 'functions/Load-ProjectFunctions.ps1'
         $content = [System.IO.File]::ReadAllText($loader)
         $content | Should -Match 'Set-StrictMode -Version 2\.0'
-        foreach ($name in @('WindowsConfiguratorLogging', 'WindowsConfiguratorTestMode', 'WindowsConfiguratorBackup', 'WindowsConfiguratorRunCache')) {
-            $content | Should -Match ([regex]::Escape("`$global:$name = `$null"))
+        $content | Should -Match '\$global:WindowsConfiguratorState = @\{'
+        foreach ($name in @('Logging', 'TestMode', 'Backup', 'RunCache')) {
+            $content | Should -Match ("$name\s+=\s+" + [regex]::Escape('$null'))
         }
     }
 

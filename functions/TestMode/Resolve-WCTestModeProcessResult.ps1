@@ -39,7 +39,7 @@
     $standardOutput = ''
     $standardError = ''
     $simulated = $false
-    $state = $global:WindowsConfiguratorTestMode
+    $state = $global:WindowsConfiguratorState.TestMode
 
     if ($null -ne $state -and $state.Enabled) {
         $commandLine = "$FilePath $ArgumentString".Trim()

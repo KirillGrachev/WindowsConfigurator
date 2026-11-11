@@ -28,7 +28,7 @@
         [bool]$Provisioned = $false
     )
 
-    $state = $global:WindowsConfiguratorTestMode
+    $state = $global:WindowsConfiguratorState.TestMode
     if ($null -eq $state -or -not $state.Enabled) { return @() }
 
     $source = if ($Provisioned) { $state.FakeProvisionedPackages } else { $state.FakeAppxPackages }

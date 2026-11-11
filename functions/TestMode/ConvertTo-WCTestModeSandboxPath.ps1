@@ -27,7 +27,7 @@
         [string]$Path
     )
 
-    $state = $global:WindowsConfiguratorTestMode
+    $state = $global:WindowsConfiguratorState.TestMode
     if ($null -eq $state -or -not $state.Enabled -or [string]::IsNullOrWhiteSpace($Path)) { return $Path }
 
     $root = [string]$state.SandboxPath

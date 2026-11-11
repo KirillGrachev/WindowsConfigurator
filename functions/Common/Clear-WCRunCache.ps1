@@ -6,5 +6,5 @@
     [CmdletBinding()]
     param()
 
-    $global:WindowsConfiguratorRunCache = $null
+    $global:WindowsConfiguratorState.RunCache = $null
 }
