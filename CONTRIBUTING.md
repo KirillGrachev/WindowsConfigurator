@@ -34,6 +34,22 @@ Requirements:
   and the tests.
 - Do not add `Write-Host` to testable functions; use `Write-Log`.
 
+## Versioning and changelog
+
+The project uses Semantic Versioning:
+
+- **MAJOR** - incompatible configuration or behavioral change;
+- **MINOR** - a new step, configuration key or user-facing capability;
+- **PATCH** - fixes, documentation and internal refactoring.
+
+For every release:
+
+1. Add an entry to `CHANGELOG.md` under the new version.
+2. Update `Meta.Version` in `config/config.json` and the example in
+   `docs/configuration.md`.
+3. Merge through a pull request and tag the merge commit as `vX.Y.Z`.
+4. Publish the release ZIP and `SHA256SUMS`.
+
 ## Documentation
 
 Reflect user-facing changes in `README.md` and `docs/`. Screenshots belong in
