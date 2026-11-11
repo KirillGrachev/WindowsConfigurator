@@ -14,7 +14,7 @@
 ## Checks
 
 - [ ] `.\tools\Set-ProjectEncoding.ps1 -Check` passes
-- [ ] `.\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 80 -WithAnalyzer` passes
+- [ ] `.\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 85 -WithAnalyzer` passes
 - [ ] `.\Configure-Windows.ps1 -ValidateConfig` passes
 - [ ] The diff contains no secrets, production configurations or corporate paths
 - [ ] Documentation is updated if behaviour or configuration changed

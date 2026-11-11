@@ -10,7 +10,7 @@ changes.
 
 [![tests](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/tests.yml/badge.svg)](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/codeql.yml/badge.svg)](https://github.com/KirillGrachev/WindowsConfigurator/actions/workflows/codeql.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
 
 ## Features
 
@@ -66,11 +66,11 @@ or invalid configuration.
 
 Main menu (TestMode, no administrator rights):
 
-![Main menu](docs/screenshots/main-menu.png)
+![Main menu](screenshots/main-menu.png)
 
 Application installation submenu; `X`, `Q` or `Enter` returns to the main menu:
 
-![Installation submenu](docs/screenshots/install-submenu.png)
+![Installation submenu](screenshots/install-submenu.png)
 
 ## Configuration
 
@@ -101,7 +101,7 @@ The shipped `config/config.json` is a **test** configuration with placeholders
 | `Menu` | Interactive menu title and items |
 | `WindowsVersions` | Windows version labels by build number |
 
-See [docs/configuration.md](docs/configuration.md) for details.
+See [configuration.md](configuration.md) for details.
 
 ### Secrets
 
@@ -130,7 +130,7 @@ In TestMode:
 - Files are written to `%TEMP%\WC-TestMode-*`;
 - The `testmode-report.json` report is created with the operation journal.
 
-See [docs/test-mode.md](docs/test-mode.md) for details.
+See [test-mode.md](test-mode.md) for details.
 
 ## Backup and rollback
 
@@ -169,19 +169,22 @@ compatibility verbs. The module exports the normal functions only; use
 
 ```text
 Configure-Windows.ps1        entry point and exit codes
+WindowsConfigurator.psd1    module manifest
 Run_Windows11Setup.cmd       launcher: elevation + Windows PowerShell 5.1 + interactive menu
 config/config.json           configuration (test data in the repository)
 config/config.schema.json    JSON Schema with defaults and rules
 functions/                   steps, menu and shared functions
+functions/TestMode/          TestMode implementation (opt-in)
 tools/                       encoding checks, secrets, test runner
 tests/                       Pester tests and test helpers
-docs/                        documentation and screenshots
+tests/integration/           elevated real-Windows checks
+docs/                        all markdown, documentation and screenshots
 ```
 
 ## Checks and security
 
 - **CI** — Windows PowerShell 5.1 / PowerShell 7, Pester 5.7.1 / 6.2.0,
-  Linux and Windows, with an 80% coverage threshold.
+  Linux and Windows, with an 85% coverage threshold and a Pester lock.
 - **PSScriptAnalyzer** — 0 findings with the `ScriptAnalyzerSettings.psd1` profile.
 - **CodeQL** — GitHub Actions analysis.
 - **Static checks** — encodings, CRLF/BOM, schema validation and no corporate
@@ -203,4 +206,4 @@ Contribution rules — [CONTRIBUTING.md](CONTRIBUTING.md); vulnerabilities —
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](../LICENSE).

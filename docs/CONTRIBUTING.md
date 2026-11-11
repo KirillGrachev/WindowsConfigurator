@@ -5,11 +5,16 @@ Thanks for your interest in the project. These are the minimum rules enforced by
 ## Branches and commits
 
 - The main branch is `main`; make changes in a separate branch and open a pull request.
+- `main` is protected: pull request required, linear history, force-pushes and
+  deletions disabled. Delete the merged branch after the pull request.
 - Use [Conventional Commits](https://www.conventionalcommits.org/):
   `feat:`, `fix:`, `docs:`, `test:`, `ci:`, `build:`, `perf:`, `refactor:`, `chore:`.
-- Commits and tags must be signed (GitHub shows them as Verified).
+- Commits must be signed and Verified on GitHub; release tags are signed with
+  the release key.
 
 ## Before a pull request
+
+Run from the repository root:
 
 ```powershell
 .\tools\Set-ProjectEncoding.ps1
@@ -48,12 +53,12 @@ The project uses Semantic Versioning:
 For every release:
 
 1. Add an entry to `CHANGELOG.md` under the new version.
-2. Update `Meta.Version` in `config/config.json` and the example in
-   `docs/configuration.md`.
+2. Update `Meta.Version` in `config/config.json`, `ModuleVersion` in
+   `WindowsConfigurator.psd1`, and the example in `configuration.md`.
 3. Merge through a pull request and tag the merge commit as `vX.Y.Z`.
 4. Publish the release ZIP and `SHA256SUMS`.
 
 ## Documentation
 
-Reflect user-facing changes in `README.md` and `docs/`. Screenshots belong in
-`docs/screenshots/` (PNG, no private data).
+Reflect user-facing changes in `README.md` and the other files in this
+directory. Screenshots belong in `screenshots/` (PNG, no private data).

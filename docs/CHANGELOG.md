@@ -4,6 +4,20 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.17] - 2026-11-11
+
+### Changed
+
+- All Markdown files consolidated under `docs/`; GitHub still discovers the
+  README, CONTRIBUTING, SECURITY and pull-request template from that directory.
+- Release packaging copies the root README/SECURITY from `docs/` into the ZIP.
+
+### Security
+
+- Enabled GitHub Private Vulnerability Reporting.
+- Documented that `main` is protected: pull request, linear history, no
+  force-push or deletion.
+
 ## [2.1.16] - 2026-11-11
 
 ### Fixed

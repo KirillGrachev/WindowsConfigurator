@@ -32,7 +32,7 @@
 
     if ($Config.ContainsKey('Meta') -and $Config.Meta -is [System.Collections.IDictionary]) {
         if ($Config.Meta.ContainsKey('IsTestData') -and $Config.Meta.IsTestData) {
-            $warnings.Add('В конфигурации используются ТЕСТОВЫЕ данные (Meta.IsTestData = true). Замените их на реальные корпоративные значения - см. README.md.')
+            $warnings.Add('В конфигурации используются ТЕСТОВЫЕ данные (Meta.IsTestData = true). Замените их на реальные корпоративные значения - см. docs/README.md.')
         }
         if ($Config.Meta.ContainsKey('Environment') -and [string]$Config.Meta.Environment -eq 'TEST') {
             $warnings.Add("Meta.Environment = 'TEST': конфигурация не предназначена для боевого применения.")
