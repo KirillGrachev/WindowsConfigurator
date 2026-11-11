@@ -119,7 +119,7 @@
                 #>
                 $attemptResult = Invoke-InstallerAttempt -App $app -AppType $appType -InstallerPath $installerPath `
                     -AppName $appName -Tokens $tokens -Config $Config -MsiExec $msiExec `
-                    -CmdInterpreter $cmdInterpreter -NetFx3Template $netFx3Template -WhatIf:$whatIf
+                    -CmdInterpreter $cmdInterpreter -NetFx3Template $netFx3Template -WhatIfMode:$whatIf
                 $exitCode = $attemptResult.ExitCode
                 if ($attemptResult.WhatIf) {
                     $isSuccess = $true
