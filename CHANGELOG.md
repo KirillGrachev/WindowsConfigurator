@@ -4,6 +4,19 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.12] - 2026-11-11
+
+### Added
+
+- `WindowsConfigurator.psd1/psm1`: the project can be imported as a module
+  instead of dot-sourcing the loader.
+
+### Changed
+
+- Outlook signature profile installation (file copies, default-signature
+  registry writes and hive unload) extracted into
+  `Install-OutlookSignatureToProfile`.
+
 ## [2.1.11] - 2026-11-11
 
 ### Changed
