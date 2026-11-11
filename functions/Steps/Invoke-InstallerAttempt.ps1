@@ -24,7 +24,7 @@
         Путь к cmd.exe.
     .PARAMETER NetFx3Template
         Шаблон источника DISM.
-    .PARAMETER WhatIf
+    .PARAMETER WhatIfMode
         Только показать команду.
     .OUTPUTS
         PSCustomObject - @{ ExitCode; WhatIf }
@@ -57,7 +57,7 @@
         [AllowEmptyString()]
         [string]$NetFx3Template = '',
 
-        [switch]$WhatIf
+        [switch]$WhatIfMode
     )
 
     if ($AppType -eq 'MSI') {
@@ -68,7 +68,7 @@
 
         $transform = if ($App.ContainsKey('TransformPath')) { [string]$App.TransformPath } else { '' }
         if ($transform) {
-            if ($transform -match '^\\\\' -and -not $WhatIf -and -not (Test-WCTestMode) -and -not (Test-Path -Path $transform -ErrorAction SilentlyContinue)) {
+            if ($transform -match '^\\\\' -and -not $WhatIfMode -and -not (Test-WCTestMode) -and -not (Test-Path -Path $transform -ErrorAction SilentlyContinue)) {
                 throw "Файл трансформации (MST) недоступен: $transform"
             }
             $arguments.Add("TRANSFORMS=`"$transform`"") | Out-Null
@@ -81,7 +81,7 @@
             Write-Log -Message "В аргументах '$AppName' остались нераскрытые токены: $($expanded.UnresolvedTokens -join ', ')" -Level Warn
         }
 
-        if ($WhatIf) {
+        if ($WhatIfMode) {
             Write-Log -Message "WHAT IF: $MsiExec $(ConvertTo-ProcessArgumentString -Arguments @($arguments.ToArray()))" -Level Info
             return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true }
         }
@@ -97,7 +97,7 @@
             Write-Log -Message "В аргументах '$AppName' остались нераскрытые токены: $($expanded.UnresolvedTokens -join ', ')" -Level Warn
         }
 
-        if ($WhatIf) {
+        if ($WhatIfMode) {
             Write-Log -Message "WHAT IF: $InstallerPath $(ConvertTo-ProcessArgumentString -Arguments $expanded.Arguments)" -Level Info
             return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true }
         }
@@ -107,7 +107,7 @@
     }
 
     if ($AppType -eq 'Batch') {
-        if ($WhatIf) {
+        if ($WhatIfMode) {
             Write-Log -Message "WHAT IF: $CmdInterpreter /c `"$InstallerPath`"" -Level Info
             return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true }
         }
@@ -143,7 +143,7 @@
         $limitAccess = $true
         if ($App.ContainsKey('LimitAccess')) { $limitAccess = [bool]$App.LimitAccess }
 
-        if ($WhatIf) {
+        if ($WhatIfMode) {
             Write-Log -Message "WHAT IF: DISM /Online /Enable-Feature /FeatureName:$featureName /Source:$sourcePath" -Level Info
             return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true }
         }
