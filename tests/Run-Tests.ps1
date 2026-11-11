@@ -206,6 +206,23 @@ if ($needRestart -or ($explicitVersionRequested -and -not $env:WC_PESTER_CHILD))
     exit $childExit
 }
 
+$lockPath = Join-Path -Path $testsRoot -ChildPath 'Pester.lock.json'
+if (Test-Path -LiteralPath $lockPath) {
+    $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
+    $lockKey = $pester.Version.ToString()
+    $lockedHash = $lock.PSObject.Properties[$lockKey]
+    if (-not $lockedHash) {
+        Write-Host "[FATAL] Pester $lockKey отсутствует в Pester.lock.json." -ForegroundColor Red
+        exit 2
+    }
+    $actualHash = (Get-FileHash -LiteralPath (Join-Path -Path $pester.Path -ChildPath 'Pester.psd1') -Algorithm SHA256).Hash
+    if ($actualHash -ne [string]$lockedHash.Value) {
+        Write-Host "[FATAL] Pester $lockKey не совпадает с Pester.lock.json (ожидался $($lockedHash.Value), получен $actualHash)." -ForegroundColor Red
+        exit 2
+    }
+    Write-Host "[OK] Pester $lockKey совпадает с lock-файлом." -ForegroundColor DarkGray
+}
+
 $env:PSModulePath = $ModuleCachePath + [System.IO.Path]::PathSeparator + $env:PSModulePath
 Import-Module -Name (Join-Path -Path $pester.Path -ChildPath 'Pester.psd1') -Force -ErrorAction Stop
 $pesterVersion = (Get-Module -Name Pester).Version
