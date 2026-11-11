@@ -1,8 +1,9 @@
 # Integration checks
 
-These checks exercise the configurator against a real Windows registry. They
-are intentionally not part of the Pester suite or CI because they require
-administrator rights and modify `HKLM`.
+These checks exercise the configurator against real Windows features (the
+registry and a temporary SMB share). They are intentionally not part of the
+Pester suite or CI because they require administrator rights and modify `HKLM`
+or create a share.
 
 ## Registry backup and restore
 
