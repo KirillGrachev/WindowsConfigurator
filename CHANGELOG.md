@@ -4,6 +4,19 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.14] - 2026-11-11
+
+### Added
+
+- Run-scoped cache for the active user and Windows build number; initialized
+  and cleared by `Start-WindowsConfiguration`.
+
+### Changed
+
+- Appx WhatIf message now reports the planned package counts.
+- Coverage threshold raised to 85%; Azure Pipelines is manual; Pester manifests
+  are verified against `tests/Pester.lock.json`.
+
 ## [2.1.13] - 2026-11-11
 
 ### Changed
