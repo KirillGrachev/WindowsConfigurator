@@ -129,6 +129,18 @@ Describe 'Синтаксис и структура проекта' {
         }
     }
 
+    It 'Модуль WindowsConfigurator импортируется и экспортирует функции' {
+        $manifestPath = Get-ProjectFilePath -RelativePath 'WindowsConfigurator.psd1'
+        $manifest = Import-PowerShellDataFile -Path $manifestPath
+        $manifest.RootModule | Should -Be 'WindowsConfigurator.psm1'
+        $manifest.ModuleVersion | Should -Not -BeNullOrEmpty
+
+        $hostExe = (Get-Process -Id $PID).Path
+        $code = "Import-Module '$manifestPath' -Force -DisableNameChecking; [bool](Get-Command Test-JsonSchema -ErrorAction SilentlyContinue)"
+        $output = & $hostExe -NoProfile -Command $code
+        ($output -join ' ') | Should -Match 'True'
+    }
+
     It 'Функции TestMode вынесены и загружаются только по флагу' {
         $testModeDir = Get-ProjectFilePath -RelativePath 'functions/TestMode'
         Test-Path -Path (Join-Path $testModeDir 'Set-WCTestMode.ps1') | Should -BeTrue
