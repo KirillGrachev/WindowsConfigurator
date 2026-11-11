@@ -21,7 +21,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.12",
+  "Version": "2.1.13",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
