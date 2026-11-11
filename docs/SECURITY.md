@@ -45,4 +45,5 @@ real values.
 - PSScriptAnalyzer with the project profile.
 - Pester tests on Windows PowerShell 5.1 and PowerShell 7 (Linux and Windows).
 - CodeQL analysis for GitHub Actions.
-- Signed commits and tags; release archives include `SHA256SUMS`.
+- Signed commits (Verified on GitHub); release tags are signed locally, and
+  release archives include `SHA256SUMS`.

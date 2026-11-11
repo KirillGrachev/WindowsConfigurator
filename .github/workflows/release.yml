@@ -94,8 +94,10 @@ jobs:
           $stage = "artifacts/WindowsConfigurator-$version"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
 
-          Copy-Item ./Configure-Windows.ps1, ./Run_Windows11Setup.cmd, ./LICENSE, ./README.md, ./SECURITY.md -Destination $stage -Force
+          Copy-Item ./Configure-Windows.ps1, ./Run_Windows11Setup.cmd, ./LICENSE -Destination $stage -Force
           Copy-Item ./config, ./functions, ./tools, ./docs -Destination $stage -Recurse -Force
+          Copy-Item ./docs/README.md -Destination (Join-Path $stage 'README.md') -Force
+          Copy-Item ./docs/SECURITY.md -Destination (Join-Path $stage 'SECURITY.md') -Force
 
           $zip = "artifacts/WindowsConfigurator-$version.zip"
           if (Test-Path $zip) { Remove-Item $zip -Force }
