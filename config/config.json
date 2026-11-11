@@ -1,12 +1,12 @@
 {
   "$schema": "./config.schema.json",
   "Meta": {
-    "Version": "2.1.8",
+    "Version": "2.1.9",
     "IsTestData": true,
     "Environment": "TEST",
     "CompanyName": "Test Company LLC",
     "Maintainer": "it-support@test.local",
-    "Description": "ТЕСТОВАЯ конфигурация WindowsConfigurator. Все значения ниже - заглушки. Замените их на реальные корпоративные данные (список - в README.md, раздел 'Конфигурация')."
+    "Description": "Test configuration for WindowsConfigurator. All values are placeholders. Replace them with real corporate values; see docs/configuration.md."
   },
   "General": {
     "DefaultSteps": [

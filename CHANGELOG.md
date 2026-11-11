@@ -1,0 +1,109 @@
+# Changelog
+
+All notable changes to WindowsConfigurator are documented here. The format is
+based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
+project follows [Semantic Versioning](https://semver.org/).
+
+## [2.1.9] - 2026-11-11
+
+### Added
+
+- Opt-in real-Windows integration check for registry backup and restore
+  (`tests/integration/RegistryBackup.Integration.ps1`).
+- Multi-session active-user resolution: the console session wins when several
+  interactive sessions exist, otherwise the lowest `SessionId` is used.
+
+### Changed
+
+- `Meta.Description` in the sample configuration now points to
+  `docs/configuration.md` instead of the removed Russian README section.
+- Added this changelog and a versioning policy to `CONTRIBUTING.md`.
+
+### Fixed
+
+- Active-user detection no longer depends on the order returned by
+  `Get-CimInstance`.
+
+## [2.1.8] - 2026-11-11
+
+### Changed
+
+- TestMode implementation files moved to `functions/TestMode` and loaded only
+  with `-IncludeTestMode`; a normal run keeps only `Test-WCTestMode`.
+- `Start-WindowsConfiguration -TestMode` without the loader flag now fails with
+  a clear message.
+
+## [2.1.7] - 2026-11-11
+
+### Changed
+
+- `Set-StrictMode -Version 2.0` is enabled in the loader; the three global
+  state variables are initialized explicitly.
+- Several pipeline output leaks were fixed (`Copy-Item`,
+  `Write-FileUtf8`, `Write-FileRtf`, `Remove-ExpiredLogFiles`).
+- PowerShell 5.1 compatibility: `$PSVersionTable.Platform` is read through
+  `ContainsKey('Platform')`.
+
+## [2.1.6] - 2026-11-11
+
+### Fixed
+
+- `Initialize-WCBackup` declares the actual `OrderedDictionary` output type,
+  fixing the CI PSScriptAnalyzer failure.
+
+## [2.1.5] - 2026-11-11
+
+### Added
+
+- Registry backup session for real runs: keys are exported before the first
+  change, created keys are recorded, and `tools/Restore-Backup.ps1` restores or
+  removes them.
+- `-NoBackup` switch.
+
+## [2.1.4] - 2026-11-11
+
+### Fixed
+
+- Folder redirection moves items one by one, skips existing names, records
+  conflicts and checks free space before moving.
+- `InstallPath` is validated as a directory; ambiguous wildcard matches are
+  treated as not installed.
+
+## [2.1.3] - 2026-11-11
+
+### Added
+
+- Power-plan selection by GUID (display name remains a fallback).
+- Launcher hardening: `fltmc` elevation check, `-File` argument passing,
+  language-independent active-session marker.
+
+### Security
+
+- KMS key is masked in Debug/WhatIf/failure logs.
+- CI actions are pinned by SHA and corporate patterns come from the
+  `WC_FORBIDDEN_PATTERNS` repository variable.
+
+### Fixed
+
+- `Write-Log` no longer writes Error/Fatal to the error stream.
+
+## [2.1.2] - 2026-11-10
+
+### Changed
+
+- English documentation, restored application screenshots, sample test
+  configuration, and removal of corporate identifiers from tests and docs.
+
+## [2.1.1] - 2026-11-10
+
+### Fixed
+
+- Windows PowerShell 5.1 compatibility in the launcher and configuration
+  loading.
+
+## [2.1.0] - 2026-11-10
+
+### Added
+
+- Initial hardened baseline: schema validation, TestMode, Pester suite,
+  CI/CodeQL workflows and release packaging.
