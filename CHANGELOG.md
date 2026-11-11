@@ -4,6 +4,14 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.11] - 2026-11-11
+
+### Changed
+
+- Installer type branches, argument expansion and WhatIf logging extracted from
+  `Install-RequiredApplications` into `Invoke-InstallerAttempt`; retries,
+  post-install, file copies and reporting stay in the step.
+
 ## [2.1.10] - 2026-11-11
 
 ### Added
