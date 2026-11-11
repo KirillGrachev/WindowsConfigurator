@@ -18,6 +18,9 @@
 
     if (Test-WCTestMode) { return [int](Get-WCTestModeState).FakeBuildNumber }
 
+    $cached = Get-WCRunCache -Key 'WindowsBuildNumber'
+    if ($null -ne $cached) { return [int]$cached }
+
     $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
     if ($null -eq $os) { throw 'Не удалось получить Win32_OperatingSystem.' }
 
@@ -26,5 +29,6 @@
         throw "Не удалось разобрать номер сборки: '$($os.BuildNumber)'."
     }
 
+    Add-WCRunCacheValue -Key 'WindowsBuildNumber' -Value $build
     return $build
 }

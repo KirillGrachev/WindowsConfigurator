@@ -36,6 +36,7 @@ Set-* падает при Set-StrictMode и зависит от порядка �
 $global:WindowsConfiguratorLogging = $null
 $global:WindowsConfiguratorTestMode = $null
 $global:WindowsConfiguratorBackup = $null
+$global:WindowsConfiguratorRunCache = $null
 
 $loadOrder = @('Common')
 if ($IncludeTestMode) { $loadOrder += 'TestMode' }

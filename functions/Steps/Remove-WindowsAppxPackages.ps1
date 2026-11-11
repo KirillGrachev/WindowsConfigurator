@@ -189,7 +189,9 @@
     }
 
     if ($whatIf) {
-        return New-StepResult -Step $stepName -Status 'WhatIf' -Message 'Удаление приложений не выполнялось (режим WhatIf).' -Started $started -Data $data
+        $planned = $removedPackages.Count + $removedProvisioned.Count
+        $message = "Режим WhatIf: будет удалено пакетов $planned (Appx: $($removedPackages.Count), provisioned: $($removedProvisioned.Count)). Удаление не выполнялось."
+        return New-StepResult -Step $stepName -Status 'WhatIf' -Message $message -Started $started -Data $data
     }
 
     $status = if ($problems.Count -gt 0 -and $removedPackages.Count -eq 0 -and $removedProvisioned.Count -eq 0 -and $legacyResults.Count -eq 0) { 'Failed' } else { 'Success' }

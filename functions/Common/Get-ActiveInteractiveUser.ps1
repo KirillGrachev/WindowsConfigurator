@@ -26,6 +26,12 @@
         return $fakeUser
     }
 
+    $cachedUser = Get-WCRunCache -Key 'ActiveUser'
+    if ($cachedUser) {
+        Write-Log -Message "Активный пользователь из кэша запуска: $cachedUser" -Level Debug
+        return [string]$cachedUser
+    }
+
     Write-Log -Message 'Определение активного интерактивного пользователя...' -Level Debug
 
     try {
@@ -57,7 +63,9 @@
         if ($candidates.Count -gt 0) {
             if ($candidates.Count -eq 1) {
                 Write-Log -Message "Активный пользователь определён через владельца explorer.exe: $($candidates[0].User)" -Level Debug
-                return [string]$candidates[0].User
+                $resolved = [string]$candidates[0].User
+                Add-WCRunCacheValue -Key 'ActiveUser' -Value $resolved
+                return $resolved
             }
 
             if ($computerSystem -and $computerSystem.UserName) {
@@ -65,17 +73,22 @@
                 $consoleCandidate = $candidates | Where-Object { $_.User -eq $consoleName } | Select-Object -First 1
                 if ($consoleCandidate) {
                     Write-Log -Message "Активный пользователь определён по консольной сессии: $($consoleCandidate.User)" -Level Debug
-                    return [string]$consoleCandidate.User
+                    $resolved = [string]$consoleCandidate.User
+                    Add-WCRunCacheValue -Key 'ActiveUser' -Value $resolved
+                    return $resolved
                 }
             }
 
             Write-Log -Message "Несколько интерактивных сессий - выбран пользователь $($candidates[0].User) (SessionId $($candidates[0].SessionId))." -Level Debug
-            return [string]$candidates[0].User
+            $resolved = [string]$candidates[0].User
+            Add-WCRunCacheValue -Key 'ActiveUser' -Value $resolved
+            return $resolved
         }
 
         if ($computerSystem -and $computerSystem.UserName) {
             $name = ([string]$computerSystem.UserName -split '\\')[-1]
             Write-Log -Message "Пользователь определён через Win32_ComputerSystem: $name" -Level Debug
+            Add-WCRunCacheValue -Key 'ActiveUser' -Value $name
             return $name
         }
 
