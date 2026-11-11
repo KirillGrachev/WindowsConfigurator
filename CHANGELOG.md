@@ -4,6 +4,14 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.13] - 2026-11-11
+
+### Changed
+
+- Object validation in `Test-JsonSchema` extracted into
+  `Test-JsonSchemaObject`; the main validator keeps type/enum/string/number/
+  array/combinators and recursion.
+
 ## [2.1.12] - 2026-11-11
 
 ### Added
