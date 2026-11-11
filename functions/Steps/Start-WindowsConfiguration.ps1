@@ -240,48 +240,27 @@
         }
 
         Write-Log -Message "Выполнение шага: $($definition.Name) ($($definition.Description)) для пользователя $UserName" -Level Step
-        $stepStart = [System.DateTime]::Now
-        if ($TestMode) { (Get-WCTestModeState).CurrentStep = $definition.Name }
 
-        try {
-            $parameters = @{}
-            if ($definition.RequiresConfig) { $parameters['Config'] = $Config }
-            if ($definition.RequiresUser) { $parameters['UserName'] = $UserName }
-            if ($definition.Name -eq 'NumLockOff') { $parameters['Enabled'] = $false }
-            if ($definition.Name -eq 'NumLock') { $parameters['Enabled'] = $true }
-            $parameters['Confirm'] = $false
-            if ($WhatIfPreference) { $parameters['WhatIf'] = $true }
+        $outcome = Invoke-ConfigurationStep -Definition $definition -Config $Config -UserName $UserName -WhatIfMode:([bool]$WhatIfPreference) -TestMode:([bool]$TestMode)
+        $stepResult = $outcome.Result
+        $results.Add($stepResult)
 
-            $stepResult = & $definition.Function @parameters
-
-            if ($null -eq $stepResult) {
-                $stepResult = New-StepResult -Step $definition.Name -Status 'Success' -Message 'Шаг выполнен (результат не возвращён).' -Started $stepStart
+        switch ($stepResult.Status) {
+            'Failed' {
+                $failedSteps.Add($definition.Name)
+                Write-Log -Message "Шаг $($definition.Name) завершился ошибкой: $($stepResult.Message)" -Level Error
+                if ($stopOnFailure) { $aborted = $true }
             }
-
-            $results.Add($stepResult)
-
-            switch ($stepResult.Status) {
-                'Failed' {
-                    $failedSteps.Add($definition.Name)
-                    Write-Log -Message "Шаг $($definition.Name) завершился ошибкой: $($stepResult.Message)" -Level Error
-                    if ($stopOnFailure) { $aborted = $true }
-                }
-                'Skipped' {
-                    $skippedSteps.Add($definition.Name)
-                    Write-Log -Message "Шаг $($definition.Name) пропущен: $($stepResult.Message)" -Level Warn
-                }
-                'WhatIf' {
-                    Write-Log -Message "Шаг $($definition.Name): режим WhatIf - изменения не применялись." -Level Info
-                }
-                default {
-                    Write-Log -Message "Шаг $($definition.Name) выполнен успешно." -Level Ok
-                }
+            'Skipped' {
+                $skippedSteps.Add($definition.Name)
+                Write-Log -Message "Шаг $($definition.Name) пропущен: $($stepResult.Message)" -Level Warn
             }
-        } catch {
-            $failedSteps.Add($definition.Name)
-            $results.Add((New-StepResult -Step $definition.Name -Status 'Failed' -Message $_.Exception.Message -Started $stepStart -ErrorRecord $_))
-            Write-Log -Message "Шаг $($definition.Name) завершился исключением: $($_.Exception.Message)" -Level Error
-            if ($stopOnFailure) { $aborted = $true }
+            'WhatIf' {
+                Write-Log -Message "Шаг $($definition.Name): режим WhatIf - изменения не применялись." -Level Info
+            }
+            default {
+                Write-Log -Message "Шаг $($definition.Name) выполнен успешно." -Level Ok
+            }
         }
 
         if ($delay -gt 0 -and -not $WhatIfPreference -and -not (Test-WCTestMode)) { Start-Sleep -Seconds $delay }
