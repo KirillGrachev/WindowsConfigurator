@@ -306,6 +306,38 @@ Describe 'Get-ActiveInteractiveUser (регрессия GetOwner у объект
         Should -Invoke Invoke-CimMethod -Times 1 -Exactly -ParameterFilter { $MethodName -eq 'GetOwner' }
     }
 
+    It 'при нескольких сессиях предпочитает консольную' {
+        $console = New-TestCimInstance -ClassName Win32_Process -Property @{ ProcessId = 100; SessionId = 1; Name = 'explorer.exe' }
+        $rdp = New-TestCimInstance -ClassName Win32_Process -Property @{ ProcessId = 200; SessionId = 3; Name = 'explorer.exe' }
+        Mock Get-CimInstance {
+            param($ClassName)
+            if ($ClassName -eq 'Win32_Process') { return @($rdp, $console) }
+            return [PSCustomObject]@{ UserName = 'CORP\console.user' }
+        }
+        Mock Invoke-CimMethod {
+            if ($InputObject.ProcessId -eq 100) { return [PSCustomObject]@{ Domain = 'CORP'; User = 'console.user' } }
+            return [PSCustomObject]@{ Domain = 'CORP'; User = 'rdp.user' }
+        }
+
+        Get-ActiveInteractiveUser | Should -Be 'console.user'
+    }
+
+    It 'при нескольких сессиях без консольного совпадения выбирает меньший SessionId' {
+        $first = New-TestCimInstance -ClassName Win32_Process -Property @{ ProcessId = 100; SessionId = 1; Name = 'explorer.exe' }
+        $second = New-TestCimInstance -ClassName Win32_Process -Property @{ ProcessId = 200; SessionId = 3; Name = 'explorer.exe' }
+        Mock Get-CimInstance {
+            param($ClassName)
+            if ($ClassName -eq 'Win32_Process') { return @($second, $first) }
+            return [PSCustomObject]@{ UserName = 'CORP\other.user' }
+        }
+        Mock Invoke-CimMethod {
+            if ($InputObject.ProcessId -eq 100) { return [PSCustomObject]@{ Domain = 'CORP'; User = 'first.user' } }
+            return [PSCustomObject]@{ Domain = 'CORP'; User = 'second.user' }
+        }
+
+        Get-ActiveInteractiveUser | Should -Be 'first.user'
+    }
+
     It 'explorer.exe в сессии 0 (служебной) игнорируется' {
         Mock Get-CimInstance {
             param($ClassName)
