@@ -117,109 +117,14 @@
                 не относятся к внешнему циклу do/while - в режиме WhatIf установка
                 продолжилась бы реальным запуском процесса.
                 #>
-                    if ($appType -eq 'MSI') {
-                        $arguments = New-Object System.Collections.Generic.List[string]
-                        $arguments.Add('/i') | Out-Null
-                        $arguments.Add("`"$installerPath`"") | Out-Null
-                        $arguments.Add('/norestart') | Out-Null
-
-                        $transform = if ($app.ContainsKey('TransformPath')) { [string]$app.TransformPath } else { '' }
-                        if ($transform) {
-                            if ($transform -match '^\\\\' -and -not $whatIf -and -not (Test-WCTestMode) -and -not (Test-Path -Path $transform -ErrorAction SilentlyContinue)) {
-                                throw "Файл трансформации (MST) недоступен: $transform"
-                            }
-                            $arguments.Add("TRANSFORMS=`"$transform`"") | Out-Null
-                        }
-
-                        $argumentString = if ($app.ContainsKey('Arguments')) { [string]$app.Arguments } else { '' }
-                        $expanded = Expand-InstallerArguments -ArgumentString $argumentString -Tokens $tokens
-                        foreach ($token in $expanded.Arguments) { $arguments.Add($token) | Out-Null }
-                        if ($expanded.UnresolvedTokens.Count -gt 0) {
-                            Write-Log -Message "В аргументах '$appName' остались нераскрытые токены: $($expanded.UnresolvedTokens -join ', ')" -Level Warn
-                        }
-
-                        if ($whatIf) {
-                            Write-Log -Message "WHAT IF: $msiExec $(ConvertTo-ProcessArgumentString -Arguments @($arguments.ToArray()))" -Level Info
-                            $isSuccess = $true
-                            $exitCode = 0
-                            break
-                        }
-
-                        $result = Start-ProcessAndWait -FilePath $msiExec -Arguments @($arguments.ToArray())
-                        $exitCode = $result.ExitCode
-                    }
-                    elseif ($appType -eq 'Executable') {
-                        $argumentString = if ($app.ContainsKey('Arguments')) { [string]$app.Arguments } else { '' }
-                        $expanded = Expand-InstallerArguments -ArgumentString $argumentString -Tokens $tokens
-                        if ($expanded.UnresolvedTokens.Count -gt 0) {
-                            Write-Log -Message "В аргументах '$appName' остались нераскрытые токены: $($expanded.UnresolvedTokens -join ', ')" -Level Warn
-                        }
-
-                        if ($whatIf) {
-                            Write-Log -Message "WHAT IF: $installerPath $(ConvertTo-ProcessArgumentString -Arguments $expanded.Arguments)" -Level Info
-                            $isSuccess = $true
-                            $exitCode = 0
-                            break
-                        }
-
-                        $result = Start-ProcessAndWait -FilePath $installerPath -Arguments $expanded.Arguments
-                        $exitCode = $result.ExitCode
-                    }
-                    elseif ($appType -eq 'Batch') {
-                        if ($whatIf) {
-                            Write-Log -Message "WHAT IF: $cmdInterpreter /c `"$installerPath`"" -Level Info
-                            $isSuccess = $true
-                            $exitCode = 0
-                            break
-                        }
-
-                        $result = Start-ProcessAndWait -FilePath $cmdInterpreter -Arguments @('/c', "`"$installerPath`"")
-                        $exitCode = $result.ExitCode
-                    }
-                    elseif ($appType -eq 'DISM') {
-                        $featureName = if ($app.ContainsKey('FeatureName')) { [string]$app.FeatureName } else { '' }
-                        if (-not $featureName) { throw "Для DISM-приложения '$appName' не задан FeatureName." }
-
-                        $sourcePath = if ($app.ContainsKey('SourcePath')) { [string]$app.SourcePath } else { '' }
-                        if (-not $sourcePath -and $netFx3Template) {
-                            if (-not $tokens.ContainsKey('VersionLabel')) {
-                                try {
-                                    $versions = @()
-                                    if ($null -ne $Config -and $Config.ContainsKey('WindowsVersions')) { $versions = @($Config.WindowsVersions) }
-                                    $minimum = [int](Get-ConfigSectionValue -Config $Config -Section 'Environment' -Key 'MinimumSupportedBuild' -DefaultValue 19045)
-                                    $tokens['VersionLabel'] = Get-WindowsVersionLabel -Versions $versions -MinimumSupportedBuild $minimum
-                                } catch {
-                                    Write-Log -Message "Не удалось определить метку версии Windows: $($_.Exception.Message)" -Level Warn
-                                }
-                            }
-                            $sourcePath = (Expand-ConfigToken -InputString $netFx3Template -Tokens $tokens).Value
-                        }
-                        if ($sourcePath -and $tokens.ContainsKey('VersionLabel')) {
-                            $sourcePath = (Expand-ConfigToken -InputString $sourcePath -Tokens $tokens).Value
-                        }
-
-                        $allFeatures = $true
-                        if ($app.ContainsKey('AllFeatures')) { $allFeatures = [bool]$app.AllFeatures }
-                        $limitAccess = $true
-                        if ($app.ContainsKey('LimitAccess')) { $limitAccess = [bool]$app.LimitAccess }
-
-                        if ($whatIf) {
-                            Write-Log -Message "WHAT IF: DISM /Online /Enable-Feature /FeatureName:$featureName /Source:$sourcePath" -Level Info
-                            $isSuccess = $true
-                            $exitCode = 0
-                            break
-                        }
-
-                        if ($sourcePath -match '^\\\\') {
-                            Write-Log -Message "Источник DISM находится в сети ($sourcePath): надёжность зависит от соединения." -Level Warn
-                        }
-
-                        $result = Invoke-DismCommand -FeatureName $featureName -SourcePath $sourcePath -AllFeatures $allFeatures -LimitAccess $limitAccess
-                        $exitCode = $result.ExitCode
-                    }
-                    else {
-                        throw "Неподдерживаемый тип приложения: '$appType' ($appName)."
-                    }
+                $attemptResult = Invoke-InstallerAttempt -App $app -AppType $appType -InstallerPath $installerPath `
+                    -AppName $appName -Tokens $tokens -Config $Config -MsiExec $msiExec `
+                    -CmdInterpreter $cmdInterpreter -NetFx3Template $netFx3Template -WhatIf:$whatIf
+                $exitCode = $attemptResult.ExitCode
+                if ($attemptResult.WhatIf) {
+                    $isSuccess = $true
+                    break
+                }
 
                 if ($successCodes -contains $exitCode) {
                     $isSuccess = $true
