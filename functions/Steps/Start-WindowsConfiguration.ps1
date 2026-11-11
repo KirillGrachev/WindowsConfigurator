@@ -119,7 +119,7 @@
     #>
     if ($TestMode) {
         if ($UserName) { $null = Set-WCTestMode -Enabled:$true -SandboxPath $TestModeSandboxPath -FakeUserName $UserName } else { $null = Set-WCTestMode -Enabled:$true -SandboxPath $TestModeSandboxPath }
-        $loggingState = $global:WindowsConfiguratorLogging
+        $loggingState = $global:WindowsConfiguratorState.Logging
         if (-not ($loggingState -and $loggingState.FilePath)) {
             <# Файловый журнал не настроен/отключён - пишем его в песочницу. #>
             $null = Initialize-Logging -Config $null -FilePath (Join-Path -Path (Get-WCTestModeState).SandboxPath -ChildPath 'configurator-testmode.log') -Level 'Debug'

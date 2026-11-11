@@ -32,7 +32,7 @@
         CreatedAt = (Get-Date).ToString('o')
         Registry  = New-Object System.Collections.Generic.List[object]
     }
-    $global:WindowsConfiguratorBackup = $state
+    $global:WindowsConfiguratorState.Backup = $state
     $null = Save-WCBackupState
     return $state
 }

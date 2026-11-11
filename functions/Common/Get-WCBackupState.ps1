@@ -3,7 +3,7 @@
     .SYNOPSIS
         Возвращает состояние текущей сессии резервного копирования.
     .DESCRIPTION
-        Состояние хранится в $global:WindowsConfiguratorBackup, чтобы функции,
+        Состояние хранится в $global:WindowsConfiguratorState.Backup, чтобы функции,
         которые dot-source'ятся в разные области видимости, видели один и тот же
         журнал. Чтение через Get-Variable безопасно и при StrictMode.
     .OUTPUTS
@@ -13,5 +13,5 @@
     [OutputType([System.Collections.Specialized.OrderedDictionary])]
     param()
 
-    return (Get-Variable -Name 'WindowsConfiguratorBackup' -Scope Global -ValueOnly -ErrorAction SilentlyContinue)
+    return $global:WindowsConfiguratorState.Backup
 }

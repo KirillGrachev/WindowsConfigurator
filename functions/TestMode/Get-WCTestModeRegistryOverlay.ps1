@@ -25,7 +25,7 @@
     )
 
     $result = New-Object System.Collections.Specialized.OrderedDictionary
-    $state = $global:WindowsConfiguratorTestMode
+    $state = $global:WindowsConfiguratorState.TestMode
     if ($null -eq $state -or -not $state.Enabled -or [string]::IsNullOrWhiteSpace($Path)) { return $result }
 
     $normalized = Normalize-RegistryPath -Path $Path

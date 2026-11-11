@@ -37,7 +37,7 @@
         [string]$Type = 'REG_SZ'
     )
 
-    $state = $global:WindowsConfiguratorTestMode
+    $state = $global:WindowsConfiguratorState.TestMode
     if ($null -eq $state -or -not $state.Enabled) {
         throw 'Set-WCTestModeRegistryValue: тестовый режим не включён (вызовите Set-WCTestMode -Enabled:$true).'
     }

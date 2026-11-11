@@ -17,7 +17,7 @@
         [object]$Value
     )
 
-    $cache = $global:WindowsConfiguratorRunCache
+    $cache = $global:WindowsConfiguratorState.RunCache
     if (-not $cache) { return }
     $cache.Values[$Key] = $Value
 }

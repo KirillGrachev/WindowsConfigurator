@@ -26,7 +26,7 @@
         [string]$Step = ''
     )
 
-    $state = $global:WindowsConfiguratorTestMode
+    $state = $global:WindowsConfiguratorState.TestMode
     if ($null -eq $state -or -not $state.Enabled) { return @() }
 
     $entries = @($state.Journal.ToArray())

@@ -3,8 +3,8 @@
     .SYNOPSIS
         Возвращает $true, если включён тестовый режим конфигуратора.
     .DESCRIPTION
-        Состояние тестового режима хранится в $global:WindowsConfiguratorTestMode
-        (тот же документированный паттерн, что и $global:WindowsConfiguratorLogging):
+        Состояние тестового режима хранится в $global:WindowsConfiguratorState.TestMode
+        (тот же документированный паттерн, что и $global:WindowsConfiguratorState.Logging):
         функции проекта dot-source'ятся, а не оформлены модулем, поэтому состояние
         должно быть доступно из любой области видимости.
         Режим включается Set-WCTestMode (обычно через Start-WindowsConfiguration
@@ -22,6 +22,6 @@
     [OutputType([bool])]
     param()
 
-    $state = $global:WindowsConfiguratorTestMode
+    $state = $global:WindowsConfiguratorState.TestMode
     return [bool]($null -ne $state -and $state.Enabled)
 }

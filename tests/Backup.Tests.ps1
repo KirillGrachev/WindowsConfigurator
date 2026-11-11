@@ -11,7 +11,7 @@ BeforeAll {
 Describe 'Резервное копирование реестра' {
 
     AfterEach {
-        $global:WindowsConfiguratorBackup = $null
+        $global:WindowsConfiguratorState.Backup = $null
     }
 
     It 'Initialize-WCBackup создаёт каталог и backup.json' {
