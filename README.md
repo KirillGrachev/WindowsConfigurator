@@ -152,6 +152,19 @@ Use `-NoBackup` to skip the backup session. The current rollback covers only the
 registry; application installs/removals, file moves and Outlook signature files
 are not rolled back yet.
 
+## Module usage
+
+The project can be imported as a module instead of dot-sourcing the loader:
+
+```powershell
+Import-Module .\WindowsConfigurator.psd1 -DisableNameChecking
+$config = Import-Configuration -Path .\config\config.json
+```
+
+`-DisableNameChecking` is needed because the module keeps a few legacy
+compatibility verbs. The module exports the normal functions only; use
+`Configure-Windows.ps1 -TestMode` when the TestMode helpers are required.
+
 ## Project structure
 
 ```text
