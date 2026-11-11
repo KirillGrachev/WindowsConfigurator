@@ -301,33 +301,11 @@
 
         <# --- 5. Установка подписи в профиль пользователя --- #>
         if ($installToUser) {
-            $signaturesFolder = Join-Path -Path $profilePath -ChildPath 'AppData\Roaming\Microsoft\Signatures'
-            if (-not (Test-Path -Path $signaturesFolder -ErrorAction SilentlyContinue)) {
-                $null = New-Item -Path $signaturesFolder -ItemType Directory -Force -ErrorAction SilentlyContinue
-            }
-            $targetHtm = Join-Path -Path $signaturesFolder -ChildPath "$signatureName.htm"
-            $targetTxt = Join-Path -Path $signaturesFolder -ChildPath "$signatureName.txt"
-            $targetRtf = Join-Path -Path $signaturesFolder -ChildPath "$signatureName.rtf"
-            if ($generateHtml -and (Test-Path -Path $htmFile)) { $null = Copy-Item -Path $htmFile -Destination $targetHtm -Force -ErrorAction SilentlyContinue }
-            if ($generateText -and (Test-Path -Path $txtFile)) { $null = Copy-Item -Path $txtFile -Destination $targetTxt -Force -ErrorAction SilentlyContinue }
-            if ($generateRtf -and (Test-Path -Path $rtfFile)) { $null = Copy-Item -Path $rtfFile -Destination $targetRtf -Force -ErrorAction SilentlyContinue }
-            if (Test-Path -Path $filesFolder -ErrorAction SilentlyContinue) {
-                $targetFiles = Join-Path -Path $signaturesFolder -ChildPath "${signatureName}_files"
-                $null = Copy-Item -Path $filesFolder -Destination $targetFiles -Recurse -Force -ErrorAction SilentlyContinue
-            }
-            $created.Add("Signatures\$signatureName.*") | Out-Null
-
-            if ($setAsDefault) {
-                try {
-                    $userInfo = Get-UserRegistryInfo -UserName $UserName -ProfilesRoot ([string](Get-ConfigSectionValue -Config $Config -Section 'Environment' -Key 'UserProfilesRoot' -DefaultValue '%SystemDrive%\Users'))
-                    $signaturesKey = "$($userInfo.RegistryPath)\Software\Microsoft\Office\$officeVersion\Common\Mail\Signatures"
-                    $null = Set-RegistryValue -Path $signaturesKey -Name 'New Signature' -Value $signatureName -Type REG_SZ -Confirm:$false
-                    $null = Set-RegistryValue -Path $signaturesKey -Name 'Reply-Forward Signature' -Value $signatureName -Type REG_SZ -Confirm:$false
-                    $created.Add("реестр: Signatures (Office $officeVersion)") | Out-Null
-                } catch {
-                    Write-Log -Message "Не удалось прописать подпись по умолчанию в реестре: $($_.Exception.Message)" -Level Warn
-                }
-            }
+            Install-OutlookSignatureToProfile -SignatureName $signatureName -UserName $UserName `
+                -ProfilePath $profilePath -OfficeVersion $officeVersion -Config $Config `
+                -HtmFile $htmFile -TxtFile $txtFile -RtfFile $rtfFile -FilesFolder $filesFolder `
+                -GenerateHtml:$generateHtml -GenerateText:$generateText -GenerateRtf:$generateRtf `
+                -SetAsDefault:$setAsDefault -Created $created
         }
 
         Write-Log -Message "Подпись сохранена: $signatureFolder" -Level Ok
