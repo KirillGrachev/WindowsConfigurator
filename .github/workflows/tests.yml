@@ -192,7 +192,7 @@ jobs:
           # (Write-Log), а обёртка раннера ставит 'stop'.
           $ErrorActionPreference = 'Continue'
           $testArgs = @('-PesterVersion', '${{ matrix.pester }}', '-Verbosity', 'Normal', '-OutputFile', 'testResults.xml')
-          if ('${{ matrix.coverage }}' -eq 'true') { $testArgs += @('-WithCoverage', '-MinimumCoverage', '80') }
+          if ('${{ matrix.coverage }}' -eq 'true') { $testArgs += @('-WithCoverage', '-MinimumCoverage', '85') }
           & ./tests/Run-Tests.ps1 @testArgs
           $code = $LASTEXITCODE
           Write-Host "Run-Tests exit code: $code"

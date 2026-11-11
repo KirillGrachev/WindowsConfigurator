@@ -1,9 +1,9 @@
-# Azure DevOps Pipelines: те же проверки, что и в GitHub Actions.
+# Ручное зеркало GitHub Actions: основной CI - GitHub.
+# Запускать вручную, чтобы не дублировать прогоны на каждый push/PR.
 # Матрица: Windows PowerShell 5.1 (реальная проверка совместимости),
 # PowerShell 7 + Pester 6, Linux + Pester 5.
-trigger:
-  branches:
-    include: [ main, master, develop ]
+trigger: none
+pr: none
 
 pool:
   vmImage: 'windows-latest'
@@ -63,7 +63,7 @@ steps:
       pwsh: false
       script: |
         $parameters = @('-PesterVersion', '$(pesterVersion)', '-OutputFile', 'testResults.xml')
-        if ('$(withCoverage)' -eq 'true') { $parameters += @('-WithCoverage', '-MinimumCoverage', '80') }
+        if ('$(withCoverage)' -eq 'true') { $parameters += @('-WithCoverage', '-MinimumCoverage', '85') }
         & ./tests/Run-Tests.ps1 @parameters
         exit $LASTEXITCODE
 

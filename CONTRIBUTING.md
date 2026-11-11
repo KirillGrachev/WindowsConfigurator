@@ -13,12 +13,15 @@ Thanks for your interest in the project. These are the minimum rules enforced by
 
 ```powershell
 .\tools\Set-ProjectEncoding.ps1
-.\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 80 -WithAnalyzer
+.\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 85 -WithAnalyzer
 ```
 
 Requirements:
 
-- Pester: all tests pass, coverage is at least **80%**;
+- Pester: all tests pass, line coverage is at least **85%** (Pester reports line,
+  not branch, coverage);
+- Pester itself is verified against `tests/Pester.lock.json`; update the lock
+  deliberately when changing the pinned version;
 - PSScriptAnalyzer: **0** findings with `ScriptAnalyzerSettings.psd1`;
 - Encodings: `.ps1/.psd1/.psm1` are UTF-8 **with BOM** and CRLF; `.json/.md/.yml`
   are LF; `.cmd/.bat` are CRLF without BOM;
