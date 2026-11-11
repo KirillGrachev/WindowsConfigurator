@@ -135,6 +135,9 @@ Describe 'Синтаксис и структура проекта' {
         $manifest = Import-PowerShellDataFile -Path $manifestPath
         $manifest.RootModule | Should -Be 'WindowsConfigurator.psm1'
         $manifest.ModuleVersion | Should -Not -BeNullOrEmpty
+        $configPath = Get-ProjectFilePath -RelativePath 'config/config.json'
+        $configVersion = (Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json).Meta.Version
+        $manifest.ModuleVersion | Should -Be $configVersion
 
         $hostExe = (Get-Process -Id $PID).Path
         $code = "Import-Module '$manifestPath' -Force -DisableNameChecking; [bool](Get-Command Test-JsonSchema -ErrorAction SilentlyContinue)"

@@ -4,6 +4,13 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.16] - 2026-11-11
+
+### Fixed
+
+- Keep `WindowsConfigurator.psd1` `ModuleVersion` in sync with
+  `Meta.Version`; a structure test now enforces the match.
+
 ## [2.1.15] - 2026-11-11
 
 ### Changed
