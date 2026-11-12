@@ -1,4 +1,4 @@
-﻿function Normalize-RegistryPath {
+﻿function ConvertTo-NormalizedRegistryPath {
     <#
     .SYNOPSIS
         Приводит путь реестра к канонической native-форме (HKEY_*).
@@ -10,7 +10,7 @@
     .PARAMETER Path
         Путь в любой из поддерживаемых форм.
     .EXAMPLE
-        Normalize-RegistryPath -Path 'HKLM:\SOFTWARE\Microsoft'
+        ConvertTo-NormalizedRegistryPath -Path 'HKLM:\SOFTWARE\Microsoft'
         # NativePath = 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft'
     .OUTPUTS
         PSCustomObject - @{ NativePath; ProviderPath; Hive }

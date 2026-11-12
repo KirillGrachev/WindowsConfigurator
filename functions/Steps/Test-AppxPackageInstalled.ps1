@@ -17,14 +17,5 @@
 
     if ([string]::IsNullOrWhiteSpace($PackageName)) { return $false }
 
-    if (Test-WCTestMode) {
-        return (@(Get-WCTestModeAppxFixture -Filter $PackageName).Count -gt 0)
-    }
-
-    try {
-        return (@(Get-AppxPackage -Name $PackageName -ErrorAction Stop).Count -gt 0)
-    } catch {
-        Write-Log -Message "Не удалось проверить Appx '$PackageName': $($_.Exception.Message)" -Level Debug
-        return $false
-    }
+    return ($null -ne (Get-AppxPackageVersion -PackageName $PackageName))
 }

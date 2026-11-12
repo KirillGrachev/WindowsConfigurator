@@ -44,24 +44,25 @@ single: 'it''s ok'
     It 'бросает понятную ошибку на табуляции' {
         { ConvertFrom-YamlText -Text "a:`n`tb: 1`n" } | Should -Throw '*Табуляция*'
     }
+
+    It 'бросает понятную ошибку на anchor/alias' {
+        { ConvertFrom-YamlText -Text "base: &base`n  a: 1`ncopy: *base`n" } | Should -Throw '*anchor*'
+    }
 }
 
 Describe 'YAML-конфигурация' {
 
     BeforeAll {
-        $script:YamlPath = Join-Path -Path $PSScriptRoot -ChildPath 'Fixtures/config.yaml'
+        $script:YamlPath = Join-Path -Path $PSScriptRoot -ChildPath 'Fixtures/config-minimal.yaml'
         $script:SchemaPath = Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'config/config.schema.json'
-        $script:JsonPath = Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'config/config.json'
     }
 
-    It 'полный YAML-конфиг проходит схему и совпадает с JSON по версии и числу приложений' {
-        $yamlConfig = Import-Configuration -Path $script:YamlPath -SchemaPath $script:SchemaPath -SkipSecretResolution -SkipLoggingInit
-        $jsonConfig = Import-Configuration -Path $script:JsonPath -SkipSecretResolution -SkipLoggingInit
-
-        $yamlConfig.Meta.Version | Should -Be $jsonConfig.Meta.Version
-        $yamlConfig.AppsToInstall.Count | Should -Be $jsonConfig.AppsToInstall.Count
-        $yamlConfig.FolderRedirection.Folders.Count | Should -Be $jsonConfig.FolderRedirection.Folders.Count
-        $yamlConfig.Menu.Items.Count | Should -Be $jsonConfig.Menu.Items.Count
+    It 'минимальный YAML-конфиг проходит схему и сохраняет Appx-настройки' {
+        $config = Import-Configuration -Path $script:YamlPath -SchemaPath $script:SchemaPath -SkipSecretResolution -SkipLoggingInit
+        $config.Meta.Version | Should -Be '1.0.0'
+        $config.AppsToInstall.Count | Should -Be 0
+        $config.AppxPackages.Packages.Count | Should -Be 1
+        $config.AppxPackages.Packages[0].Dependencies[0].PackageName | Should -Be 'Test.Dep'
     }
 
     It 'Test-Configuration принимает YAML' {
@@ -72,6 +73,6 @@ Describe 'YAML-конфигурация' {
 
     It 'Get-ConfigurationFileContent выбирает YAML по расширению' {
         $result = Get-ConfigurationFileContent -Path $script:YamlPath
-        $result.Meta.Version | Should -Not -BeNullOrEmpty
+        $result.Meta.Version | Should -Be '1.0.0'
     }
 }

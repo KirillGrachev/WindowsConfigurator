@@ -6,7 +6,7 @@
         Оверлей - in-memory имитация реестра: записи reg add попадают туда
         (Update-WCTestModeRegistryOverlay), чтение (Get-RegistryValues) и проверка
         существования (Test-RegistryKeyExists) в тестовом режиме идут из него.
-        Ключи нормализуются Normalize-RegistryPath и сравниваются без учёта регистра.
+        Ключи нормализуются ConvertTo-NormalizedRegistryPath и сравниваются без учёта регистра.
         Возвращает упорядоченный словарь 'имя значения -> строковые данные'
         (тот же контракт, что и Get-RegistryValues).
     .PARAMETER Path
@@ -25,10 +25,10 @@
     )
 
     $result = New-Object System.Collections.Specialized.OrderedDictionary
-    $state = $global:WindowsConfiguratorState.TestMode
+    $state = (Get-WCState).TestMode
     if ($null -eq $state -or -not $state.Enabled -or [string]::IsNullOrWhiteSpace($Path)) { return $result }
 
-    $normalized = Normalize-RegistryPath -Path $Path
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Path
     $overlayKey = $normalized.NativePath.ToUpperInvariant()
     if (-not $state.RegistryOverlay.ContainsKey($overlayKey)) { return $result }
 

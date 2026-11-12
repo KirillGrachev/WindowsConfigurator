@@ -120,14 +120,12 @@ Describe 'Синтаксис и структура проекта' {
         $content | Should -Not -Match '-Command\s+"&'
     }
 
-    It 'Загрузчик включает StrictMode и инициализирует глобальное состояние' {
+    It 'Загрузчик включает StrictMode и инициализирует состояние проекта' {
         $loader = Get-ProjectFilePath -RelativePath 'functions/Load-ProjectFunctions.ps1'
         $content = [System.IO.File]::ReadAllText($loader)
         $content | Should -Match 'Set-StrictMode -Version 2\.0'
-        $content | Should -Match '\$global:WindowsConfiguratorState = @\{'
-        foreach ($name in @('Logging', 'TestMode', 'Backup', 'RunCache')) {
-            $content | Should -Match ("$name\s+=\s+" + [regex]::Escape('$null'))
-        }
+        $content | Should -Match 'Initialize-WCState'
+        $content | Should -Not -Match '\$global:WindowsConfiguratorState'
     }
 
     It 'Модуль WindowsConfigurator импортируется и экспортирует функции' {

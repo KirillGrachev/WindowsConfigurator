@@ -38,7 +38,7 @@
         [hashtable]$Details = $null
     )
 
-    $state = $global:WindowsConfiguratorState.TestMode
+    $state = (Get-WCState).TestMode
     if ($null -eq $state -or -not $state.Enabled) { return }
 
     $entry = [PSCustomObject]@{

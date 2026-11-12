@@ -25,7 +25,7 @@
         [string]$Name
     )
 
-    $normalized = Normalize-RegistryPath -Path $Path
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Path
     $target = "$($normalized.NativePath)\$Name"
 
     if (-not $PSCmdlet.ShouldProcess($target, 'Удалить значение реестра')) { return $true }

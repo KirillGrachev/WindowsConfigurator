@@ -528,6 +528,14 @@ Describe 'Шаг FolderRedirection: перенос папок профиля' {
         $result.Message | Should -Match 'нет подходящего диска'
     }
 
+    It 'при ошибке определения системного диска шаг не продолжает работу' {
+        Mock Get-SystemDriveLetter { throw 'system drive unknown' }
+        $result = Set-UserFolderRedirection -UserName 'test.user' -Config $script:Config -Confirm:$false
+        $result.Status | Should -Be 'Failed'
+        $result.Message | Should -Match 'системный диск'
+        Should -Invoke Get-LocalFixedDrives -Times 0
+    }
+
     It 'для каждого каталога пишется REG_EXPAND_SZ с новым путём' {
         $config = Copy-ConfigValue -Value $script:Config
         $config.FolderRedirection.Folders = @(

@@ -37,12 +37,12 @@
         [string]$Type = 'REG_SZ'
     )
 
-    $state = $global:WindowsConfiguratorState.TestMode
+    $state = (Get-WCState).TestMode
     if ($null -eq $state -or -not $state.Enabled) {
         throw 'Set-WCTestModeRegistryValue: тестовый режим не включён (вызовите Set-WCTestMode -Enabled:$true).'
     }
 
-    $normalized = Normalize-RegistryPath -Path $Path
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Path
     $overlayKey = $normalized.NativePath.ToUpperInvariant()
     if (-not $state.RegistryOverlay.ContainsKey($overlayKey)) {
         $state.RegistryOverlay[$overlayKey] = New-Object System.Collections.Specialized.OrderedDictionary -ArgumentList ([System.StringComparer]::OrdinalIgnoreCase)

@@ -14,7 +14,7 @@
         [string]$Key
     )
 
-    $cache = $global:WindowsConfiguratorState.RunCache
+    $cache = (Get-WCState).RunCache
     if (-not $cache -or -not $cache.Values.ContainsKey($Key)) { return $null }
     return $cache.Values[$Key]
 }

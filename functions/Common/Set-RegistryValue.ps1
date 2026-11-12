@@ -48,7 +48,7 @@
         [int]$RetryDelaySeconds = 2
     )
 
-    $normalized = Normalize-RegistryPath -Path $Path
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Path
     $data = ''
     if ($null -ne $Value) {
         if ($Value -is [bool]) {

@@ -1,4 +1,4 @@
-﻿function Normalize-Configuration {
+﻿function ConvertTo-NormalizedConfiguration {
     <#
     .SYNOPSIS
         Приводит слитую конфигурацию к канонической внутренней форме.
@@ -15,7 +15,7 @@
     .PARAMETER Config
         Hashtable конфигурации (дефолты + JSON).
     .EXAMPLE
-        $config = Normalize-Configuration -Config $merged
+        $config = ConvertTo-NormalizedConfiguration -Config $merged
     .OUTPUTS
         System.Collections.Hashtable
     #>

@@ -37,7 +37,7 @@
 
     if (-not $PSCmdlet.ShouldProcess($Path, 'Создать ключ реестра')) { return $true }
 
-    $normalized = Normalize-RegistryPath -Path $Path
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Path
     for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
         $result = Invoke-RegCommand -Arguments @('add', $normalized.NativePath, '/f')
         if ($result.ExitCode -eq 0) {

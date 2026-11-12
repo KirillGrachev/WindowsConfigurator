@@ -489,25 +489,25 @@ Describe 'Get-JsonTypeName и Get-EnumerableItems' {
     }
 }
 
-Describe 'Normalize-RegistryPath' {
+Describe 'ConvertTo-NormalizedRegistryPath' {
 
     It 'PSDrive-формы приводятся к native-путям' {
-        (Normalize-RegistryPath -Path 'HKLM:\SOFTWARE\Microsoft').NativePath | Should -Be 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft'
-        (Normalize-RegistryPath -Path 'HKCU:\Software\Test').NativePath | Should -Be 'HKEY_CURRENT_USER\Software\Test'
-        (Normalize-RegistryPath -Path 'HKU:\S-1-5-21').NativePath | Should -Be 'HKEY_USERS\S-1-5-21'
+        (ConvertTo-NormalizedRegistryPath -Path 'HKLM:\SOFTWARE\Microsoft').NativePath | Should -Be 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft'
+        (ConvertTo-NormalizedRegistryPath -Path 'HKCU:\Software\Test').NativePath | Should -Be 'HKEY_CURRENT_USER\Software\Test'
+        (ConvertTo-NormalizedRegistryPath -Path 'HKU:\S-1-5-21').NativePath | Should -Be 'HKEY_USERS\S-1-5-21'
     }
 
     It 'native-форма и Registry:: префикс обрабатываются' {
-        (Normalize-RegistryPath -Path 'HKEY_LOCAL_MACHINE\SOFTWARE').NativePath | Should -Be 'HKEY_LOCAL_MACHINE\SOFTWARE'
-        (Normalize-RegistryPath -Path 'Registry::HKEY_USERS\S-1-5-21\X').NativePath | Should -Be 'HKEY_USERS\S-1-5-21\X'
-        (Normalize-RegistryPath -Path 'Registry::HKEY_USERS\S-1-5-21\X').ProviderPath | Should -Be 'Registry::HKEY_USERS\S-1-5-21\X'
+        (ConvertTo-NormalizedRegistryPath -Path 'HKEY_LOCAL_MACHINE\SOFTWARE').NativePath | Should -Be 'HKEY_LOCAL_MACHINE\SOFTWARE'
+        (ConvertTo-NormalizedRegistryPath -Path 'Registry::HKEY_USERS\S-1-5-21\X').NativePath | Should -Be 'HKEY_USERS\S-1-5-21\X'
+        (ConvertTo-NormalizedRegistryPath -Path 'Registry::HKEY_USERS\S-1-5-21\X').ProviderPath | Should -Be 'Registry::HKEY_USERS\S-1-5-21\X'
     }
 
     It 'путь без подраздела и определение Hive/SubKey' {
-        $result = Normalize-RegistryPath -Path 'HKLM:\SOFTWARE'
+        $result = ConvertTo-NormalizedRegistryPath -Path 'HKLM:\SOFTWARE'
         $result.Hive | Should -Be 'HKEY_LOCAL_MACHINE'
         $result.SubKey | Should -Be 'SOFTWARE'
-        (Normalize-RegistryPath -Path 'HKCU:').NativePath | Should -Be 'HKEY_CURRENT_USER'
+        (ConvertTo-NormalizedRegistryPath -Path 'HKCU:').NativePath | Should -Be 'HKEY_CURRENT_USER'
     }
 }
 

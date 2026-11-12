@@ -21,7 +21,7 @@
     )
 
     $result = New-Object System.Collections.Specialized.OrderedDictionary
-    $normalized = Normalize-RegistryPath -Path $Path
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Path
 
     if (Test-WCTestMode) { return (Get-WCTestModeRegistryOverlay -Path $normalized.NativePath) }
 

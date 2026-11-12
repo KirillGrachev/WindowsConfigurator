@@ -34,7 +34,7 @@
     )
 
     begin {
-        $state = $global:WindowsConfiguratorState.Logging
+        $state = (Get-WCState).Logging
         if (-not $state) {
             $state = Initialize-Logging -Config $null
         }
@@ -98,7 +98,8 @@
             } catch {
                 $state.FileError = $_.Exception.Message
                 $state.FilePath = ''
-                $global:WindowsConfiguratorState.Logging = $state
+                $wcState = Get-WCState
+$wcState.Logging = $state
             }
         }
 

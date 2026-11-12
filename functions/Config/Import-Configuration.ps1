@@ -10,7 +10,7 @@
              и причину (опечатка в GUID, лишний раздел, неверный формат ключа);
           4. построение дефолтов ИЗ СХЕМЫ (Get-ConfigurationDefaults) и слияние
              с значениями файла (Merge-Hashtable) - дефолты не дублируются в коде;
-          5. нормализация (Normalize-Configuration): типы, массивы, токены путей;
+          5. нормализация (ConvertTo-NormalizedConfiguration): типы, массивы, токены путей;
           6. раскрытие секретов (Resolve-ConfigSecret): plain/env/file/dpapi;
           7. инициализация журналирования (Initialize-Logging), если не отключена;
           8. служебная метаинформация (пути, время загрузки, признаки тестовых данных).
@@ -73,7 +73,7 @@
     }
 
     $config = Merge-Hashtable -Base $defaults -Override $fromFile
-    $config = Normalize-Configuration -Config $config
+    $config = ConvertTo-NormalizedConfiguration -Config $config
 
     <# --- Секреты --- #>
     $secretsSection = @{}

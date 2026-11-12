@@ -8,6 +8,6 @@
     loader. The entry point keeps its own loader for TestMode support.
 #>
 $script:ModuleRoot = $PSScriptRoot
-. (Join-Path -Path $PSScriptRoot -ChildPath 'functions/Load-ProjectFunctions.ps1') | Out-Null
+. (Join-Path -Path $PSScriptRoot -ChildPath 'functions/Load-ProjectFunctions.ps1') -IncludeTestMode -SkipCompatibilityAliases | Out-Null
 
-Export-ModuleMember -Function * -Alias *
+Export-ModuleMember -Function *

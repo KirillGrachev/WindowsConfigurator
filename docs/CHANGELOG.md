@@ -4,6 +4,25 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.23] - 2026-11-13
+
+### Changed
+
+- Entry point now imports the module; module and tests share the same loader.
+- State moved to AppDomain storage, so `$global:WindowsConfiguratorState` is gone.
+- Unapproved `Normalize-*` functions renamed; compatibility aliases are installed
+  by the entry point only, so `Import-Module` is warning-free without
+  `-DisableNameChecking`.
+- Appx packages support required versions, retries, WhatIf file validation and
+  rollback of dependencies installed during the same run.
+- Registry backups default to `%ProgramData%\WindowsConfigurator\Backups`, apply
+  retention, and journal SHA256 hashes; restore verifies them.
+- `Get-SystemDriveLetter` rejects non-existent candidates and folder redirection
+  fails closed if the system drive cannot be determined.
+- YAML tests use a small purpose-built fixture instead of duplicating the whole
+  JSON config; redundant `tests/Fixtures/config.yaml` was removed.
+- Release workflow verifies `ModuleVersion` against `Meta.Version`.
+
 ## [2.1.22] - 2026-11-13
 
 ### Fixed
