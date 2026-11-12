@@ -1,9 +1,15 @@
 # Configuration
 
-The configurator reads `config/config.json` and validates it against
-`config/config.schema.json` **before** any system change. The schema is the only
-source of defaults: a minimal configuration can contain just the required
-sections.
+The configurator reads `config/config.json` or `config/config.yaml` /
+`config/config.yml` and validates it against `config/config.schema.json`
+**before** any system change. YAML uses the same schema; the schema itself
+remains JSON. The schema is the only source of defaults: a minimal
+configuration can contain just the required sections.
+
+YAML support covers nested mappings/sequences, flow collections (`[]`, `{}`),
+comments, quoted strings and scalars. Anchors/aliases and block scalars (`|`,
+`>`) are not supported; use quoted values instead. Keep `config.schema.json`
+next to the YAML file, or pass `-SchemaPath` explicitly.
 
 Required sections: `Meta`, `Activation`, `AppsToInstall`, `SignatureSettings`.
 
@@ -21,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.17",
+  "Version": "2.1.18",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -37,7 +43,7 @@ and the failed rule).
 
 ```json
 "General": {
-  "DefaultSteps": ["Activation", "AppRemoval", "Installation", "Desktop", "Taskbar", "Autostart", "Power", "NumLock"],
+  "DefaultSteps": ["Activation", "AppRemoval", "Installation", "AppxPackages", "Desktop", "Taskbar", "Autostart", "Power", "NumLock"],
   "StepDelaySeconds": 2,
   "RequireAdministrator": true,
   "ConfirmImpact": "Medium",
@@ -213,6 +219,36 @@ Types:
 `PostInstall` runs after installation; `CopyFiles` copies files with
 `{InstallPath}` substitution.
 
+## Appx and MSIX packages
+
+```json
+"AppxPackages": {
+  "RepositoryRoot": "\\\\fileserver.example.local\\Deploy$\\Appx",
+  "Packages": [
+    {
+      "Name": "Calculator",
+      "PackagePath": "Calculator\\Microsoft.WindowsCalculator.msixbundle",
+      "PackageName": "Microsoft.WindowsCalculator",
+      "Dependencies": [
+        "Calculator\\Dependencies\\Microsoft.VCLibs.x64.appx",
+        "Calculator\\Dependencies\\Microsoft.UI.Xaml.appx"
+      ],
+      "ForceUpdate": false
+    }
+  ]
+}
+```
+
+For each selected package, all dependencies are installed first, then the main
+`.appx`/`.msix`/`.msixbundle`. `PackagePath` and `Dependencies` are relative to
+`RepositoryRoot`; absolute and UNC paths are also accepted. Dependency paths are
+resolved relative to the package directory first, then the repository root.
+
+`PackageName` is used for `Get-AppxPackage` and defaults to `Name`. An already
+installed package is skipped unless `ForceUpdate` is true. Menu item 14 opens the
+Appx submenu; `0` installs all packages and a number installs one. In TestMode
+the installation is simulated and logged.
+
 ## Autostart and tweaks
 
 ```json
@@ -280,7 +316,7 @@ display name for backward compatibility. `Target`: `AC`, `DC` or `Both`.
 "FolderRedirection": {
   "RootFolderName": "Users",
   "PreferredDriveLetter": "D",
-  "ExcludedDriveLetters": ["C"],
+  "ExcludedDriveLetters": [],
   "AllowedDriveTypes": [3],
   "Folders": [
     { "Name": "Desktop", "RegValueName": "Desktop" },
@@ -291,7 +327,9 @@ display name for backward compatibility. `Target`: `AC`, `DC` or `Both`.
 
 `Name` is the folder name on the target drive; `RegValueName` is the value in
 `User Shell Folders`. `AllowedDriveTypes`: `3` — local fixed disk, `4` — network
-drive, `5` — CD/DVD. If no suitable drive exists, the step fails.
+drive, `5` — CD/DVD. The system drive is detected automatically (via
+`Win32_OperatingSystem.SystemDrive`/`%SystemDrive%`) and always excluded, even
+when it is not `C:`. If no suitable drive exists, the step fails.
 
 ## Outlook signature
 

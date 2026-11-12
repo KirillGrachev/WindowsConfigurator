@@ -147,7 +147,7 @@ Describe 'Импорт реальной конфигурации проекта'
 
     It 'состав -RunAll берётся из General.DefaultSteps и состоит из известных шагов' {
         $known = @(Get-StepDefinitions | ForEach-Object { $_.Name })
-        $script:Config.General.DefaultSteps.Count | Should -Be 8
+        $script:Config.General.DefaultSteps.Count | Should -Be 9
         foreach ($step in $script:Config.General.DefaultSteps) { $known | Should -Contain $step }
     }
 

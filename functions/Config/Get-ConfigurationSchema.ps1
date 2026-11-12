@@ -29,7 +29,7 @@
     $resolved = $SchemaPath
 
     if (-not $resolved) {
-        $configJson = Get-JsonFileContent -Path $ConfigPath
+        $configJson = Get-ConfigurationFileContent -Path $ConfigPath
         $declared = ''
         foreach ($property in $configJson.PSObject.Properties) {
             if ($property.Name -eq '$schema') { $declared = [string]$property.Value; break }

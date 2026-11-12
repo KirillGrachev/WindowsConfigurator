@@ -22,7 +22,10 @@
         [AllowEmptyCollection()]
         [object[]]$Apps,
 
-        [string]$Title = 'Выберите приложение для установки'
+        [string]$Title = 'Выберите приложение для установки',
+
+        [AllowEmptyString()]
+        [string]$DefaultType = ''
     )
 
     $lines = New-Object System.Collections.Generic.List[string]
@@ -30,7 +33,7 @@
 
     for ($i = 0; $i -lt $Apps.Count; $i++) {
         $name = if ($Apps[$i].ContainsKey('Name')) { [string]$Apps[$i].Name } else { "(приложение $($i + 1))" }
-        $type = if ($Apps[$i].ContainsKey('Type')) { [string]$Apps[$i].Type } else { '' }
+        $type = if ($Apps[$i].ContainsKey('Type')) { [string]$Apps[$i].Type } else { $DefaultType }
         $lines.Add("$($i + 1). $name [$type]") | Out-Null
     }
 

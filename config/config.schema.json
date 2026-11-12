@@ -33,7 +33,8 @@
           "uniqueItems": true,
           "minItems": 1,
           "items": { "$ref": "#/definitions/stepName" },
-          "default": [ "Activation", "AppRemoval", "Installation", "Desktop", "Taskbar", "Autostart", "Power", "NumLock" ],
+          "default": [ "Activation", "AppRemoval", "Installation",
+        "AppxPackages", "Desktop", "Taskbar", "Autostart", "Power", "NumLock" ],
           "description": "Состав -RunAll. Порядок = порядок выполнения."
         },
         "StepDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 60, "default": 2, "description": "Пауза между шагами (сек)." },
@@ -163,6 +164,13 @@
       "type": "array",
       "items": { "$ref": "#/definitions/appItem" },
       "default": []
+    },    "AppxPackages": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "RepositoryRoot": { "type": "string", "default": "", "description": "Корень каталога с Appx/MSIX-пакетами (локальный или UNC)." },
+        "Packages": { "type": "array", "items": { "$ref": "#/definitions/appxPackage" }, "default": [] }
+      }
     },
     "AutoStartApps": {
       "type": "object",
@@ -247,7 +255,7 @@
       "properties": {
         "RootFolderName": { "type": "string", "default": "Users", "description": "Имя родительского каталога на целевом диске." },
         "PreferredDriveLetter": { "type": "string", "pattern": "^[A-Za-z]?$", "default": "", "description": "Предпочтительная буква диска. Пусто = первый подходящий." },
-        "ExcludedDriveLetters": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z]$" }, "uniqueItems": true, "default": [ "C" ], "description": "Буквы дисков, которые нельзя использовать." },
+        "ExcludedDriveLetters": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z]$" }, "uniqueItems": true, "default": [], "description": "Буквы дисков, которые нельзя использовать. Системный диск исключается автоматически." },
         "AllowedDriveTypes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 6 }, "minItems": 1, "default": [ 3 ], "description": "Win32_LogicalDisk.DriveType: 3 = локальный фиксированный, 4 = сетевой, 5 = CD/DVD." },
         "RegistrySubPath": { "type": "string", "default": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders", "description": "Подпуть User Shell Folders в кусте пользователя." },
         "Folders": {
@@ -390,6 +398,7 @@
         "Activation",
         "AppRemoval",
         "Installation",
+        "AppxPackages",
         "Desktop",
         "Taskbar",
         "Autostart",
@@ -567,7 +576,26 @@
         "SourceFolderName": { "type": "string", "default": "", "description": "Имя исходной папки в профиле. Пусто = совпадает с Name." }
       }
     },
-    "menuItem": {
+    "appxPackage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "Name", "PackagePath" ],
+      "properties": {
+        "Name": { "type": "string", "minLength": 1, "description": "Отображаемое имя пакета." },
+        "PackagePath": { "type": "string", "minLength": 1, "description": "Путь к .appx/.msix/.msixbundle относительно RepositoryRoot или абсолютный/UNC." },
+        "PackageName": { "type": "string", "default": "", "description": "Имя для Get-AppxPackage; пусто = Name." },
+        "Dependencies": { "type": "array", "items": { "type": "string", "minLength": 1 }, "default": [], "description": "Зависимости; устанавливаются до основного пакета." },
+        "ForceUpdate": { "type": "boolean", "default": false, "description": "Устанавливать, даже если пакет уже найден." }
+      }
+    },
+    "appxPackages": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "RepositoryRoot": { "type": "string", "default": "" },
+        "Packages": { "type": "array", "items": { "$ref": "#/definitions/appxPackage" }, "default": [] }
+      }
+    },    "menuItem": {
       "description": "Пункт интерактивного меню. RequiresUser=true допустим только для шагов, которым нужен пользователь (if/then).",
       "type": "object",
       "additionalProperties": false,

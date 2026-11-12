@@ -25,7 +25,7 @@
         [int[]]$AllowedDriveTypes = @(3),
 
         [AllowEmptyCollection()]
-        [string[]]$ExcludedDriveLetters = @('C')
+        [string[]]$ExcludedDriveLetters = @()
     )
 
     $excluded = @($ExcludedDriveLetters | ForEach-Object { $_.TrimEnd(':').ToUpperInvariant() } | Where-Object { $_ })

@@ -50,7 +50,14 @@
 
     $rootFolderName = [string](Get-ConfigSectionValue -Config $Config -Section 'FolderRedirection' -Key 'RootFolderName' -DefaultValue 'Users')
     $preferredLetter = [string](Get-ConfigSectionValue -Config $Config -Section 'FolderRedirection' -Key 'PreferredDriveLetter' -DefaultValue '')
-    $excludedLetters = @(Get-ConfigSectionValue -Config $Config -Section 'FolderRedirection' -Key 'ExcludedDriveLetters' -DefaultValue @('C'))
+    $excludedLetters = @(Get-ConfigSectionValue -Config $Config -Section 'FolderRedirection' -Key 'ExcludedDriveLetters' -DefaultValue @())
+    try {
+        $systemDrive = Get-SystemDriveLetter
+        $excludedLetters = @($excludedLetters + $systemDrive | ForEach-Object { ([string]$_).TrimEnd(':').ToUpperInvariant() } | Where-Object { $_ } | Sort-Object -Unique)
+    } catch {
+        Write-Log -Message "Не удалось определить системный диск: $($_.Exception.Message). Используются только явно исключённые буквы." -Level Warn
+        $excludedLetters = @($excludedLetters | ForEach-Object { ([string]$_).TrimEnd(':').ToUpperInvariant() } | Where-Object { $_ } | Sort-Object -Unique)
+    }
     $allowedTypes = @(Get-ConfigSectionValue -Config $Config -Section 'FolderRedirection' -Key 'AllowedDriveTypes' -DefaultValue @(3) | ForEach-Object { [int]$_ })
     $subPath = [string](Get-ConfigSectionValue -Config $Config -Section 'FolderRedirection' -Key 'RegistrySubPath' -DefaultValue 'Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders')
     $folders = @(Get-ConfigSectionValue -Config $Config -Section 'FolderRedirection' -Key 'Folders' -DefaultValue @())

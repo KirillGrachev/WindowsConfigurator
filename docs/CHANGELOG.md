@@ -4,6 +4,22 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.18] - 2026-11-12
+
+### Added
+
+- Appx/MSIX installation step and submenu: dependencies are installed before
+  the main package, paths can be local or UNC, and installed packages are
+  skipped unless `ForceUpdate` is set.
+- YAML configuration support (`.yaml`/`.yml`) using the same JSON Schema, with a
+  self-contained parser for mappings, sequences, flow collections and comments.
+- Real Windows Sandbox test of the Appx dependency-first installation.
+
+### Fixed
+
+- Folder redirection detects the real system drive instead of always excluding
+  `C:`.
+
 ## [2.1.17] - 2026-11-11
 
 ### Changed

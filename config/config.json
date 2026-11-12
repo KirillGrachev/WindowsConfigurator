@@ -1,7 +1,7 @@
 {
   "$schema": "./config.schema.json",
   "Meta": {
-    "Version": "2.1.17",
+    "Version": "2.1.18",
     "IsTestData": true,
     "Environment": "TEST",
     "CompanyName": "Test Company LLC",
@@ -13,6 +13,7 @@
       "Activation",
       "AppRemoval",
       "Installation",
+      "AppxPackages",
       "Desktop",
       "Taskbar",
       "Autostart",
@@ -103,7 +104,21 @@
       "WaitAfterUninstallSeconds": 5
     }
   ],
-  "AppsToInstall": [
+  "AppxPackages": {
+    "RepositoryRoot": "\\\\fileserver01.test.local\\Deploy$\\Appx",
+    "Packages": [
+      {
+        "Name": "Test Calculator",
+        "PackagePath": "Calculator\\TestCalculator.msixbundle",
+        "PackageName": "Test.WindowsCalculator",
+        "Dependencies": [
+          "Calculator\\Dependencies\\Test.VCLibs.appx",
+          "Calculator\\Dependencies\\Test.UI.Xaml.appx"
+        ],
+        "ForceUpdate": false
+      }
+    ]
+  },  "AppsToInstall": [
     {
       "Name": "Test Office Suite",
       "Type": "MSI",
@@ -236,7 +251,7 @@
   "FolderRedirection": {
     "RootFolderName": "Users",
     "PreferredDriveLetter": "",
-    "ExcludedDriveLetters": [ "C" ],
+    "ExcludedDriveLetters": [],
     "AllowedDriveTypes": [ 3 ],
     "RegistrySubPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
     "Folders": [
@@ -316,6 +331,7 @@
       { "Id": "1", "Label": "Активация Windows (KMS)", "Step": "Activation", "Color": "White", "RequiresUser": false, "InRunAll": true },
       { "Id": "2", "Label": "Удаление встроенных приложений", "Step": "AppRemoval", "Color": "White", "RequiresUser": false, "InRunAll": true },
       { "Id": "3", "Label": "Установка приложений", "Step": "Installation", "Color": "White", "RequiresUser": false, "InRunAll": true, "HasSubmenu": true },
+      { "Id": "14", "Label": "Установка Appx-пакетов", "Step": "AppxPackages", "Color": "White", "RequiresUser": false, "InRunAll": true, "HasSubmenu": true },
       { "Id": "4", "Label": "Показ значков рабочего стола", "Step": "Desktop", "Color": "White", "RequiresUser": true, "InRunAll": true },
       { "Id": "5", "Label": "Настройка панели задач", "Step": "Taskbar", "Color": "White", "RequiresUser": true, "InRunAll": true },
       { "Id": "6", "Label": "Отключение автозагрузки", "Step": "Autostart", "Color": "White", "RequiresUser": true, "InRunAll": true },
