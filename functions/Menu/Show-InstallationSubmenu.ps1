@@ -29,6 +29,7 @@
     )
 
     $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add('') | Out-Null
     $lines.Add($Title) | Out-Null
 
     for ($i = 0; $i -lt $Apps.Count; $i++) {

@@ -4,6 +4,15 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.22] - 2026-11-13
+
+### Fixed
+
+- Installation and Appx submenus now always start with a blank line, so the
+  spacing after the main-menu prompt is identical.
+- Screenshots were re-captured and renamed to avoid stale browser/GitHub image
+  caches; README captions and links were aligned.
+
 ## [2.1.21] - 2026-11-13
 
 ### Changed

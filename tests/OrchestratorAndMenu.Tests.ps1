@@ -269,6 +269,12 @@ Describe 'Интерактивное меню: данные и отрисовк�
         ($lines | Where-Object { $_ -match '^8\.' }) -join '' | Should -Match 'Не входит'
     }
 
+    It 'подменю отделено пустой строкой от приглашения' {
+        $lines = @(Show-InstallationSubmenu -Apps $script:Config.AppsToInstall)
+        $lines[0] | Should -Be ''
+        $lines[1] | Should -Be 'Выберите приложение для установки'
+    }
+
     It 'подменю установки перечисляет приложения и пункт "установить все"' {
         $lines = @(Show-InstallationSubmenu -Apps $script:Config.AppsToInstall)
         ($lines -join "`n") | Should -Match '1\. Test Office Suite'

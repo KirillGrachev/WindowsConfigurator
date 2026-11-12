@@ -66,17 +66,17 @@ or invalid configuration.
 
 ## Screenshots
 
-Main menu (TestMode, no administrator rights):
+Main menu (TestMode):
 
-![Main menu](screenshots/main-menu.png)
+![Main menu](screenshots/main-menu-2.1.22.png)
 
-Application installation submenu; `X`, `Q` or `Enter` returns to the main menu:
+Application installation submenu (TestMode); `X`, `Q` or `Enter` returns to the main menu:
 
-![Installation submenu](screenshots/install-submenu.png)
+![Installation submenu](screenshots/install-submenu-2.1.22.png)
 
-Appx/MSIX submenu; dependencies are installed before the selected package:
+Appx/MSIX submenu (TestMode); dependencies are installed before the selected package:
 
-![Appx submenu](screenshots/appx-submenu.png)
+![Appx submenu](screenshots/appx-submenu-2.1.22.png)
 
 ## Configuration
 
