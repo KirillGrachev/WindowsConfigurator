@@ -142,7 +142,12 @@ When the configurator is started through `Configure-Windows.ps1` in a real run
 
 - Every registry key is exported once, before its first modification.
 - Keys that did not exist are recorded and deleted on rollback.
-- The journal is written to `backup.json` after each change.
+- `backup.json` is the **journal**, not the backup itself; exported keys are
+  stored next to it as `registry-001.reg`, `registry-002.reg`, etc.
+- If the journal's `Registry` array is empty, no step changed the registry
+  through `Set-RegistryValue` during that run. MSI/EXE installers, Appx
+  operations and `slmgr` write the registry directly and are not captured.
+- A `README.txt` in the backup folder explains the files.
 
 Restore the registry from a backup session with:
 

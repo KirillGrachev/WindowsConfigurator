@@ -181,7 +181,14 @@ try {
     Write-Host '==============================================' -ForegroundColor Cyan
 
     if ($backupState) {
-        Write-Host ("[INFO] Откат реестра: .\tools\Restore-Backup.ps1 -Root '{0}'" -f $backupState.Root) -ForegroundColor Gray
+        $backupCount = @($backupState.Registry).Count
+        if ($backupCount -eq 0) {
+            Write-Host "[INFO] Резервная копия реестра пуста: за запуск не было изменений через Set-RegistryValue." -ForegroundColor Yellow
+            Write-Host "       backup.json - журнал; .reg-файлы появляются только для сохранённых ключей." -ForegroundColor Gray
+            Write-Host "       Установщики MSI/EXE, Appx и slmgr пишут реестр напрямую и в этот журнал не попадают." -ForegroundColor Gray
+        } else {
+            Write-Host ("[INFO] Резервная копия реестра: {0} ключ(ей). Откат: .\tools\Restore-Backup.ps1 -Root '{1}'" -f $backupCount, $backupState.Root) -ForegroundColor Gray
+        }
     }
 
     if ($summary.Success) { exit 0 }

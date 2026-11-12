@@ -1,6 +1,6 @@
 $schema: ./config.schema.json
 Meta:
-  Version: 2.1.18
+  Version: 2.1.19
   IsTestData: true
   Environment: TEST
   CompanyName: Test Company LLC

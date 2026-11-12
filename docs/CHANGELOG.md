@@ -4,6 +4,15 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.19] - 2026-11-12
+
+### Changed
+
+- Registry backup folders now include `README.txt` explaining that
+  `backup.json` is a journal and actual keys are in `registry-*.reg`.
+- The end-of-run summary reports an empty backup and explains that MSI/EXE,
+  Appx and `slmgr` changes are not captured by the journal.
+
 ## [2.1.18] - 2026-11-12
 
 ### Added

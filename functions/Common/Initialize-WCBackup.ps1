@@ -34,5 +34,26 @@
     }
     $global:WindowsConfiguratorState.Backup = $state
     $null = Save-WCBackupState
+
+    $readme = @'
+WindowsConfigurator registry backup
+====================================
+
+backup.json
+    Journal of exported and created keys. It is not the backup itself.
+
+registry-*.reg
+    Actual exported registry keys. A file appears only after a key is
+    exported, i.e. after the first Set-RegistryValue call for that key.
+
+If "Registry" in backup.json is empty, no step changed the registry through
+Set-RegistryValue during this run. MSI/EXE installers, Appx operations and
+slmgr write the registry directly and are not captured by this journal.
+
+Restore:
+    .\tools\Restore-Backup.ps1 -Root "<this folder>"
+'@
+    [System.IO.File]::WriteAllText((Join-Path -Path $state.Root -ChildPath 'README.txt'), $readme, (New-Object System.Text.UTF8Encoding($false)))
+
     return $state
 }
