@@ -1,6 +1,6 @@
 ﻿@{
     RootModule           = 'WindowsConfigurator.psm1'
-    ModuleVersion        = '2.1.20'
+    ModuleVersion        = '2.1.21'
     GUID                 = '55204824-8ded-4ba8-9c9e-0f267bd18418'
     Author               = 'Kirill Grachev'
     Copyright            = '(c) Kirill Grachev. All rights reserved.'

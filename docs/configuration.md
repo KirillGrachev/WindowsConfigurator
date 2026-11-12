@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.20",
+  "Version": "2.1.21",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -43,7 +43,7 @@ and the failed rule).
 
 ```json
 "General": {
-  "DefaultSteps": ["Activation", "AppRemoval", "Installation", "AppxPackages", "Desktop", "Taskbar", "Autostart", "Power", "NumLock"],
+  "DefaultSteps": ["Activation", "AppRemoval", "Installation", "Desktop", "Taskbar", "Autostart", "Power", "NumLock"],
   "StepDelaySeconds": 2,
   "RequireAdministrator": true,
   "ConfirmImpact": "Medium",
@@ -52,7 +52,8 @@ and the failed rule).
 ```
 
 `DefaultSteps` is used by `-RunAll`. `StopOnFirstFailure: true` stops the run
-after the first failed step.
+after the first failed step. `AppxPackages` is intentionally not in
+`DefaultSteps`; install Appx packages through menu item 13.
 
 ## Logging
 
@@ -245,7 +246,7 @@ For each selected package, all dependencies are installed first, then the main
 resolved relative to the package directory first, then the repository root.
 
 `PackageName` is used for `Get-AppxPackage` and defaults to `Name`. An already
-installed package is skipped unless `ForceUpdate` is true. Menu item 14 opens the
+installed package is skipped unless `ForceUpdate` is true. Menu item 13 opens the
 Appx submenu; `0` installs all packages and a number installs one. In TestMode
 the installation is simulated and logged.
 
