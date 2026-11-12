@@ -1,7 +1,7 @@
 {
   "$schema": "./config.schema.json",
   "Meta": {
-    "Version": "2.1.20",
+    "Version": "2.1.21",
     "IsTestData": true,
     "Environment": "TEST",
     "CompanyName": "Test Company LLC",
@@ -13,7 +13,6 @@
       "Activation",
       "AppRemoval",
       "Installation",
-      "AppxPackages",
       "Desktop",
       "Taskbar",
       "Autostart",
@@ -331,17 +330,17 @@
       { "Id": "1", "Label": "Активация Windows (KMS)", "Step": "Activation", "Color": "White", "RequiresUser": false, "InRunAll": true },
       { "Id": "2", "Label": "Удаление встроенных приложений", "Step": "AppRemoval", "Color": "White", "RequiresUser": false, "InRunAll": true },
       { "Id": "3", "Label": "Установка приложений", "Step": "Installation", "Color": "White", "RequiresUser": false, "InRunAll": true, "HasSubmenu": true },
-      { "Id": "14", "Label": "Установка Appx-пакетов", "Step": "AppxPackages", "Color": "White", "RequiresUser": false, "InRunAll": true, "HasSubmenu": true },
+      { "Id": "13", "Label": "Установка Appx-пакетов", "Step": "AppxPackages", "Color": "White", "RequiresUser": false, "InRunAll": false, "Hint": "Не входит в пункт 14", "HasSubmenu": true },
       { "Id": "4", "Label": "Показ значков рабочего стола", "Step": "Desktop", "Color": "White", "RequiresUser": true, "InRunAll": true },
       { "Id": "5", "Label": "Настройка панели задач", "Step": "Taskbar", "Color": "White", "RequiresUser": true, "InRunAll": true },
       { "Id": "6", "Label": "Отключение автозагрузки", "Step": "Autostart", "Color": "White", "RequiresUser": true, "InRunAll": true },
       { "Id": "7", "Label": "Настройка планов питания", "Step": "Power", "Color": "White", "RequiresUser": false, "InRunAll": true },
-      { "Id": "8", "Label": "Перенаправление пользовательских папок", "Step": "FolderRedirection", "Color": "White", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 12" },
+      { "Id": "8", "Label": "Перенаправление пользовательских папок", "Step": "FolderRedirection", "Color": "White", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 14" },
       { "Id": "9", "Label": "Включить NumLock при запуске", "Step": "NumLock", "Color": "White", "RequiresUser": true, "InRunAll": true },
-      { "Id": "10", "Label": "Создать подпись для почты", "Step": "Signature", "Color": "White", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 12" },
-      { "Id": "11", "Label": "Вернуть контекстное меню Windows 10", "Step": "ClassicContextMenu", "Color": "Yellow", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 12" },
-      { "Id": "12", "Label": "Выключить NumLock при запуске", "Step": "NumLockOff", "Color": "Yellow", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 12" },
-      { "Id": "13", "Label": "Запустить все эти шаги", "Step": "RunAll", "Color": "Green", "RequiresUser": true, "InRunAll": false }
+      { "Id": "10", "Label": "Создать подпись для почты", "Step": "Signature", "Color": "White", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 14" },
+      { "Id": "11", "Label": "Вернуть контекстное меню Windows 10", "Step": "ClassicContextMenu", "Color": "Yellow", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 14" },
+      { "Id": "12", "Label": "Выключить NumLock при запуске", "Step": "NumLockOff", "Color": "Yellow", "RequiresUser": true, "InRunAll": false, "Hint": "Не входит в пункт 14" },
+      { "Id": "14", "Label": "Запустить все эти шаги", "Step": "RunAll", "Color": "Green", "RequiresUser": true, "InRunAll": false }
     ]
   }
 }

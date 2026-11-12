@@ -4,6 +4,15 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.21] - 2026-11-13
+
+### Changed
+
+- Appx installation is menu item 13 and is explicitly marked as not included in
+  RunAll; RunAll is now menu item 14.
+- Optional steps now point to item 14 in their hints.
+- Updated menu screenshots for the new numbering.
+
 ## [2.1.20] - 2026-11-12
 
 ### Changed

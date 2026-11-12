@@ -111,11 +111,11 @@ Describe 'Appx submenu' {
         ($lines -join ';') | Should -Match 'Calculator \[Appx\]'
     }
 
-    It 'пункт меню 14 вызывает Install-AppxPackages для выбранного пакета' {
+    It 'пункт меню 13 вызывает Install-AppxPackages для выбранного пакета' {
         Mock Install-AppxPackages { return [PSCustomObject]@{ Status = 'Success'; Message = 'ok' } }
-        $items = @([PSCustomObject]@{ Id = '14'; Label = 'Appx'; Step = 'AppxPackages'; RequiresUser = $false; HasSubmenu = $true })
+        $items = @([PSCustomObject]@{ Id = '13'; Label = 'Appx'; Step = 'AppxPackages'; RequiresUser = $false; HasSubmenu = $true })
         $config = Copy-ConfigValue -Value $script:Config
-        $result = Invoke-InteractiveMenuAction -Choice '14' -Items $items -Config $config -SubChoice '1' -Confirm:$false
+        $result = Invoke-InteractiveMenuAction -Choice '13' -Items $items -Config $config -SubChoice '1' -Confirm:$false
         $result.Action | Should -Be 'InstallSingle'
         Should -Invoke Install-AppxPackages -Times 1 -ParameterFilter { $PackageName -eq 'Test Calculator' }
     }
