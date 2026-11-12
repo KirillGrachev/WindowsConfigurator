@@ -1,6 +1,6 @@
 $schema: ./config.schema.json
 Meta:
-  Version: 2.1.19
+  Version: 2.1.20
   IsTestData: true
   Environment: TEST
   CompanyName: Test Company LLC
@@ -282,7 +282,7 @@ ContextMenu:
   ValueName: (Default)
   RestartExplorer: true
 Menu:
-  Title: Windows 11 Конфигуратор
+  Title: Windows 10/11 Конфигуратор
   ExitChoice: '0'
   ContinuePrompt: Нажмите Enter для продолжения
   InvalidChoiceMessage: Неправильный выбор

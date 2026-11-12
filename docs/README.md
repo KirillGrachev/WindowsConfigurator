@@ -74,6 +74,10 @@ Application installation submenu; `X`, `Q` or `Enter` returns to the main menu:
 
 ![Installation submenu](screenshots/install-submenu.png)
 
+Appx/MSIX submenu; dependencies are installed before the selected package:
+
+![Appx submenu](screenshots/appx-submenu.png)
+
 ## Configuration
 
 The shipped `config/config.json` is a **test** configuration with placeholders
