@@ -23,12 +23,14 @@
         [string]$Path
     )
 
-    if (-not (Test-Path -Path $Path -PathType Leaf)) {
+    try {
+        $resolvedPath = (Resolve-Path -LiteralPath $Path -ErrorAction Stop).ProviderPath
+    } catch {
         throw "JSON-файл не найден: $Path"
     }
 
     try {
-        $content = [System.IO.File]::ReadAllText($Path)
+        $content = [System.IO.File]::ReadAllText($resolvedPath)
     } catch {
         throw "Не удалось прочитать файл '$Path': $($_.Exception.Message)"
     }

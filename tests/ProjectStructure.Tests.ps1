@@ -409,7 +409,7 @@ Describe 'Регистрация шагов и псевдонимы совмес
 
     It 'Get-StepDefinitions возвращает 12 шагов с уникальными именами и существующими функциями' {
         $definitions = @(Get-StepDefinitions)
-        $definitions.Count | Should -Be 12
+        $definitions.Count | Should -Be 13
         ($definitions.Name | Sort-Object -Unique).Count | Should -Be $definitions.Count
 
         foreach ($definition in $definitions) {

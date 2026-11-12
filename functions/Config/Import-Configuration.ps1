@@ -4,7 +4,7 @@
         Загружает, валидирует и нормализует конфигурацию проекта.
     .DESCRIPTION
         Последовательность (fail-fast):
-          1. чтение config.json (Get-JsonFileContent);
+          1. чтение config.json/config.yaml (Get-ConfigurationFileContent);
           2. поиск и чтение схемы (Get-ConfigurationSchema);
           3. ВАЛИДАЦИЯ по JSON Schema - при ошибке исключение содержит путь к полю
              и причину (опечатка в GUID, лишний раздел, неверный формат ключа);
@@ -54,7 +54,7 @@
     $pathToResolve = $Path -replace '^Microsoft\.PowerShell\.Core\\FileSystem::', ''
     $pathToResolve = $pathToResolve -replace '^FileSystem::', ''
     $resolvedPath = (Resolve-Path -LiteralPath $pathToResolve -ErrorAction Stop).ProviderPath
-    $json = Get-JsonFileContent -Path $resolvedPath
+    $json = Get-ConfigurationFileContent -Path $resolvedPath
 
     $schemaInfo = Get-ConfigurationSchema -ConfigPath $resolvedPath -SchemaPath $SchemaPath
 
@@ -69,7 +69,7 @@
     $defaults = Get-ConfigurationDefaults -Schema $schemaInfo.Schema
     $fromFile = Copy-ConfigValue -Value $json
     if ($fromFile -isnot [System.Collections.IDictionary]) {
-        throw "Корень конфигурации '$resolvedPath' должен быть JSON-объектом."
+        throw "Корень конфигурации '$resolvedPath' должен быть объектом."
     }
 
     $config = Merge-Hashtable -Base $defaults -Override $fromFile

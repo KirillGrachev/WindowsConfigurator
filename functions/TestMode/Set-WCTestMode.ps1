@@ -53,6 +53,9 @@
         [ValidateRange(1, 99999)]
         [int]$FakeBuildNumber = 26100,
 
+        [ValidatePattern('^[A-Za-z]$')]
+        [string]$FakeSystemDrive = 'C',
+
         [AllowEmptyCollection()]
         [string[]]$FakeDriveLetters = @('D')
     )
@@ -94,6 +97,7 @@
         FakeUserName            = $FakeUserName
         FakeSid                 = $FakeSid
         FakeBuildNumber         = $FakeBuildNumber
+        FakeSystemDrive         = $FakeSystemDrive.TrimEnd(':').ToUpperInvariant()
         FakeDriveLetters        = @($FakeDriveLetters | ForEach-Object { $_.TrimEnd(':').ToUpperInvariant() } | Where-Object { $_ })
         FakeAppxPackages        = (New-Object System.Collections.Generic.List[object])
         FakeProvisionedPackages = (New-Object System.Collections.Generic.List[object])

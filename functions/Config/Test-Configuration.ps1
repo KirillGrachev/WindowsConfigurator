@@ -28,7 +28,7 @@
     )
 
     $schemaInfo = Get-ConfigurationSchema -ConfigPath $Path -SchemaPath $SchemaPath
-    $json = Get-JsonFileContent -Path $Path
+    $json = Get-ConfigurationFileContent -Path $Path
 
     $result = Test-JsonSchema -InputObject $json -Schema $schemaInfo.Schema
 

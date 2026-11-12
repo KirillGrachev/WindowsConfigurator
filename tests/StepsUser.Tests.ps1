@@ -565,6 +565,14 @@ Describe 'Шаг FolderRedirection: перенос папок профиля' {
         $result.Data.Drive | Should -Be 'D'
     }
 
+    It 'автоматически исключает системный диск, даже если он не C' {
+        Mock Get-SystemDriveLetter { return 'A' }
+        Mock Get-LocalFixedDrives { return @('D') }
+        $result = Set-UserFolderRedirection -UserName 'test.user' -Config $script:Config -WhatIf -Confirm:$false
+        $result.Status | Should -Be 'WhatIf'
+        Should -Invoke Get-LocalFixedDrives -Times 1 -ParameterFilter { @($ExcludedDriveLetters) -contains 'A' }
+    }
+
     It '-WhatIf показывает план переноса и не создаёт каталоги' {
         Mock Get-LocalFixedDrives { return @('D') }
         $result = Set-UserFolderRedirection -UserName 'test.user' -Config $script:Config -WhatIf -Confirm:$false

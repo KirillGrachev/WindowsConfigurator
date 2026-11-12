@@ -14,13 +14,15 @@ changes.
 
 ## Features
 
-- **One config** — `config/config.json`, validated against `config/config.schema.json`.
-- **Interactive menu** — pick steps one by one, with a submenu for application installation.
+- **One config** — `config/config.json` or `config/config.yaml`, validated against `config/config.schema.json`.
+- **Interactive menu** — pick steps one by one, with submenus for MSI/EXE and Appx/MSIX installation.
 - **Batch mode** — run everything with `-RunAll` or selected steps with `-RunSteps`.
-- **Idempotent** — already installed applications are skipped; repeated runs are safe.
-- **Secrets** — `env:`, `file:` and `dpapi:` references instead of plaintext keys in JSON.
+- **Idempotent** — already installed applications and Appx packages are skipped; repeated runs are safe.
+- **Appx dependencies** — dependencies are installed before the main `.appx`/`.msix`/`.msixbundle`.
+- **Secrets** — `env:`, `file:` and `dpapi:` references instead of plaintext keys in the configuration.
 - **TestMode** — registry, processes, files and Appx operations are simulated in a sandbox.
 - **Outlook signature** — HTML/RTF/TXT generated from AD data, a template and a logo.
+- **System-drive aware** — the real system drive is detected instead of assuming `C:`.
 - **Cross-platform tests** — Pester 5/6, Windows PowerShell 5.1 and PowerShell 7.
 
 ## Requirements

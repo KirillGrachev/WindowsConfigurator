@@ -404,6 +404,20 @@ Describe 'Restart-ExplorerProcess' {
     }
 }
 
+Describe 'Get-SystemDriveLetter' {
+
+    It 'в TestMode использует FakeSystemDrive' {
+        Mock Test-WCTestMode { return $true }
+        Mock Get-WCTestModeState { return [PSCustomObject]@{ FakeSystemDrive = 'A' } }
+        Get-SystemDriveLetter | Should -Be 'A'
+    }
+
+    It 'на реальной Windows возвращает букву системного диска' {
+        Mock Test-WCTestMode { return $false }
+        Get-SystemDriveLetter | Should -Match '^[A-Z]$'
+    }
+}
+
 Describe 'Get-LocalFixedDrives (регрессия WMI-командлета и [0] от строки)' {
 
     It 'возвращает буквы дисков без двоеточия, исключая системные' {

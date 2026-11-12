@@ -57,7 +57,7 @@ Describe 'Оркестратор Start-WindowsConfiguration' {
         $summary.UserName | Should -Be 'test.user'
         $summary.Mode | Should -Be 'Auto'
         $summary.DurationMs | Should -BeGreaterOrEqual 0
-        $summary.Results.Count | Should -Be 8
+        $summary.Results.Count | Should -Be 9
     }
 
     It '-RunAll выполняет шаги из General.DefaultSteps в порядке их регистрации' {

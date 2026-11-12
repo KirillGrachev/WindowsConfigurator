@@ -88,11 +88,24 @@
     }
 
     if ($item.HasSubmenu -or $stepName -eq 'InstallSubmenu') {
+        $isAppx = ($stepName -eq 'AppxPackages')
         $apps = @()
-        if ($null -ne $Config -and $Config.ContainsKey('AppsToInstall')) { $apps = @($Config.AppsToInstall) }
+        if ($isAppx) {
+            if ($null -ne $Config -and $Config.ContainsKey('AppxPackages') -and $Config.AppxPackages -is [System.Collections.IDictionary] -and $Config.AppxPackages.Contains('Packages')) {
+                $apps = @($Config.AppxPackages.Packages)
+            }
+        } elseif ($null -ne $Config -and $Config.ContainsKey('AppsToInstall')) {
+            $apps = @($Config.AppsToInstall)
+        }
 
+        if ($apps.Count -eq 0) {
+            return [PSCustomObject]@{ Handled = $false; Action = 'EmptySubmenu'; Step = $stepName; Result = $null; Message = 'В конфигурации нет приложений для этого подменю.' }
+        }
+
+        $title = if ($isAppx) { 'Выберите Appx-пакет для установки' } else { 'Выберите приложение для установки' }
+        $defaultType = if ($isAppx) { 'Appx' } else { '' }
         if ([string]::IsNullOrEmpty($SubChoice)) {
-            $null = Show-InstallationSubmenu -Apps $apps
+            $null = Show-InstallationSubmenu -Apps $apps -Title $title -DefaultType $defaultType
             $SubChoice = Read-MenuChoice -Prompt 'Ваш выбор'
         }
 
@@ -111,10 +124,11 @@
         }
 
         if ($sub -eq '0') {
-            if (-not $PSCmdlet.ShouldProcess('все приложения', 'Установить программное обеспечение')) {
+            $target = if ($isAppx) { 'все Appx-пакеты' } else { 'все приложения' }
+            if (-not $PSCmdlet.ShouldProcess($target, 'Установить программное обеспечение')) {
                 return [PSCustomObject]@{ Handled = $true; Action = 'Cancelled'; Step = $stepName; Result = $null; Message = 'Отменено пользователем.' }
             }
-            $result = Install-Software -Config $Config -Confirm:$false
+            $result = if ($isAppx) { Install-AppxPackages -Config $Config -Confirm:$false } else { Install-Software -Config $Config -Confirm:$false }
             return [PSCustomObject]@{ Handled = $true; Action = 'InstallAll'; Step = $stepName; Result = $result; Message = $result.Message }
         }
 
@@ -127,7 +141,7 @@
         if (-not $PSCmdlet.ShouldProcess($appName, 'Установить приложение')) {
             return [PSCustomObject]@{ Handled = $true; Action = 'Cancelled'; Step = $stepName; Result = $null; Message = 'Отменено пользователем.' }
         }
-        $result = Install-Software -Config $Config -AppName $appName -Confirm:$false
+        $result = if ($isAppx) { Install-AppxPackages -Config $Config -PackageName $appName -Confirm:$false } else { Install-Software -Config $Config -AppName $appName -Confirm:$false }
         return [PSCustomObject]@{ Handled = $true; Action = 'InstallSingle'; Step = $stepName; Result = $result; Message = "$appName : $($result.Message)" }
     }
 
