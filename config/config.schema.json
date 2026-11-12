@@ -363,7 +363,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "Title": { "type": "string", "default": "Windows 11 Конфигуратор" },
+        "Title": { "type": "string", "default": "Windows 10/11 Конфигуратор" },
         "ExitChoice": { "type": "string", "default": "0" },
         "ContinuePrompt": { "type": "string", "default": "Нажмите Enter для продолжения" },
         "InvalidChoiceMessage": { "type": "string", "default": "Неправильный выбор" },

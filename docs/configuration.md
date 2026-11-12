@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.19",
+  "Version": "2.1.20",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -356,7 +356,7 @@ Placeholders are filled from AD data; fallbacks are used for empty attributes.
   "RestartExplorer": true
 },
 "Menu": {
-  "Title": "Windows 11 Configurator",
+  "Title": "Windows 10/11 Configurator",
   "ExitChoice": "0",
   "RunAllLabel": "Run all these steps",
   "ContinuePrompt": "Press Enter to continue",
