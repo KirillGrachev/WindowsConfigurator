@@ -1,0 +1,21 @@
+$schema: ../config/config.schema.json
+Meta:
+  Version: 1.0.0
+  IsTestData: true
+  Environment: TEST
+  CompanyName: YAML Test Company
+Activation:
+  Enabled: false
+AppsToInstall: []
+SignatureSettings:
+  TemplatePath: C:\Test\signature-template.htm
+AppxPackages:
+  RepositoryRoot: C:\Test\Appx
+  Packages:
+    - Name: Test App
+      PackagePath: Test.App.msix
+      PackageName: Test.App
+      Version: 1.0.0.0
+      Dependencies:
+        - Path: Test.Dep.msix
+          PackageName: Test.Dep

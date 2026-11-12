@@ -21,7 +21,8 @@
 #>
 [CmdletBinding()]
 param(
-    [switch]$IncludeTestMode
+    [switch]$IncludeTestMode,
+    [switch]$SkipCompatibilityAliases
 )
 
 Set-StrictMode -Version 2.0
@@ -30,15 +31,8 @@ $script:WindowsConfiguratorFunctionsRoot = $PSScriptRoot
 $script:WindowsConfiguratorProjectRoot = Split-Path -Path $PSScriptRoot -Parent
 
 <#
-Глобальное состояние инициализируется явно: иначе чтение переменной до первого
-Set-* падает при Set-StrictMode и зависит от порядка тестов.
+Состояние проекта создаётся после загрузки функций (AppDomain, не $global).
 #>
-$global:WindowsConfiguratorState = @{
-    Logging  = $null
-    TestMode = $null
-    Backup   = $null
-    RunCache = $null
-}
 
 $loadOrder = @('Common')
 if ($IncludeTestMode) { $loadOrder += 'TestMode' }
@@ -62,9 +56,11 @@ foreach ($subDirectory in $loadOrder) {
     }
 }
 
+$null = Initialize-WCState
+
 <# Псевдонимы совместимости со старыми именами функций (оригинальный скрипт). #>
 $aliasFile = Join-Path -Path $script:WindowsConfiguratorFunctionsRoot -ChildPath 'Aliases.ps1'
-if (Test-Path -Path $aliasFile -PathType Leaf) {
+if (-not $SkipCompatibilityAliases -and (Test-Path -Path $aliasFile -PathType Leaf)) {
     . $aliasFile
     $loadedFiles.Add($aliasFile)
 }

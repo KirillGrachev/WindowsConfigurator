@@ -25,7 +25,7 @@
         [string[]]$Arguments
     )
 
-    $state = $global:WindowsConfiguratorState.TestMode
+    $state = (Get-WCState).TestMode
     if ($null -eq $state -or -not $state.Enabled) { return $false }
 
     if ($Arguments.Count -lt 2) {
@@ -34,7 +34,7 @@
     }
 
     $operation = $Arguments[0].ToLowerInvariant()
-    $normalized = Normalize-RegistryPath -Path $Arguments[1]
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Arguments[1]
     $overlayKey = $normalized.NativePath.ToUpperInvariant()
 
     $valueName = ''

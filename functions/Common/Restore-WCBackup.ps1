@@ -42,6 +42,14 @@
             if (-not (Test-Path -LiteralPath $file -ErrorAction SilentlyContinue)) {
                 $failed.Add("$path : файл резервной копии не найден ($file)") | Out-Null
             } else {
+                $expectedHash = if ($entry.PSObject.Properties['Hash']) { [string]$entry.Hash } else { '' }
+                if ($expectedHash) {
+                    $actualHash = (Get-FileHash -LiteralPath $file -Algorithm SHA256 -ErrorAction Stop).Hash
+                    if ($actualHash -ne $expectedHash) {
+                        $failed.Add("$path : SHA256 файла резервной копии не совпадает ($file)") | Out-Null
+                        continue
+                    }
+                }
                 $result = Invoke-RegCommand -Arguments @('import', $file)
                 if ($result.ExitCode -eq 0) { $restored++ } else { $failed.Add("$path : reg import завершился с кодом $($result.ExitCode)") | Out-Null }
             }

@@ -142,12 +142,12 @@ See [test-mode.md](test-mode.md) for details.
 
 When the configurator is started through `Configure-Windows.ps1` in a real run
 (not TestMode and not `-WhatIf`), it creates a registry backup session under
-`%TEMP%\WindowsConfigurator\Backup-<timestamp>` before the first change.
+`%ProgramData%\WindowsConfigurator\Backups\Backup-<timestamp>` (fallback: `%TEMP%\WindowsConfigurator\Backup-<timestamp>`) before the first change.
 
 - Every registry key is exported once, before its first modification.
 - Keys that did not exist are recorded and deleted on rollback.
 - `backup.json` is the **journal**, not the backup itself; exported keys are
-  stored next to it as `registry-001.reg`, `registry-002.reg`, etc.
+  stored next to it as `registry-001.reg`, `registry-002.reg`, etc. Journal entries contain the SHA256 of each exported file; restore rejects a file whose hash does not match.
 - If the journal's `Registry` array is empty, no step changed the registry
   through `Set-RegistryValue` during that run. MSI/EXE installers, Appx
   operations and `slmgr` write the registry directly and are not captured.
@@ -156,7 +156,7 @@ When the configurator is started through `Configure-Windows.ps1` in a real run
 Restore the registry from a backup session with:
 
 ```powershell
-.\tools\Restore-Backup.ps1 -Root "$env:TEMP\WindowsConfigurator\Backup-20261110-230000"
+.\tools\Restore-Backup.ps1 -Root "$env:ProgramData\WindowsConfigurator\Backups\Backup-20261110-230000"
 ```
 
 Use `-NoBackup` to skip the backup session. The current rollback covers only the
@@ -168,13 +168,13 @@ are not rolled back yet.
 The project can be imported as a module instead of dot-sourcing the loader:
 
 ```powershell
-Import-Module .\WindowsConfigurator.psd1 -DisableNameChecking
+Import-Module .\WindowsConfigurator.psd1
 $config = Import-Configuration -Path .\config\config.json
 ```
 
-`-DisableNameChecking` is needed because the module keeps a few legacy
-compatibility verbs. The module exports the normal functions only; use
-`Configure-Windows.ps1 -TestMode` when the TestMode helpers are required.
+The module exports the normal functions without legacy aliases. Compatibility
+aliases (`Redirect-UserFolders`, etc.) are installed by the entry point for old
+scenarios; module users should call the canonical functions.
 
 ## Project structure
 

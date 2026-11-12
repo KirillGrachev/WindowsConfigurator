@@ -250,16 +250,16 @@ Describe 'Дефолты берутся из схемы (единственны�
 
 Describe 'Нормализация и служебные функции конфигурации' {
 
-    It 'Normalize-Configuration идемпотентна' {
+    It 'ConvertTo-NormalizedConfiguration идемпотентна' {
         $config = Import-Configuration -Path (Get-ProjectFilePath -RelativePath 'config/config.json') -SkipLoggingInit
-        $again = Normalize-Configuration -Config $config
+        $again = ConvertTo-NormalizedConfiguration -Config $config
         (ConvertTo-CanonicalJson -InputObject $config.AppsToInstall) | Should -Be (ConvertTo-CanonicalJson -InputObject $again.AppsToInstall)
         (ConvertTo-CanonicalJson -InputObject $config.Menu.Items) | Should -Be (ConvertTo-CanonicalJson -InputObject $again.Menu.Items)
     }
 
-    It 'Normalize-Configuration не изменяет исходный hashtable' {
+    It 'ConvertTo-NormalizedConfiguration не изменяет исходный hashtable' {
         $source = @{ Deployment = @{ AppsRepositoryRoot = '\\srv\root' }; AppsToInstall = @(@{ Name = 'A'; Type = 'Batch'; InstallerPath = '{AppsRepositoryRoot}\a.cmd' }) }
-        $null = Normalize-Configuration -Config $source
+        $null = ConvertTo-NormalizedConfiguration -Config $source
         $source.AppsToInstall[0].InstallerPath | Should -Be '{AppsRepositoryRoot}\a.cmd'
     }
 

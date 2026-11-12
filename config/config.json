@@ -1,7 +1,7 @@
 {
   "$schema": "./config.schema.json",
   "Meta": {
-    "Version": "2.1.22",
+    "Version": "2.1.23",
     "IsTestData": true,
     "Environment": "TEST",
     "CompanyName": "Test Company LLC",
@@ -105,11 +105,15 @@
   ],
   "AppxPackages": {
     "RepositoryRoot": "\\\\fileserver01.test.local\\Deploy$\\Appx",
+    "RetryCount": 2,
+    "RetryDelaySeconds": 5,
+    "RollbackDependenciesOnFailure": true,
     "Packages": [
       {
         "Name": "Test Calculator",
         "PackagePath": "Calculator\\TestCalculator.msixbundle",
         "PackageName": "Test.WindowsCalculator",
+        "Version": "1.0.0.0",
         "Dependencies": [
           "Calculator\\Dependencies\\Test.VCLibs.appx",
           "Calculator\\Dependencies\\Test.UI.Xaml.appx"

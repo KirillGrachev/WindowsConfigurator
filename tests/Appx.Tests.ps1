@@ -20,6 +20,7 @@ Describe 'Install-AppxPackages' {
 
         $script:Added = New-Object System.Collections.Generic.List[string]
         $script:InstalledPackages = New-Object System.Collections.Generic.List[string]
+        $script:InstalledVersion = '1.0.0.0'
         Mock Add-AppxPackage {
             $script:Added.Add([string]$Path) | Out-Null
             if ([string]$Path -match 'other\.msix$') { $script:InstalledPackages.Add('Test.Other') | Out-Null }
@@ -28,7 +29,7 @@ Describe 'Install-AppxPackages' {
         Mock Get-AppxPackage {
             param($Name)
             if ($script:InstalledPackages -contains [string]$Name) {
-                return [PSCustomObject]@{ Name = [string]$Name }
+                return [PSCustomObject]@{ Name = [string]$Name; PackageFullName = [string]$Name; Version = $script:InstalledVersion }
             }
             return @()
         }
@@ -102,7 +103,67 @@ Describe 'Install-AppxPackages' {
             $null = Set-WCTestMode -Enabled:$false
         }
     }
-}
+    It 'пропускает установленную версию не ниже требуемой' {
+        $script:InstalledPackages.Add('Test.Calculator') | Out-Null
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.Packages[0].Version = '1.0.0.0'
+        $result = Install-AppxPackages -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $script:Added.Count | Should -Be 0
+    }
+
+    It 'не откатывает установленную более новую версию' {
+        $script:InstalledPackages.Add('Test.Calculator') | Out-Null
+        $script:InstalledVersion = '2.0.0.0'
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.Packages[0].Version = '1.0.0.0'
+        $config.AppxPackages.Packages[0].ForceUpdate = $true
+        $result = Install-AppxPackages -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $script:Added.Count | Should -Be 0
+    }
+
+    It 'WhatIf не планирует отсутствующий файл' {
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.Packages[0].PackagePath = 'missing.msixbundle'
+        $result = Install-AppxPackages -Config $config -WhatIf -Confirm:$false
+        $result.Status | Should -Be 'Failed'
+        $script:Added.Count | Should -Be 0
+    }
+
+    It 'повторяет установку при временной ошибке' {
+        $script:Attempts = 0
+        Mock Add-AppxPackage {
+            $script:Attempts++
+            if ($script:Attempts -eq 1) { throw 'transient' }
+            $script:InstalledPackages.Add('Test.Calculator') | Out-Null
+        }
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.Packages[0].Dependencies = @()
+        $config.AppxPackages.RetryCount = 1
+        $config.AppxPackages.RetryDelaySeconds = 0
+        $result = Install-AppxPackages -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $script:Attempts | Should -Be 2
+    }
+
+    It 'откатывает только что установленные зависимости при ошибке основного пакета' {
+        $script:Removed = New-Object System.Collections.Generic.List[string]
+        Mock Add-AppxPackage {
+            param($Path)
+            if ([string]$Path -match 'app\.msixbundle$') { throw 'main failed' }
+            $script:InstalledPackages.Add('Test.Dep') | Out-Null
+        }
+        Mock Remove-AppxPackage { param($Package) $script:Removed.Add([string]$Package) | Out-Null }
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.RetryCount = 0
+        $config.AppxPackages.RetryDelaySeconds = 0
+        $config.AppxPackages.Packages[0].Dependencies = @(@{ Path = 'dep1.appx'; PackageName = 'Test.Dep' })
+        $result = Install-AppxPackages -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Failed'
+        $result.Data.Failed[0] | Should -Match 'main failed'
+        Should -Invoke Remove-AppxPackage -Times 1
+    }}
 
 Describe 'Appx submenu' {
 

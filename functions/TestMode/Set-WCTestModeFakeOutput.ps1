@@ -38,7 +38,7 @@
         [int]$ExitCode = 0
     )
 
-    $state = $global:WindowsConfiguratorState.TestMode
+    $state = (Get-WCState).TestMode
     if ($null -eq $state -or -not $state.Enabled) {
         throw 'Set-WCTestModeFakeOutput: тестовый режим не включён (вызовите Set-WCTestMode -Enabled:$true).'
     }

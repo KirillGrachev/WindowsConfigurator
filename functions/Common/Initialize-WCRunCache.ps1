@@ -17,6 +17,7 @@
         RunId  = [guid]::NewGuid().ToString('N')
         Values = @{}
     }
-    $global:WindowsConfiguratorState.RunCache = $cache
+    $wcState = Get-WCState
+$wcState.RunCache = $cache
     return $cache
 }

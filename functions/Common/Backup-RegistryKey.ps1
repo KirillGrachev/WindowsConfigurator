@@ -7,7 +7,7 @@
         резервной копии. Если ключа нет, запоминает его как созданный, чтобы
         при откате удалить. Повторный вызов для того же ключа ничего не делает.
     .PARAMETER Path
-        Путь ключа в любой форме, поддерживаемой Normalize-RegistryPath.
+        Путь ключа в любой форме, поддерживаемой ConvertTo-NormalizedRegistryPath.
     .EXAMPLE
         Backup-RegistryKey -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'
     .OUTPUTS
@@ -24,7 +24,7 @@
     $state = Get-WCBackupState
     if (-not $state) { return $false }
 
-    $normalized = Normalize-RegistryPath -Path $Path
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Path
     $native = [string]$normalized.NativePath
     foreach ($entry in $state.Registry) {
         if ([string]$entry.Path -eq $native) { return $true }
@@ -35,7 +35,11 @@
         $file = Join-Path -Path $state.Root -ChildPath $fileName
         $result = Invoke-RegCommand -Arguments @('export', $native, $file, '/y')
         if ($result.ExitCode -eq 0) {
-            $state.Registry.Add(@{ Action = 'Restore'; Path = $native; File = $file }) | Out-Null
+            $entry = @{ Action = 'Restore'; Path = $native; File = $file }
+            if (Test-Path -LiteralPath $file -PathType Leaf -ErrorAction SilentlyContinue) {
+                try { $entry.Hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256 -ErrorAction Stop).Hash } catch { Write-Log -Message "Не удалось посчитать SHA256 для ${file}: $($_.Exception.Message)" -Level Debug }
+            }
+            $state.Registry.Add($entry) | Out-Null
             Write-Log -Message "Резервная копия ключа '$native' -> '$file'." -Level Debug
         } else {
             $state.Registry.Add(@{ Action = 'Failed'; Path = $native; Error = ($result.Output -join '; ') }) | Out-Null

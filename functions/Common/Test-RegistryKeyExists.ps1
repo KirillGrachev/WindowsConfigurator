@@ -23,7 +23,7 @@
 
     if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
 
-    $normalized = Normalize-RegistryPath -Path $Path
+    $normalized = ConvertTo-NormalizedRegistryPath -Path $Path
 
     if (Test-WCTestMode) {
         $overlayState = Get-WCTestModeState

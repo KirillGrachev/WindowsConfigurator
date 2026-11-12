@@ -85,8 +85,9 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = $PSScriptRoot
 
 try {
-    $loaderPath = Join-Path -Path $projectRoot -ChildPath 'functions/Load-ProjectFunctions.ps1'
-    . $loaderPath -IncludeTestMode:$TestMode | Out-Null
+    $modulePath = Join-Path -Path $projectRoot -ChildPath 'WindowsConfigurator.psd1'
+    Import-Module -Name $modulePath -Force -ErrorAction Stop
+    . (Join-Path -Path $projectRoot -ChildPath 'functions/Aliases.ps1') | Out-Null
 } catch {
     Write-Host "[FATAL] Не удалось загрузить функции проекта: $($_.Exception.Message)" -ForegroundColor Red
     exit 2

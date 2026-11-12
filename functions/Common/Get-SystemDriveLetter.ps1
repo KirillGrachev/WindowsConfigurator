@@ -46,7 +46,14 @@
 
     foreach ($candidate in $candidates) {
         $letter = ([string]$candidate).Trim().TrimEnd(':').ToUpperInvariant()
-        if ($letter -match '^[A-Z]$') { return $letter }
+        if ($letter -notmatch '^[A-Z]$') { continue }
+
+        <# На Windows проверяем, что корень диска реально существует. #>
+        if ($env:OS -eq 'Windows_NT' -and -not (Test-Path -LiteralPath "${letter}:\" -ErrorAction SilentlyContinue)) {
+            Write-Log -Message "Кандидат системного диска '$letter' не существует - пропущен." -Level Debug
+            continue
+        }
+        return $letter
     }
 
     throw 'Не удалось определить букву системного диска (SystemDrive).'

@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.22",
+  "Version": "2.1.23",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -225,14 +225,18 @@ Types:
 ```json
 "AppxPackages": {
   "RepositoryRoot": "\\\\fileserver.example.local\\Deploy$\\Appx",
+  "RetryCount": 2,
+  "RetryDelaySeconds": 5,
+  "RollbackDependenciesOnFailure": true,
   "Packages": [
     {
       "Name": "Calculator",
       "PackagePath": "Calculator\\Microsoft.WindowsCalculator.msixbundle",
       "PackageName": "Microsoft.WindowsCalculator",
+      "Version": "1.0.0.0",
       "Dependencies": [
         "Calculator\\Dependencies\\Microsoft.VCLibs.x64.appx",
-        "Calculator\\Dependencies\\Microsoft.UI.Xaml.appx"
+        { "Path": "Calculator\\Dependencies\\Microsoft.UI.Xaml.appx", "PackageName": "Microsoft.UI.Xaml" }
       ],
       "ForceUpdate": false
     }
@@ -246,9 +250,15 @@ For each selected package, all dependencies are installed first, then the main
 resolved relative to the package directory first, then the repository root.
 
 `PackageName` is used for `Get-AppxPackage` and defaults to `Name`. An already
-installed package is skipped unless `ForceUpdate` is true. Menu item 13 opens the
-Appx submenu; `0` installs all packages and a number installs one. In TestMode
-the installation is simulated and logged.
+installed package is skipped when its version is at least `Version` (or
+`MinimumVersion`); a newer installed version is never downgraded. `ForceUpdate`
+reinstalls unless the installed version is newer. A dependency can be a string
+or an object with `Path`, `PackageName` and `MinimumVersion`; the object form
+enables rollback of dependencies installed during this run. `RetryCount` and
+`RetryDelaySeconds` control transient `Add-AppxPackage` failures.
+
+Menu item 13 opens the Appx submenu; `0` installs all packages and a number
+installs one. In TestMode the installation is simulated and logged.
 
 ## Autostart and tweaks
 

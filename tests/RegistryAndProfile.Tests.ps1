@@ -413,8 +413,22 @@ Describe 'Get-SystemDriveLetter' {
     }
 
     It 'на реальной Windows возвращает букву системного диска' {
+        if ($env:OS -ne 'Windows_NT') { Set-ItResult -Skipped -Because 'Windows-only проверка'; return }
         Mock Test-WCTestMode { return $false }
         Get-SystemDriveLetter | Should -Match '^[A-Z]$'
+    }
+
+    It 'пропускает несуществующий %SystemDrive% и берёт SystemDrive из CIM' {
+        if ($env:OS -ne 'Windows_NT') { Set-ItResult -Skipped -Because 'Windows-only проверка'; return }
+        Mock Test-WCTestMode { return $false }
+        Mock Get-CimInstance { return [PSCustomObject]@{ SystemDrive = 'C:' } }
+        $original = $env:SystemDrive
+        try {
+            $env:SystemDrive = 'Z:'
+            Get-SystemDriveLetter | Should -Be 'C'
+        } finally {
+            $env:SystemDrive = $original
+        }
     }
 }
 

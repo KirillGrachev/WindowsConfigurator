@@ -21,6 +21,8 @@ $compatibilityAliases = @{
     'Unload-UserHiveIfNecessary' = 'Remove-UserRegistryHive'
     'Redirect-UserFolders'       = 'Set-UserFolderRedirection'
     'Set-OldContextMenu'         = 'Set-ClassicContextMenu'
+    'Normalize-Configuration'    = 'ConvertTo-NormalizedConfiguration'
+    'Normalize-RegistryPath'     = 'ConvertTo-NormalizedRegistryPath'
 }
 
 foreach ($aliasName in $compatibilityAliases.Keys) {

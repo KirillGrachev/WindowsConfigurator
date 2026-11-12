@@ -33,8 +33,7 @@
           "uniqueItems": true,
           "minItems": 1,
           "items": { "$ref": "#/definitions/stepName" },
-          "default": [ "Activation", "AppRemoval", "Installation",
-        "AppxPackages", "Desktop", "Taskbar", "Autostart", "Power", "NumLock" ],
+          "default": [ "Activation", "AppRemoval", "Installation", "Desktop", "Taskbar", "Autostart", "Power", "NumLock" ],
           "description": "Состав -RunAll. Порядок = порядок выполнения."
         },
         "StepDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 60, "default": 2, "description": "Пауза между шагами (сек)." },
@@ -169,7 +168,10 @@
       "additionalProperties": false,
       "properties": {
         "RepositoryRoot": { "type": "string", "default": "", "description": "Корень каталога с Appx/MSIX-пакетами (локальный или UNC)." },
-        "Packages": { "type": "array", "items": { "$ref": "#/definitions/appxPackage" }, "default": [] }
+        "Packages": { "type": "array", "items": { "$ref": "#/definitions/appxPackage" }, "default": [] },
+        "RetryCount": { "type": "integer", "minimum": 0, "maximum": 10, "default": 2, "description": "Повторы установки одного Appx-файла." },
+        "RetryDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 300, "default": 5, "description": "Пауза между повторами." },
+        "RollbackDependenciesOnFailure": { "type": "boolean", "default": true, "description": "Удалять зависимости, установленные в этом запуске, если основной пакет не установился." }
       }
     },
     "AutoStartApps": {
@@ -584,7 +586,28 @@
         "Name": { "type": "string", "minLength": 1, "description": "Отображаемое имя пакета." },
         "PackagePath": { "type": "string", "minLength": 1, "description": "Путь к .appx/.msix/.msixbundle относительно RepositoryRoot или абсолютный/UNC." },
         "PackageName": { "type": "string", "default": "", "description": "Имя для Get-AppxPackage; пусто = Name." },
-        "Dependencies": { "type": "array", "items": { "type": "string", "minLength": 1 }, "default": [], "description": "Зависимости; устанавливаются до основного пакета." },
+        "Version": { "type": "string", "pattern": "^(\\d+\\.){1,3}\\d+$", "default": "", "description": "Требуемая версия; пусто = любая." },
+        "MinimumVersion": { "type": "string", "pattern": "^(\\d+\\.){1,3}\\d+$", "default": "", "description": "Минимальная версия (альтернатива Version)." },
+        "Dependencies": {
+          "type": "array",
+          "default": [],
+          "description": "Зависимости; устанавливаются до основного пакета.",
+          "items": {
+            "anyOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [ "Path" ],
+                "properties": {
+                  "Path": { "type": "string", "minLength": 1 },
+                  "PackageName": { "type": "string", "default": "" },
+                  "MinimumVersion": { "type": "string", "default": "" }
+                }
+              }
+            ]
+          }
+        },
         "ForceUpdate": { "type": "boolean", "default": false, "description": "Устанавливать, даже если пакет уже найден." }
       }
     },
@@ -593,7 +616,10 @@
       "additionalProperties": false,
       "properties": {
         "RepositoryRoot": { "type": "string", "default": "" },
-        "Packages": { "type": "array", "items": { "$ref": "#/definitions/appxPackage" }, "default": [] }
+        "Packages": { "type": "array", "items": { "$ref": "#/definitions/appxPackage" }, "default": [] },
+        "RetryCount": { "type": "integer", "minimum": 0, "maximum": 10, "default": 2 },
+        "RetryDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 300, "default": 5 },
+        "RollbackDependenciesOnFailure": { "type": "boolean", "default": true }
       }
     },    "menuItem": {
       "description": "Пункт интерактивного меню. RequiresUser=true допустим только для шагов, которым нужен пользователь (if/then).",

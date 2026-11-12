@@ -27,7 +27,11 @@ jobs:
           if ($expected -ne "${{ github.ref_name }}") {
             throw "Tag ${{ github.ref_name }} does not match Meta.Version $($config.Meta.Version)"
           }
-          Write-Host "Version $expected matches the tag."
+          $manifest = Import-PowerShellDataFile ./WindowsConfigurator.psd1
+          if ([string]$manifest.ModuleVersion -ne [string]$config.Meta.Version) {
+            throw "ModuleVersion $($manifest.ModuleVersion) does not match Meta.Version $($config.Meta.Version)"
+          }
+          Write-Host "Version $expected matches the tag, config and module manifest."
 
       - name: Generate release notes
         shell: pwsh

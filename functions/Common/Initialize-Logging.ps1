@@ -3,7 +3,7 @@
     .SYNOPSIS
         Инициализирует подсистему журналирования (консоль + файл).
     .DESCRIPTION
-        Состояние хранится в $global:WindowsConfiguratorState.Logging, чтобы быть доступным
+        Состояние хранится в состоянии проекта (Get-WCState).Logging, чтобы быть доступным
         из любой области видимости (функции проекта dot-source'ятся, а не оформлены
         как модуль - совместимость с PowerShell 5.1 без зависимостей).
         Все пути раскрываются через переменные окружения (%SystemRoot% и т.п.).
@@ -103,6 +103,7 @@
         }
     }
 
-    $global:WindowsConfiguratorState.Logging = $state
+    $wcState = Get-WCState
+$wcState.Logging = $state
     return $state
 }
