@@ -143,16 +143,25 @@
         foreach ($dependency in $dependencies) {
             $dependencyPath = ''
             $dependencyName = ''
+            $dependencyMinVersion = $null
             if ($dependency -is [System.Collections.IDictionary]) {
                 if ($dependency.Contains('Path')) { $dependencyPath = [string]$dependency.Path }
                 if ($dependency.Contains('PackageName')) { $dependencyName = [string]$dependency.PackageName }
+                if ($dependency.Contains('MinimumVersion') -and $dependency.MinimumVersion) {
+                    try { $dependencyMinVersion = [version]$dependency.MinimumVersion } catch {
+                        $failed.Add("${name}: неверная MinimumVersion зависимости '$($dependency.MinimumVersion)'.") | Out-Null
+                        Write-Log -Message "Appx '${name}': неверная MinimumVersion зависимости." -Level Error
+                        $dependencyPath = ''
+                    }
+                }
             } else {
                 $dependencyPath = [string]$dependency
             }
             if (-not $dependencyPath) { continue }
             $dependencyPaths.Add([PSCustomObject]@{
-                    Path        = Resolve-AppxPackagePath -Path $dependencyPath -RepositoryRoot $repositoryRoot -RelativeTo $packageDirectory
-                    PackageName = $dependencyName
+                    Path           = Resolve-AppxPackagePath -Path $dependencyPath -RepositoryRoot $repositoryRoot -RelativeTo $packageDirectory
+                    PackageName    = $dependencyName
+                    MinimumVersion = $dependencyMinVersion
                 }) | Out-Null
         }
 
@@ -198,6 +207,12 @@
             foreach ($dependency in $dependencyPaths) {
                 $wasInstalled = if ($dependency.PackageName) { Test-AppxPackageInstalled -PackageName $dependency.PackageName } else { $true }
                 Invoke-AppxInstallWithRetry -Path $dependency.Path -RetryCount $retryCount -RetryDelaySeconds $retryDelaySeconds
+                if ($dependency.PackageName -and $dependency.MinimumVersion) {
+                    $dependencyVersion = Get-AppxPackageVersion -PackageName $dependency.PackageName
+                    if ($null -eq $dependencyVersion -or $dependencyVersion -lt $dependency.MinimumVersion) {
+                        throw "Зависимость '$($dependency.PackageName)' имеет версию '$dependencyVersion', требуется не ниже '$($dependency.MinimumVersion)'."
+                    }
+                }
                 if ($dependency.PackageName -and -not $wasInstalled) { $newDependencies.Add($dependency.PackageName) | Out-Null }
                 Write-Log -Message "Зависимость установлена: $($dependency.Path)" -Level Debug
             }
