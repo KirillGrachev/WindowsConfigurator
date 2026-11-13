@@ -99,6 +99,12 @@ Describe 'Резервное копирование реестра' {
         $calls[1][0] | Should -Be 'import'
     }
 
+    It 'Protect-WCBackupDirectory не меняет ACL тестового каталога вне ProgramData' {
+        $root = Join-Path -Path $TestDrive -ChildPath ("wc-backup-acl-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $null = New-Item -Path $root -ItemType Directory -Force
+        Protect-WCBackupDirectory -Root $root | Should -BeFalse
+    }
+
     It 'FullRegistry экспортирует HKLM SOFTWARE/SYSTEM и HKCU' {
         $root = Join-Path -Path $TestDrive -ChildPath ("wc-backup-full-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
         $calls = New-Object System.Collections.Generic.List[object]

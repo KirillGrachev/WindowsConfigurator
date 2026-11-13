@@ -4,6 +4,13 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.30] - 2026-11-13
+
+### Security
+
+- ProgramData backup folders now get an ACL limited to Administrators and
+  SYSTEM when the process is elevated; non-ProgramData/test paths are untouched.
+
 ## [2.1.29] - 2026-11-13
 
 ### Changed

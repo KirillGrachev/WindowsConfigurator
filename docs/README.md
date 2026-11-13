@@ -151,6 +151,7 @@ When the configurator is started through `Configure-Windows.ps1` in a real run
 - If the journal's `Registry` array is empty, no step changed the registry
   through `Set-RegistryValue` during that run. MSI/EXE installers, Appx
   operations and `slmgr` write the registry directly and are not captured.
+- ProgramData backups get an ACL limited to Administrators and SYSTEM; temp fallback keeps the user's temp ACL.
 - A `README.txt` in the backup folder explains the files.
 
 Restore the registry from a backup session with:
