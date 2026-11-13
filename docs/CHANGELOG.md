@@ -4,6 +4,14 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.29] - 2026-11-13
+
+### Changed
+
+- Extracted JSON Schema combinators (`allOf`, `anyOf`, `oneOf`, `not`,
+  `if/then/else`) into `Test-JsonSchemaCombinator` and shared error creation into
+  `Format-JsonSchemaError`. `Test-JsonSchema` is now 235 lines instead of 293.
+
 ## [2.1.28] - 2026-11-13
 
 ### Changed
