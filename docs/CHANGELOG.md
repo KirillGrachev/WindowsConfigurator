@@ -4,6 +4,14 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.28] - 2026-11-13
+
+### Changed
+
+- Extracted `Resolve-OutlookSignatureTarget` (directory selection, OneDrive
+  Desktop, TestMode Temp and file names). `Set-OutlookSignature` is now
+  256 lines instead of 278.
+
 ## [2.1.27] - 2026-11-13
 
 ### Changed
