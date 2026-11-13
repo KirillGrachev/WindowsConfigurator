@@ -4,6 +4,15 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.26] - 2026-11-13
+
+### Changed
+
+- Split `Start-WindowsConfiguration`: step planning is now
+  `Resolve-WindowsConfigurationStepPlan`, and execution is
+  `Invoke-WindowsConfigurationStepPlan`. The orchestrator dropped from 276 to
+  219 lines without changing behavior.
+
 ## [2.1.25] - 2026-11-13
 
 ### Added
