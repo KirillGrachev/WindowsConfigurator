@@ -4,6 +4,13 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.31] - 2026-11-13
+
+### Added
+
+- Dependency objects with `MinimumVersion` are now enforced after installation;
+  a too-old dependency fails the Appx package instead of leaving a broken app.
+
 ## [2.1.30] - 2026-11-13
 
 ### Security

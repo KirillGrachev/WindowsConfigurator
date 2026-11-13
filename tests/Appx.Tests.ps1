@@ -147,6 +147,19 @@ Describe 'Install-AppxPackages' {
         $script:Attempts | Should -Be 2
     }
 
+    It 'проверяет минимальную версию установленной зависимости' {
+        Mock Add-AppxPackage {
+            $script:InstalledPackages.Add('Test.Dep') | Out-Null
+        }
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.RetryCount = 0
+        $config.AppxPackages.RetryDelaySeconds = 0
+        $config.AppxPackages.Packages[0].Dependencies = @(@{ Path = 'dep1.appx'; PackageName = 'Test.Dep'; MinimumVersion = '2.0.0.0' })
+        $result = Install-AppxPackages -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Failed'
+        $result.Data.Failed[0] | Should -Match 'требуется не ниже'
+    }
+
     It 'откатывает только что установленные зависимости при ошибке основного пакета' {
         $script:Removed = New-Object System.Collections.Generic.List[string]
         Mock Add-AppxPackage {

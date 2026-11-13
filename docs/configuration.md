@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.30",
+  "Version": "2.1.31",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -254,7 +254,7 @@ installed package is skipped when its version is at least `Version` (or
 `MinimumVersion`); a newer installed version is never downgraded. `ForceUpdate`
 reinstalls unless the installed version is newer. A dependency can be a string
 or an object with `Path`, `PackageName` and `MinimumVersion`; the object form
-enables rollback of dependencies installed during this run. `RetryCount` and
+enables rollback of dependencies installed during this run and enforces `MinimumVersion`. `RetryCount` and
 `RetryDelaySeconds` control transient `Add-AppxPackage` failures.
 
 Menu item 13 opens the Appx submenu; `0` installs all packages and a number
