@@ -83,7 +83,7 @@
             }
             $entry = @{ Key = [string]$target.Key; File = $file }
             if (Test-Path -LiteralPath $file -PathType Leaf -ErrorAction SilentlyContinue) {
-                try { $entry.Hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256 -ErrorAction Stop).Hash } catch { Write-Log -Message "Полный backup: не удалось посчитать SHA256 для $file: $($_.Exception.Message)" -Level Debug }
+                try { $entry.Hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256 -ErrorAction Stop).Hash } catch { Write-Log -Message "Полный backup: не удалось посчитать SHA256 для ${file}: $($_.Exception.Message)" -Level Debug }
             }
             $state.FullRegistry.Add($entry) | Out-Null
             Write-Log -Message "Полный backup: '$($target.Key)' -> '$file'." -Level Debug
