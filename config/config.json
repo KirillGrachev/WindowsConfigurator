@@ -1,7 +1,7 @@
 {
   "$schema": "./config.schema.json",
   "Meta": {
-    "Version": "2.1.26",
+    "Version": "2.1.27",
     "IsTestData": true,
     "Environment": "TEST",
     "CompanyName": "Test Company LLC",
