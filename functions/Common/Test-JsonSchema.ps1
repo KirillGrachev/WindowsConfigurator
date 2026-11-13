@@ -54,13 +54,7 @@
     #>
     function Add-SchemaError {
         param([string]$ErrorPath, [string]$Keyword, [string]$MessageText, [object]$Expected, [object]$Actual)
-        $errors.Add([PSCustomObject]@{
-                Path     = $ErrorPath
-                Keyword  = $Keyword
-                Message  = "$ErrorPath : $MessageText"
-                Expected = $Expected
-                Actual   = $Actual
-            })
+        $errors.Add((Format-JsonSchemaError -Path $ErrorPath -Keyword $Keyword -Message $MessageText -Expected $Expected -Actual $Actual)) | Out-Null
     }
 
     <# Схема может отсутствовать (anyOf из пустого массива и т.п.) - всё валидно. #>
@@ -245,64 +239,8 @@
         }
     }
     <# ---- allOf / anyOf / oneOf / not / if-then-else ---- #>
-    if ($props.Contains('allOf')) {
-        foreach ($sub in @($props['allOf'])) {
-            $nested = Test-JsonSchema -InputObject $InputObject -Schema $sub -Root $Root -Path $Path
-            foreach ($e in $nested.Errors) { $errors.Add($e) }
-        }
-    }
-
-    if ($props.Contains('anyOf')) {
-        $branches = @($props['anyOf'])
-        $ok = $false
-        $branchErrors = New-Object System.Collections.Generic.List[object]
-        foreach ($sub in $branches) {
-            $nested = Test-JsonSchema -InputObject $InputObject -Schema $sub -Root $Root -Path $Path
-            if ($nested.Valid) { $ok = $true; break }
-            foreach ($e in $nested.Errors) { $branchErrors.Add($e) }
-        }
-        if (-not $ok) {
-            $detail = ($branchErrors | Select-Object -First 4 | ForEach-Object { $_.Message }) -join ' | '
-            Add-SchemaError -ErrorPath $Path -Keyword 'anyOf' -MessageText "значение не соответствует ни одной из ветвей anyOf ($($branches.Count)). Детали: $detail" -Expected 'anyOf match' -Actual $null
-        }
-    }
-
-    if ($props.Contains('oneOf')) {
-        $branches = @($props['oneOf'])
-        $matchCount = 0
-        $branchErrors = New-Object System.Collections.Generic.List[object]
-        foreach ($sub in $branches) {
-            $nested = Test-JsonSchema -InputObject $InputObject -Schema $sub -Root $Root -Path $Path
-            if ($nested.Valid) { $matchCount++ } else { foreach ($e in $nested.Errors) { $branchErrors.Add($e) } }
-        }
-        if ($matchCount -ne 1) {
-            if ($matchCount -eq 0) {
-                $detail = ($branchErrors | Select-Object -First 4 | ForEach-Object { $_.Message }) -join ' | '
-                Add-SchemaError -ErrorPath $Path -Keyword 'oneOf' -MessageText "значение не соответствует ни одной ветви oneOf. Детали: $detail" -Expected 'exactly 1 branch' -Actual 0
-            } else {
-                Add-SchemaError -ErrorPath $Path -Keyword 'oneOf' -MessageText "значение соответствует $matchCount ветвям oneOf одновременно (должно ровно одной)" -Expected 'exactly 1 branch' -Actual $matchCount
-            }
-        }
-    }
-
-    if ($props.Contains('not')) {
-        $nested = Test-JsonSchema -InputObject $InputObject -Schema $props['not'] -Root $Root -Path $Path
-        if ($nested.Valid) {
-            Add-SchemaError -ErrorPath $Path -Keyword 'not' -MessageText 'значение запрещено схемой (not)' -Expected 'no match' -Actual $null
-        }
-    }
-
-    if ($props.Contains('if')) {
-        $ifResult = Test-JsonSchema -InputObject $InputObject -Schema $props['if'] -Root $Root -Path $Path
-        if ($ifResult.Valid) {
-            if ($props.Contains('then')) {
-                $nested = Test-JsonSchema -InputObject $InputObject -Schema $props['then'] -Root $Root -Path $Path
-                foreach ($e in $nested.Errors) { $errors.Add($e) }
-            }
-        } elseif ($props.Contains('else')) {
-            $nested = Test-JsonSchema -InputObject $InputObject -Schema $props['else'] -Root $Root -Path $Path
-            foreach ($e in $nested.Errors) { $errors.Add($e) }
-        }
+    foreach ($e in (Test-JsonSchemaCombinator -InputObject $InputObject -Properties $props -Root $Root -Path $Path)) {
+        $errors.Add($e)
     }
 
     return [PSCustomObject]@{
