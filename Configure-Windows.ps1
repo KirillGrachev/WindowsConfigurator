@@ -78,7 +78,9 @@ param(
 
     [switch]$TestMode,
 
-    [switch]$NoBackup
+    [switch]$NoBackup,
+
+    [switch]$FullRegistryBackup
 )
 
 $ErrorActionPreference = 'Stop'
@@ -122,7 +124,7 @@ try {
     $backupState = $null
     if (-not $TestMode -and -not $WhatIfPreference -and -not $NoBackup) {
         try {
-            $backupState = Initialize-WCBackup
+            $backupState = Initialize-WCBackup -FullRegistry:$FullRegistryBackup
             Write-Host "[INFO] Резервная копия реестра: $($backupState.Root)" -ForegroundColor Gray
         } catch {
             Write-Host "[WARN] Не удалось создать резервную копию реестра: $($_.Exception.Message)" -ForegroundColor Yellow

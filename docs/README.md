@@ -159,9 +159,15 @@ Restore the registry from a backup session with:
 .\tools\Restore-Backup.ps1 -Root "$env:ProgramData\WindowsConfigurator\Backups\Backup-20261110-230000"
 ```
 
-Use `-NoBackup` to skip the backup session. The current rollback covers only the
-registry; application installs/removals, file moves and Outlook signature files
-are not rolled back yet.
+Use `-NoBackup` to skip the backup session. `-FullRegistryBackup` additionally
+exports `HKLM\SOFTWARE`, `HKLM\SYSTEM` and `HKCU` into `full-*.reg`; these files
+are large and restoring `HKLM\SYSTEM` may require a reboot. Full snapshots are
+imported after the per-key journal.
+
+The current rollback covers only the registry; application installs/removals,
+file moves and Outlook signature files are not rolled back yet. MSI/EXE, Appx and
+`slmgr` changes bypass the per-key journal, so use `-FullRegistryBackup` or a VM
+snapshot when those changes must be reversible.
 
 ## Module usage
 

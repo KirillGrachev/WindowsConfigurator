@@ -4,6 +4,19 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.25] - 2026-11-13
+
+### Added
+
+- `-FullRegistryBackup` creates `full-HKLM_SOFTWARE.reg`,
+  `full-HKLM_SYSTEM.reg` and `full-HKCU.reg` in the backup folder. Restore
+  verifies their SHA256 and imports them after the per-key journal.
+
+### Changed
+
+- Documented that MSI/EXE, Appx and `slmgr` changes bypass the per-key journal
+  and require `-FullRegistryBackup` or a VM snapshot for rollback.
+
 ## [2.1.24] - 2026-11-13
 
 ### Changed

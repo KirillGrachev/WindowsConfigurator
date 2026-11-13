@@ -19,6 +19,7 @@
         Root      = [string]$state.Root
         CreatedAt = [string]$state.CreatedAt
         Registry  = @($state.Registry.ToArray())
+        FullRegistry = if ($state.Contains('FullRegistry')) { @($state.FullRegistry.ToArray()) } else { @() }
     }
     $json = $payload | ConvertTo-Json -Depth 6
     $path = Join-Path -Path $state.Root -ChildPath 'backup.json'
