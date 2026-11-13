@@ -176,6 +176,28 @@ Describe 'Install-AppxPackages' {
         $result.Status | Should -Be 'Failed'
         $result.Data.Failed[0] | Should -Match 'main failed'
         Should -Invoke Remove-AppxPackage -Times 1
+    }
+
+    It 'читает PackageDependency из AppxManifest.xml' {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+        $staging = Join-Path $script:AppxRoot 'staging'
+        $null = New-Item -Path $staging -ItemType Directory -Force
+        $manifest = @'
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+  <Identity Name="Test.App" Publisher="CN=Test" Version="1.0.0.0" />
+  <Dependencies>
+    <PackageDependency Name="Test.Framework" Publisher="CN=Test" MinVersion="2.0.0.0" />
+  </Dependencies>
+</Package>
+'@
+        [System.IO.File]::WriteAllText((Join-Path $staging 'AppxManifest.xml'), $manifest)
+        $package = Join-Path $script:AppxRoot 'manifest.msix'
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($staging, $package)
+        $dependencies = @(Get-AppxManifestDependencies -Path $package)
+        $dependencies.Count | Should -Be 1
+        $dependencies[0].Name | Should -Be 'Test.Framework'
+        $dependencies[0].MinVersion | Should -Be '2.0.0.0'
     }}
 
 Describe 'Appx submenu' {

@@ -1,7 +1,7 @@
 {
   "$schema": "./config.schema.json",
   "Meta": {
-    "Version": "2.1.31",
+    "Version": "2.1.32",
     "IsTestData": true,
     "Environment": "TEST",
     "CompanyName": "Test Company LLC",
@@ -108,6 +108,7 @@
     "RetryCount": 2,
     "RetryDelaySeconds": 5,
     "RollbackDependenciesOnFailure": true,
+    "ValidateManifest": true,
     "Packages": [
       {
         "Name": "Test Calculator",
