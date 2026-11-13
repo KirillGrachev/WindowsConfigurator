@@ -1,8 +1,20 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
+
+## [2.1.24] - 2026-11-13
+
+### Changed
+
+- Split the YAML parser into a small public wrapper plus `YamlParserScalars` and
+  `YamlParserBlock`; added tests for flow mappings, scalar types, comments,
+  continuation lines, top-level sequences and malformed input.
+- CodeQL no longer cancels an in-flight `main` analysis when another run starts;
+  cancellation remains enabled for pull requests.
+- `main` now requires the test matrix, PSScriptAnalyzer and static checks before
+  merge.
 
 ## [2.1.23] - 2026-11-13
 
