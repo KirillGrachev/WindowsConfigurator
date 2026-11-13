@@ -45,6 +45,8 @@
         $null = New-Item -Path $Root -ItemType Directory -Force -ErrorAction Stop
     }
 
+    $null = Protect-WCBackupDirectory -Root $Root
+
     if ($RetentionDays -gt 0) {
         $parent = Split-Path -Path $Root -Parent
         if ($parent -and (Test-Path -LiteralPath $parent -PathType Container -ErrorAction SilentlyContinue)) {
