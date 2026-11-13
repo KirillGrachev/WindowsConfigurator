@@ -177,40 +177,7 @@
     }
 
     <# --- 5. Список шагов --- #>
-    $definitions = @(Get-StepDefinitions)
-    $requested = @()
-
-    if ($RunSteps -and $RunSteps.Count -gt 0) {
-        $requested = @($RunSteps)
-    } elseif ($RunAll) {
-        $requested = @(Get-ConfigSectionValue -Config $Config -Section 'General' -Key 'DefaultSteps')
-    } else {
-        Write-Log -Message 'Режим выполнения не указан - использую General.DefaultSteps (как -RunAll).' -Level Warn
-        $requested = @(Get-ConfigSectionValue -Config $Config -Section 'General' -Key 'DefaultSteps')
-    }
-
-    $aliases = Get-StepAliases
-    $canonical = New-Object System.Collections.Generic.List[string]
-    foreach ($step in $requested) {
-        if ([string]::IsNullOrWhiteSpace($step)) { continue }
-        $name = [string]$step
-        if ($aliases.ContainsKey($name)) {
-            Write-Log -Message "Шаг '$name' переименован в '$($aliases[$name])' (устаревший алиас)." -Level Debug
-            $name = $aliases[$name]
-        }
-        if (-not $canonical.Contains($name)) { $canonical.Add($name) }
-    }
-
-    <# Неизвестные шаги - критическая ошибка конфигурации (опечатка не должна молча проскакивать). #>
-    $unknown = @($canonical | Where-Object { $stepName = $_; -not ($definitions | Where-Object { $_.Name -eq $stepName }) })
-    if ($unknown.Count -gt 0) {
-        if ($TestMode) { $null = Set-WCTestMode -Enabled:$false }
-        $known = ($definitions | ForEach-Object { $_.Name }) -join ', '
-        throw "Неизвестные шаги: $($unknown -join ', '). Допустимые: $known (алиас: OldContextMenu)."
-    }
-
-    $orderedSteps = @($canonical | ForEach-Object { $stepName = $_; $definitions | Where-Object { $_.Name -eq $stepName } } |
-            Sort-Object -Property Order)
+    $orderedSteps = @(Resolve-WindowsConfigurationStepPlan -Config $Config -RunSteps $RunSteps -RunAll:$RunAll -TestMode:$TestMode)
 
     <#
     --- 5.5 Тестовый режим: демо-данные 'чистой машины' по конфигурации -
@@ -230,43 +197,10 @@
 
     $stopOnFailure = [bool](Get-ConfigSectionValue -Config $Config -Section 'General' -Key 'StopOnFirstFailure' -DefaultValue $false)
 
-    $results = New-Object System.Collections.Generic.List[object]
-    $failedSteps = New-Object System.Collections.Generic.List[string]
-    $skippedSteps = New-Object System.Collections.Generic.List[string]
-    $aborted = $false
-
-    foreach ($definition in $orderedSteps) {
-        if ($aborted) {
-            $skippedSteps.Add($definition.Name)
-            continue
-        }
-
-        Write-Log -Message "Выполнение шага: $($definition.Name) ($($definition.Description)) для пользователя $UserName" -Level Step
-
-        $outcome = Invoke-ConfigurationStep -Definition $definition -Config $Config -UserName $UserName -WhatIfMode:([bool]$WhatIfPreference) -TestMode:([bool]$TestMode)
-        $stepResult = $outcome.Result
-        $results.Add($stepResult)
-
-        switch ($stepResult.Status) {
-            'Failed' {
-                $failedSteps.Add($definition.Name)
-                Write-Log -Message "Шаг $($definition.Name) завершился ошибкой: $($stepResult.Message)" -Level Error
-                if ($stopOnFailure) { $aborted = $true }
-            }
-            'Skipped' {
-                $skippedSteps.Add($definition.Name)
-                Write-Log -Message "Шаг $($definition.Name) пропущен: $($stepResult.Message)" -Level Warn
-            }
-            'WhatIf' {
-                Write-Log -Message "Шаг $($definition.Name): режим WhatIf - изменения не применялись." -Level Info
-            }
-            default {
-                Write-Log -Message "Шаг $($definition.Name) выполнен успешно." -Level Ok
-            }
-        }
-
-        if ($delay -gt 0 -and -not $WhatIfPreference -and -not (Test-WCTestMode)) { Start-Sleep -Seconds $delay }
-    }
+    $stepRun = Invoke-WindowsConfigurationStepPlan -Definitions $orderedSteps -Config $Config -UserName $UserName -DelaySeconds $delay -StopOnFailure $stopOnFailure -WhatIfMode ([bool]$WhatIfPreference) -TestMode ([bool]$TestMode)
+    $results = @($stepRun.Results)
+    $failedSteps = @($stepRun.FailedSteps)
+    $skippedSteps = @($stepRun.SkippedSteps)
 
     $finishedAt = [System.DateTime]::Now
     $summary = [PSCustomObject]@{
@@ -275,9 +209,9 @@
         UserName     = $UserName
         ConfigPath   = $Config.ConfigFilePath
         StepsRun     = @($orderedSteps | ForEach-Object { $_.Name })
-        Results      = @($results.ToArray())
-        FailedSteps  = @($failedSteps.ToArray())
-        SkippedSteps = @($skippedSteps.ToArray())
+        Results      = @($results)
+        FailedSteps  = @($failedSteps)
+        SkippedSteps = @($skippedSteps)
         StartedAt    = $startedAt
         FinishedAt   = $finishedAt
         DurationMs   = [int]($finishedAt - $startedAt).TotalMilliseconds
