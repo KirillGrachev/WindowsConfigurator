@@ -147,42 +147,18 @@
     $phoneNumber = $userData.PhoneNumber
 
     <# --- 2. Каталоги --- #>
-    $signatureFolderName = $folderPattern.Replace('{UserName}', $UserName)
-    $profilePath = ''
     try {
-        $profilePath = Get-UserProfileFolderPath -UserName $UserName -ProfilesRoot ([string](Get-ConfigSectionValue -Config $Config -Section 'Environment' -Key 'UserProfilesRoot' -DefaultValue '%SystemDrive%\Users')) -Validate (-not $whatIf)
+        $target = Resolve-OutlookSignatureTarget -Config $Config -UserName $UserName -FolderPattern $folderPattern -OutputRoot $outputRoot -WhatIfMode $whatIf
     } catch {
-        if (-not $whatIf) {
-            return New-StepResult -Step $stepName -Status 'Failed' -Message $_.Exception.Message -Started $started -ErrorRecord $_
-        }
-        $profilePath = "%SystemDrive%\Users\$UserName"
+        return New-StepResult -Step $stepName -Status 'Failed' -Message $_.Exception.Message -Started $started -ErrorRecord $_
     }
-
-    $rootPath = switch ($outputRoot) {
-        'Temp' {
-            if (Test-WCTestMode) { Join-Path -Path (Get-WCTestModeState).SandboxPath -ChildPath 'Temp' }
-            else { [System.IO.Path]::GetTempPath() }
-        }
-        'UserProfile' { $profilePath }
-        default {
-            if ($whatIf) { Join-Path -Path $profilePath -ChildPath 'Desktop' }
-            else {
-                $desktop = Join-Path -Path $profilePath -ChildPath 'Desktop'
-                if (-not (Test-Path -Path $desktop -ErrorAction SilentlyContinue)) {
-                    $shellDesktop = Join-Path -Path $profilePath -ChildPath 'OneDrive\Desktop'
-                    if (Test-Path -Path $shellDesktop -ErrorAction SilentlyContinue) { $desktop = $shellDesktop }
-                }
-                $desktop
-            }
-        }
-    }
-
-    $signatureFolder = Join-Path -Path $rootPath -ChildPath $signatureFolderName
-    $signatureName = $UserName.Trim()
-    $htmFile = Join-Path -Path $signatureFolder -ChildPath "$signatureName.htm"
-    $txtFile = Join-Path -Path $signatureFolder -ChildPath "$signatureName.txt"
-    $rtfFile = Join-Path -Path $signatureFolder -ChildPath "$signatureName.rtf"
-    $filesFolder = Join-Path -Path $signatureFolder -ChildPath "${signatureName}_files"
+    $signatureFolder = $target.Folder
+    $profilePath = $target.ProfilePath
+    $signatureName = $target.Name
+    $htmFile = $target.HtmFile
+    $txtFile = $target.TxtFile
+    $rtfFile = $target.RtfFile
+    $filesFolder = $target.FilesFolder
 
     if ($whatIf) {
         Write-Log -Message "WHAT IF: создать '$signatureFolder' и файлы: $(@(@('htm') * [int]$generateHtml + @('txt') * [int]$generateText + @('rtf') * [int]$generateRtf) -join ', ')" -Level Info
