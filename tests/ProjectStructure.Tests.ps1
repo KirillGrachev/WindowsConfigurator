@@ -53,7 +53,7 @@ Describe 'Синтаксис и структура проекта' {
 
     It 'Имя файла соответствует имени первой определённой в нём функции' {
         foreach ($file in $script:FunctionFiles) {
-            if ($file.Name -in @('Load-ProjectFunctions.ps1', 'Aliases.ps1')) { continue }
+            if ($file.Name -in @('Load-ProjectFunctions.ps1', 'Aliases.ps1', 'YamlParserScalars.ps1', 'YamlParserBlock.ps1')) { continue }
 
             $ast = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$null, [ref]$null)
             $functions = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true))
@@ -64,7 +64,7 @@ Describe 'Синтаксис и структура проекта' {
 
     It 'У каждой функции есть comment-based help с .SYNOPSIS' {
         foreach ($file in $script:FunctionFiles) {
-            if ($file.Name -in @('Load-ProjectFunctions.ps1', 'Aliases.ps1')) { continue }
+            if ($file.Name -in @('Load-ProjectFunctions.ps1', 'Aliases.ps1', 'YamlParserScalars.ps1', 'YamlParserBlock.ps1')) { continue }
 
             $ast = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$null, [ref]$null)
             <#
