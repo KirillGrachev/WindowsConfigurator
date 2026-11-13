@@ -132,50 +132,19 @@
     }
 
     <# --- 1. Данные пользователя --- #>
-    $ad = $AdUserInfo
-    if ($null -eq $ad -and -not $whatIf) {
-        try {
-            $ad = Get-AdUserInfo -UserName $UserName -Attributes $adAttributes -SearchRoot $adSearchRoot -SearchFilter $adFilter
-        } catch {
-            $message = "[AD ERROR] $($_.Exception.Message)"
-            Write-Log -Message $message -Level Error
-            return New-StepResult -Step $stepName -Status 'Failed' -Message $message -Started $started -ErrorRecord $_
-        }
+    try {
+        $userData = Get-OutlookSignatureUserData -UserName $UserName -AdUserInfo $AdUserInfo -AdAttributes $adAttributes -AdSearchRoot $adSearchRoot -AdFilter $adFilter -FallbackFullName $fallbackFullName -FallbackCompany $fallbackCompany -FallbackDomain $fallbackDomain -PhoneLabels $phoneLabels -PhonePattern $phonePattern -PhoneReplacement $phoneReplacement -WhatIfMode:$whatIf
+    } catch {
+        $message = "[AD ERROR] $($_.Exception.Message)"
+        Write-Log -Message $message -Level Error
+        return New-StepResult -Step $stepName -Status 'Failed' -Message $message -Started $started -ErrorRecord $_
     }
-    if ($null -eq $ad) {
-        $ad = @{ displayname = ''; company = ''; title = ''; mail = ''; telephonenumber = ''; mobile = ''; cn = '' }
-    }
-
-    $getAd = {
-        param($name)
-        if ($ad.ContainsKey($name) -and $ad[$name]) { return [string]$ad[$name] }
-        return ''
-    }
-
-    $fullName = & $getAd 'displayname'
-    if (-not $fullName) { $fullName = & $getAd 'cn' }
-    if (-not $fullName -and $fallbackFullName) { $fullName = $fallbackFullName }
-    if (-not $fullName) { $fullName = $UserName }
-
-    $company = & $getAd 'company'
-    if (-not $company) { $company = $fallbackCompany }
-
-    $jobTitle = & $getAd 'title'
-    $email = & $getAd 'mail'
-    if (-not $email -and $fallbackDomain) { $email = "$UserName@$fallbackDomain" }
-
-    $phoneLabel = ''
-    $phoneNumber = ''
-    $workPhone = & $getAd 'telephonenumber'
-    $mobilePhone = & $getAd 'mobile'
-    if ($workPhone) { $phoneLabel = $phoneLabels.Work; $phoneNumber = $workPhone }
-    elseif ($mobilePhone) { $phoneLabel = $phoneLabels.Mobile; $phoneNumber = $mobilePhone }
-
-    if ($phoneNumber -and $phonePattern) {
-        $phoneNumber = Format-PhoneNumber -PhoneNumber $phoneNumber -Pattern $phonePattern -Replacement $phoneReplacement
-    }
-
-    Write-Log -Message "Данные для подписи: $fullName / $jobTitle / $company / $email" -Level Debug
+    $fullName = $userData.FullName
+    $company = $userData.Company
+    $jobTitle = $userData.JobTitle
+    $email = $userData.Email
+    $phoneLabel = $userData.PhoneLabel
+    $phoneNumber = $userData.PhoneNumber
 
     <# --- 2. Каталоги --- #>
     $signatureFolderName = $folderPattern.Replace('{UserName}', $UserName)
