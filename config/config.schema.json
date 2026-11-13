@@ -171,7 +171,8 @@
         "Packages": { "type": "array", "items": { "$ref": "#/definitions/appxPackage" }, "default": [] },
         "RetryCount": { "type": "integer", "minimum": 0, "maximum": 10, "default": 2, "description": "Повторы установки одного Appx-файла." },
         "RetryDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 300, "default": 5, "description": "Пауза между повторами." },
-        "RollbackDependenciesOnFailure": { "type": "boolean", "default": true, "description": "Удалять зависимости, установленные в этом запуске, если основной пакет не установился." }
+        "RollbackDependenciesOnFailure": { "type": "boolean", "default": true, "description": "Удалять зависимости, установленные в этом запуске, если основной пакет не установился." },
+        "ValidateManifest": { "type": "boolean", "default": true, "description": "Проверять PackageDependency в AppxManifest.xml и предупреждать о незадекларированных зависимостях." }
       }
     },
     "AutoStartApps": {
@@ -619,7 +620,8 @@
         "Packages": { "type": "array", "items": { "$ref": "#/definitions/appxPackage" }, "default": [] },
         "RetryCount": { "type": "integer", "minimum": 0, "maximum": 10, "default": 2 },
         "RetryDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 300, "default": 5 },
-        "RollbackDependenciesOnFailure": { "type": "boolean", "default": true }
+        "RollbackDependenciesOnFailure": { "type": "boolean", "default": true },
+        "ValidateManifest": { "type": "boolean", "default": true }
       }
     },    "menuItem": {
       "description": "Пункт интерактивного меню. RequiresUser=true допустим только для шагов, которым нужен пользователь (if/then).",

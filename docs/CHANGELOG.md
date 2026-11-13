@@ -4,6 +4,14 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.32] - 2026-11-13
+
+### Added
+
+- `AppxPackages.ValidateManifest` (default true) reads `AppxManifest.xml` for
+  `.appx`/`.msix`, and warns when a `PackageDependency` is neither installed nor
+  declared in `Dependencies`. `.msixbundle` is intentionally skipped.
+
 ## [2.1.31] - 2026-11-13
 
 ### Added

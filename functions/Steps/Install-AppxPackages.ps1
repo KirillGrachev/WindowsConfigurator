@@ -84,6 +84,7 @@
     $retryCount = if ($section.Contains('RetryCount')) { [int]$section.RetryCount } else { 2 }
     $retryDelaySeconds = if ($section.Contains('RetryDelaySeconds')) { [int]$section.RetryDelaySeconds } else { 5 }
     $rollbackDependencies = if ($section.Contains('RollbackDependenciesOnFailure')) { [bool]$section.RollbackDependenciesOnFailure } else { $true }
+    $validateManifest = if ($section.Contains('ValidateManifest')) { [bool]$section.ValidateManifest } else { $true }
 
     if ($PackageName) {
         $packages = @($packages | Where-Object { $_.ContainsKey('Name') -and [string]$_.Name -eq $PackageName })
@@ -175,6 +176,20 @@
             $failed.Add("${name}: не найдены файлы: $($missing -join ', ')") | Out-Null
             Write-Log -Message "Appx '$name': не найдены файлы: $($missing -join ', ')" -Level Error
             continue
+        }
+
+        if ($validateManifest) {
+            $declaredNames = @($dependencyPaths | ForEach-Object { $_.PackageName } | Where-Object { $_ })
+            foreach ($manifestDependency in @(Get-AppxManifestDependencies -Path $packagePath)) {
+                $dependencyMin = [version]'0.0.0.0'
+                if ($manifestDependency.MinVersion) {
+                    try { $dependencyMin = [version]$manifestDependency.MinVersion } catch { Write-Log -Message "Appx ${name}: неверная MinVersion в манифесте ($($manifestDependency.MinVersion))." -Level Debug }
+                }
+                $installedDependency = Get-AppxPackageVersion -PackageName $manifestDependency.Name
+                if ($null -ne $installedDependency -and $installedDependency -ge $dependencyMin) { continue }
+                if ($declaredNames -contains $manifestDependency.Name) { continue }
+                Write-Log -Message "Appx '$name': манифест требует '$($manifestDependency.Name)' >= $dependencyMin, но этой зависимости нет в AppxPackages.Dependencies и она не установлена." -Level Warn
+            }
         }
 
         $installedVersion = Get-AppxPackageVersion -PackageName $installedPackageName
