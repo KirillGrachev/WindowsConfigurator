@@ -24,7 +24,7 @@ $projectRoot = Split-Path -Path $PSScriptRoot -Parent
 if (-not $PSCmdlet.ShouldProcess($Root, 'Откатить изменения реестра')) { exit 0 }
 
 $result = Restore-WCBackup -Root $Root -Confirm:$false
-Write-Host ("Восстановлено ключей: {0}; удалено созданных: {1}; проблем: {2}" -f $result.Restored, $result.Deleted, $result.Failed.Count) -ForegroundColor Cyan
+Write-Host ("Восстановлено ключей: {0}; удалено созданных: {1}; полных снимков: {2}; проблем: {3}" -f $result.Restored, $result.Deleted, $result.FullRestored, $result.Failed.Count) -ForegroundColor Cyan
 foreach ($problem in $result.Failed) { Write-Host "  [!] $problem" -ForegroundColor Yellow }
 
 if ($result.Failed.Count -gt 0) { exit 1 }

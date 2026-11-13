@@ -98,4 +98,39 @@ Describe 'Резервное копирование реестра' {
         $calls[0][0] | Should -Be 'delete'
         $calls[1][0] | Should -Be 'import'
     }
+
+    It 'FullRegistry экспортирует HKLM SOFTWARE/SYSTEM и HKCU' {
+        $root = Join-Path -Path $TestDrive -ChildPath ("wc-backup-full-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $calls = New-Object System.Collections.Generic.List[object]
+        Mock Invoke-RegCommand {
+            $calls.Add(@($Arguments)) | Out-Null
+            return [PSCustomObject]@{ ExitCode = 0; Output = @(); ArgumentString = '' }
+        }
+        $state = Initialize-WCBackup -Root $root -FullRegistry
+        $state.FullRegistry.Count | Should -Be 3
+        $calls.Count | Should -Be 3
+        ($calls | ForEach-Object { $_[1] }) | Should -Contain 'HKEY_LOCAL_MACHINE\SOFTWARE'
+        ($calls | ForEach-Object { $_[1] }) | Should -Contain 'HKEY_LOCAL_MACHINE\SYSTEM'
+        ($calls | ForEach-Object { $_[1] }) | Should -Contain 'HKEY_CURRENT_USER'
+    }
+
+    It 'Restore импортирует полный снимок с проверкой SHA256' {
+        $root = Join-Path -Path $TestDrive -ChildPath ("wc-backup-full-restore-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $null = New-Item -Path $root -ItemType Directory -Force
+        $full = Join-Path $root 'full-HKCU.reg'
+        [System.IO.File]::WriteAllText($full, 'Windows Registry Editor Version 5.00')
+        $hash = (Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash
+        $journal = @{
+            Root         = $root
+            CreatedAt    = (Get-Date).ToString('o')
+            Registry     = @()
+            FullRegistry = @(@{ Key = 'HKEY_CURRENT_USER'; File = $full; Hash = $hash })
+        } | ConvertTo-Json -Depth 6
+        [System.IO.File]::WriteAllText((Join-Path $root 'backup.json'), $journal, (New-Object System.Text.UTF8Encoding($false)))
+        Mock Invoke-RegCommand { return [PSCustomObject]@{ ExitCode = 0; Output = @(); ArgumentString = '' } }
+
+        $result = Restore-WCBackup -Root $root -Confirm:$false
+        $result.FullRestored | Should -Be 1
+        $result.Failed.Count | Should -Be 0
+    }
 }

@@ -20,7 +20,9 @@
         [string]$Root = '',
 
         [ValidateRange(0, 3650)]
-        [int]$RetentionDays = 30
+        [int]$RetentionDays = 30,
+
+        [switch]$FullRegistry
     )
 
     if (-not $Root) {
@@ -57,13 +59,37 @@
     }
 
     $state = [ordered]@{
-        Root      = (Resolve-Path -LiteralPath $Root -ErrorAction Stop).ProviderPath
-        CreatedAt = (Get-Date).ToString('o')
-        Registry  = New-Object System.Collections.Generic.List[object]
+        Root         = (Resolve-Path -LiteralPath $Root -ErrorAction Stop).ProviderPath
+        CreatedAt    = (Get-Date).ToString('o')
+        Registry     = New-Object System.Collections.Generic.List[object]
+        FullRegistry = New-Object System.Collections.Generic.List[object]
     }
     $wcState = Get-WCState
-$wcState.Backup = $state
+    $wcState.Backup = $state
     $null = Save-WCBackupState
+
+    if ($FullRegistry) {
+        $targets = @(
+            @{ Key = 'HKEY_LOCAL_MACHINE\SOFTWARE'; Name = 'full-HKLM_SOFTWARE.reg' }
+            @{ Key = 'HKEY_LOCAL_MACHINE\SYSTEM'; Name = 'full-HKLM_SYSTEM.reg' }
+            @{ Key = 'HKEY_CURRENT_USER'; Name = 'full-HKCU.reg' }
+        )
+        foreach ($target in $targets) {
+            $file = Join-Path -Path $state.Root -ChildPath $target.Name
+            $result = Invoke-RegCommand -Arguments @('export', $target.Key, $file, '/y')
+            if ($result.ExitCode -ne 0) {
+                Write-Log -Message "Полный backup: не удалось экспортировать '$($target.Key)' (код $($result.ExitCode))." -Level Warn
+                continue
+            }
+            $entry = @{ Key = [string]$target.Key; File = $file }
+            if (Test-Path -LiteralPath $file -PathType Leaf -ErrorAction SilentlyContinue) {
+                try { $entry.Hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256 -ErrorAction Stop).Hash } catch { Write-Log -Message "Полный backup: не удалось посчитать SHA256 для ${file}: $($_.Exception.Message)" -Level Debug }
+            }
+            $state.FullRegistry.Add($entry) | Out-Null
+            Write-Log -Message "Полный backup: '$($target.Key)' -> '$file'." -Level Debug
+        }
+        $null = Save-WCBackupState
+    }
 
     $readme = @'
 WindowsConfigurator registry backup
@@ -75,6 +101,11 @@ backup.json
 registry-*.reg
     Actual exported registry keys. A file appears only after a key is
     exported, i.e. after the first Set-RegistryValue call for that key.
+
+full-*.reg
+    Optional full-HKLM-SOFTWARE/HKLM-SYSTEM/HKCU snapshots created with
+    -FullRegistryBackup. They are large; restore imports them after the
+    per-key journal.
 
 If "Registry" in backup.json is empty, no step changed the registry through
 Set-RegistryValue during this run. MSI/EXE installers, Appx operations and
