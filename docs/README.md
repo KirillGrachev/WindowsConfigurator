@@ -68,15 +68,15 @@ or invalid configuration.
 
 Main menu (TestMode):
 
-![Main menu](screenshots/main-menu-2.1.33.png)
+![Main menu](screenshots/main-menu.png)
 
 Application installation submenu (TestMode); `X`, `Q` or `Enter` returns to the main menu:
 
-![Installation submenu](screenshots/install-submenu-2.1.33.png)
+![Installation submenu](screenshots/install-submenu.png)
 
 Appx/MSIX submenu (TestMode); dependencies are installed before the selected package:
 
-![Appx submenu](screenshots/appx-submenu-2.1.33.png)
+![Appx submenu](screenshots/appx-submenu.png)
 
 ## Configuration
 
@@ -107,7 +107,7 @@ The shipped `config/config.json` is a **test** configuration with placeholders
 | `Menu` | Interactive menu title and items |
 | `WindowsVersions` | Windows version labels by build number |
 
-See [configuration.md](configuration.md) for details.
+See [CONFIGURATION.md](CONFIGURATION.md) for details.
 
 ### Secrets
 
@@ -136,7 +136,7 @@ In TestMode:
 - Files are written to `%TEMP%\WC-TestMode-*`;
 - The `testmode-report.json` report is created with the operation journal.
 
-See [test-mode.md](test-mode.md) for details.
+See [TEST-MODE.md](TEST-MODE.md) for details.
 
 ## Backup and rollback
 
@@ -219,7 +219,8 @@ docs/                        all markdown, documentation and screenshots
 .\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 85 -WithAnalyzer
 ```
 
-Contribution rules — [CONTRIBUTING.md](CONTRIBUTING.md); vulnerabilities —
+Contribution rules — [CONTRIBUTING.md](CONTRIBUTING.md); manual real-Windows
+checks — [INTEGRATION-TESTS.md](INTEGRATION-TESTS.md); vulnerabilities —
 [SECURITY.md](SECURITY.md).
 
 ## License

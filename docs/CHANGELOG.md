@@ -4,6 +4,16 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.34] - 2026-11-15
+
+### Documentation
+
+- Renamed remaining Markdown files to the project's uppercase convention:
+  `CONFIGURATION.md`, `INTEGRATION-TESTS.md`, `TEST-MODE.md`.
+- Screenshots use stable names (`main-menu.png`, etc.) instead of per-release
+  filenames.
+- Updated all internal links and the shipped config description.
+
 ## [2.1.33] - 2026-11-15
 
 ### Documentation
@@ -259,7 +269,7 @@ project follows [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - `Meta.Description` in the sample configuration now points to
-  `docs/configuration.md` instead of the removed Russian README section.
+  `docs/CONFIGURATION.md` instead of the removed Russian README section.
 - Added this changelog and a versioning policy to `CONTRIBUTING.md`.
 
 ### Fixed

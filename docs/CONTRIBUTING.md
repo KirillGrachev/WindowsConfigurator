@@ -55,7 +55,7 @@ For every release:
 
 1. Add an entry to `CHANGELOG.md` under the new version.
 2. Update `Meta.Version` in `config/config.json`, `ModuleVersion` in
-   `WindowsConfigurator.psd1`, and the example in `configuration.md`.
+   `WindowsConfigurator.psd1`, and the example in `CONFIGURATION.md`.
 3. Merge through a pull request and tag the merge commit as `vX.Y.Z`.
 4. The release workflow checks that the tag, `Meta.Version` and `ModuleVersion`
    match, then publishes the release ZIP and `SHA256SUMS`.
