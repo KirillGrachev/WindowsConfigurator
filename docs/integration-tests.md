@@ -35,6 +35,29 @@ The check creates a temporary SMB share, copies `config.json` and
 `\\<computer>\<share>\config.json`, verifies `Meta.Version`, and removes the
 share in `finally`. A successful run prints `PASS UNC configuration import`.
 
+## Full registry backup
+
+`-FullRegistryBackup` is not exercised by CI because `HKLM\SYSTEM` is large and
+`reg import` may require a reboot. On a test VM, run a real deployment with the
+flag, verify `full-HKLM_SOFTWARE.reg`, `full-HKLM_SYSTEM.reg` and
+`full-HKCU.reg` appear with SHA256 entries, then test `Restore-Backup.ps1`.
+The per-key journal still does not capture MSI/EXE, Appx or `slmgr` writes.
+
+## Appx/MSIX (manual)
+
+Real Appx installation is not part of CI: it requires signed packages and a
+Windows environment with the Appx service. Use a disposable Windows Sandbox/VM
+with the package and dependency files copied to a local folder, set
+`AppxPackages.RepositoryRoot` to that folder, and run:
+
+```powershell
+.\Configure-Windows.ps1 -RunSteps AppxPackages -ConfigPath C:\cfg\appx.json
+```
+
+Check that dependencies install first, `MinimumVersion` is enforced, and
+`ValidateManifest` warnings point to undeclared `PackageDependency` entries.
+`.msixbundle` manifest validation is intentionally skipped.
+
 ## Adding checks
 
 Keep each check self-contained, use a unique key or directory, clean up in

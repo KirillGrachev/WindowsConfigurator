@@ -4,6 +4,16 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.33] - 2026-11-15
+
+### Documentation
+
+- Audited all Markdown against the current code: module loading, Appx
+  `MinimumVersion`/`ValidateManifest`, full registry backup/ACL, required CI
+  checks and release version verification.
+- Updated integration notes for the manual full-registry and Appx checks.
+- Renamed screenshots to match the current release and updated README links.
+
 ## [2.1.32] - 2026-11-13
 
 ### Added
