@@ -22,7 +22,7 @@ on any machine without administrator rights and without risk.
 | Registry | Writes and reads go to an in-memory overlay; the real registry is untouched |
 | Processes | `Start-ProcessAndWait`, `Stop-Process` and `Restart-ExplorerProcess` are only journaled |
 | Files | Paths are redirected to the sandbox `%TEMP%\WC-TestMode-*` |
-| Appx / provisioned | Packages are "removed" from fixtures; real `Remove-AppxPackage` is not called |
+| Appx / provisioned | `Add-AppxPackage`/`Remove-AppxPackage` are journaled; fixtures provide the simulated installed state |
 | Services and tasks | `Set-Service` and `Disable-ScheduledTask` are only journaled |
 | `powercfg`, `slmgr`, `reg`, `dism` | Commands are replaced with synthetic output |
 | AD | Demo user attributes are returned |
@@ -83,6 +83,6 @@ autostart shortcuts from `AutoStartApps`, `powercfg /l` output from
 ## Safety
 
 TestMode is enabled only for the duration of the run and is disabled in
-`finally`/`AfterEach`, so the global state does not stay enabled. Do not run it
+`finally`/`AfterEach`, so the AppDomain state does not stay enabled. Do not run it
 at the same time as a real deployment in the same process: these are two modes of
 the same configurator.

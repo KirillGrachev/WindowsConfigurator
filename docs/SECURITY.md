@@ -44,6 +44,7 @@ real values.
 - Static check for known corporate identifiers in code and comments.
 - PSScriptAnalyzer with the project profile.
 - Pester tests on Windows PowerShell 5.1 and PowerShell 7 (Linux and Windows).
+- Required status checks on `main`: the full test matrix, PSScriptAnalyzer and static checks.
 - CodeQL analysis for GitHub Actions.
 - Signed commits (Verified on GitHub); release tags are signed locally, and
   release archives include `SHA256SUMS`.

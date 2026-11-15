@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.32",
+  "Version": "2.1.33",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -228,6 +228,7 @@ Types:
   "RetryCount": 2,
   "RetryDelaySeconds": 5,
   "RollbackDependenciesOnFailure": true,
+  "ValidateManifest": true,
   "Packages": [
     {
       "Name": "Calculator",
@@ -257,8 +258,11 @@ or an object with `Path`, `PackageName` and `MinimumVersion`; the object form
 enables rollback of dependencies installed during this run and enforces `MinimumVersion`. `RetryCount` and
 `RetryDelaySeconds` control transient `Add-AppxPackage` failures.
 
-If `ValidateManifest` is true, `.appx`/`.msix` manifests are checked for `PackageDependency` entries; undeclared and missing dependencies produce warnings. Bundles are skipped. Menu item 13 opens the Appx submenu; `0` installs all packages and a number
-installs one. In TestMode the installation is simulated and logged.
+If `ValidateManifest` is true, `.appx`/`.msix` manifests are checked for
+`PackageDependency` entries; undeclared and missing dependencies produce warnings.
+Bundles are skipped. Menu item 13 opens the Appx submenu; `0` installs all
+packages and a number installs one. In TestMode the installation is simulated and
+logged.
 
 ## Autostart and tweaks
 

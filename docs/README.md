@@ -18,7 +18,7 @@ changes.
 - **Interactive menu** — pick steps one by one, with submenus for MSI/EXE and Appx/MSIX installation.
 - **Batch mode** — run everything with `-RunAll` or selected steps with `-RunSteps`.
 - **Idempotent** — already installed applications and Appx packages are skipped; repeated runs are safe.
-- **Appx on demand** — menu item 13, not included in `-RunAll`; dependencies are installed before the main `.appx`/`.msix`/`.msixbundle`.
+- **Appx on demand** — menu item 13, not included in `-RunAll`; dependencies, minimum versions, optional dependency rollback and manifest warnings are supported.
 - **Secrets** — `env:`, `file:` and `dpapi:` references instead of plaintext keys in the configuration.
 - **TestMode** — registry, processes, files and Appx operations are simulated in a sandbox.
 - **Outlook signature** — HTML/RTF/TXT generated from AD data, a template and a logo.
@@ -68,15 +68,15 @@ or invalid configuration.
 
 Main menu (TestMode):
 
-![Main menu](screenshots/main-menu-2.1.22.png)
+![Main menu](screenshots/main-menu-2.1.33.png)
 
 Application installation submenu (TestMode); `X`, `Q` or `Enter` returns to the main menu:
 
-![Installation submenu](screenshots/install-submenu-2.1.22.png)
+![Installation submenu](screenshots/install-submenu-2.1.33.png)
 
 Appx/MSIX submenu (TestMode); dependencies are installed before the selected package:
 
-![Appx submenu](screenshots/appx-submenu-2.1.22.png)
+![Appx submenu](screenshots/appx-submenu-2.1.33.png)
 
 ## Configuration
 
@@ -202,7 +202,7 @@ docs/                        all markdown, documentation and screenshots
 ## Checks and security
 
 - **CI** — Windows PowerShell 5.1 / PowerShell 7, Pester 5.7.1 / 6.2.0,
-  Linux and Windows, with an 85% coverage threshold and a Pester lock.
+  Linux and Windows, with an 85% coverage threshold and a Pester lock. `main` requires the test matrix, PSScriptAnalyzer and static checks.
 - **PSScriptAnalyzer** — 0 findings with the `ScriptAnalyzerSettings.psd1` profile.
 - **CodeQL** — GitHub Actions analysis.
 - **Static checks** — encodings, CRLF/BOM, schema validation and no corporate
@@ -216,7 +216,7 @@ docs/                        all markdown, documentation and screenshots
 .\tests\Run-Tests.ps1 -PesterVersion 5.7.1
 
 # tests + coverage + analyzer
-.\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 80 -WithAnalyzer
+.\tests\Run-Tests.ps1 -PesterVersion 5.7.1 -WithCoverage -MinimumCoverage 85 -WithAnalyzer
 ```
 
 Contribution rules — [CONTRIBUTING.md](CONTRIBUTING.md); vulnerabilities —

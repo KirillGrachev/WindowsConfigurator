@@ -6,7 +6,8 @@ Thanks for your interest in the project. These are the minimum rules enforced by
 
 - The main branch is `main`; make changes in a separate branch and open a pull request.
 - `main` is protected: pull request required, linear history, force-pushes and
-  deletions disabled. Delete the merged branch after the pull request.
+  deletions disabled; the test matrix, PSScriptAnalyzer and static checks are
+  required status checks. Delete the merged branch after the pull request.
 - Use [Conventional Commits](https://www.conventionalcommits.org/):
   `feat:`, `fix:`, `docs:`, `test:`, `ci:`, `build:`, `perf:`, `refactor:`, `chore:`.
 - Commits must be signed and Verified on GitHub; release tags are signed with
@@ -56,7 +57,8 @@ For every release:
 2. Update `Meta.Version` in `config/config.json`, `ModuleVersion` in
    `WindowsConfigurator.psd1`, and the example in `configuration.md`.
 3. Merge through a pull request and tag the merge commit as `vX.Y.Z`.
-4. Publish the release ZIP and `SHA256SUMS`.
+4. The release workflow checks that the tag, `Meta.Version` and `ModuleVersion`
+   match, then publishes the release ZIP and `SHA256SUMS`.
 
 ## Documentation
 
