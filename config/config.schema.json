@@ -163,7 +163,8 @@
       "type": "array",
       "items": { "$ref": "#/definitions/appItem" },
       "default": []
-    },    "AppxPackages": {
+    },
+    "AppxPackages": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -623,7 +624,8 @@
         "RollbackDependenciesOnFailure": { "type": "boolean", "default": true },
         "ValidateManifest": { "type": "boolean", "default": true }
       }
-    },    "menuItem": {
+    },
+    "menuItem": {
       "description": "Пункт интерактивного меню. RequiresUser=true допустим только для шагов, которым нужен пользователь (if/then).",
       "type": "object",
       "additionalProperties": false,

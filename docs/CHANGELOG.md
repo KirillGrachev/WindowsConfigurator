@@ -4,6 +4,14 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.35] - 2026-11-17
+
+### Fixed
+
+- `config/config.json` and `config/config.schema.json` now put section
+  separators on their own lines (`"AppsToInstall"`, `"AppxPackages"`,
+  `"menuItem"`) instead of joining them after a closing brace.
+
 ## [2.1.34] - 2026-11-15
 
 ### Documentation
