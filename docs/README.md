@@ -183,6 +183,10 @@ The module exports the normal functions without legacy aliases. Compatibility
 aliases (`Redirect-UserFolders`, etc.) are installed by the entry point for old
 scenarios; module users should call the canonical functions.
 
+When `Configure-Windows.ps1` is launched from a UNC path, it uses the direct
+loader fallback because Windows PowerShell 5.1 does not import a UNC module
+manifest reliably.
+
 ## Project structure
 
 ```text

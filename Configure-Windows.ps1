@@ -86,12 +86,33 @@ param(
 $ErrorActionPreference = 'Stop'
 $projectRoot = $PSScriptRoot
 
+$modulePath = Join-Path -Path $projectRoot -ChildPath 'WindowsConfigurator.psd1'
+$moduleLoaded = $false
+if ($projectRoot -like '\\*') {
+    Write-Host '[INFO] Запуск с UNC-пути: используется прямой загрузчик функций.' -ForegroundColor Gray
+} else {
+    try {
+        Import-Module -Name $modulePath -Force -ErrorAction Stop
+        $moduleLoaded = $true
+    } catch {
+        Write-Host "[WARN] Модуль не загрузился: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host '[WARN] Использую прямой загрузчик функций.' -ForegroundColor Yellow
+    }
+}
+
+if (-not $moduleLoaded) {
+    try {
+        . (Join-Path -Path $projectRoot -ChildPath 'functions/Load-ProjectFunctions.ps1') -IncludeTestMode -SkipCompatibilityAliases | Out-Null
+    } catch {
+        Write-Host "[FATAL] Не удалось загрузить функции проекта: $($_.Exception.Message)" -ForegroundColor Red
+        exit 2
+    }
+}
+
 try {
-    $modulePath = Join-Path -Path $projectRoot -ChildPath 'WindowsConfigurator.psd1'
-    Import-Module -Name $modulePath -Force -ErrorAction Stop
     . (Join-Path -Path $projectRoot -ChildPath 'functions/Aliases.ps1') | Out-Null
 } catch {
-    Write-Host "[FATAL] Не удалось загрузить функции проекта: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "[FATAL] Не удалось загрузить алиасы проекта: $($_.Exception.Message)" -ForegroundColor Red
     exit 2
 }
 

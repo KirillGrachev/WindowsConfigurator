@@ -4,6 +4,15 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.36] - 2026-11-17
+
+### Fixed
+
+- `Configure-Windows.ps1` no longer fails when launched from a UNC share
+  (`\\server\share\...`). It skips the module-manifest import and uses the
+  direct loader, avoiding the Windows PowerShell 5.1 "no valid module file"
+  error. The same fallback covers any module import failure.
+
 ## [2.1.35] - 2026-11-17
 
 ### Fixed
