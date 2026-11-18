@@ -423,6 +423,25 @@ Describe 'Test-SoftwareInstallation: определение установлен
         } finally { Remove-Item -Path $file -Force -ErrorAction SilentlyContinue }
     }
 
+    It 'устаревший UninstallKey не считается установкой, если InstallPath отсутствует' {
+        Mock Test-RegistryKeyExists { return $true }
+        $missing = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-missing-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
+        Test-SoftwareInstallation -App @{ Name = 'Trueconf'; Type = 'Batch'; InstallPath = $missing; UninstallKey = '{50698F7D-41A9-43DC-999C-874C7824ADB8}' } | Should -BeFalse
+        Should -Invoke Test-RegistryKeyExists -Times 0
+    }
+
+    It 'InstallPath с хвостовым \\* проверяет непустой каталог и игнорирует ключ' {
+        Mock Test-RegistryKeyExists { return $true }
+        $root = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-installed-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
+        $client = Join-Path $root 'Client'
+        $null = New-Item -Path $client -ItemType Directory -Force
+        [System.IO.File]::WriteAllText((Join-Path $client 'TrueConf.exe'), 'x')
+        try {
+            Test-SoftwareInstallation -App @{ Name = 'Trueconf'; Type = 'Batch'; InstallPath = (Join-Path $client '*'); UninstallKey = '{stale}' } | Should -BeTrue
+            Should -Invoke Test-RegistryKeyExists -Times 0
+        } finally { Remove-Item -Path $root -Recurse -Force }
+    }
+
     It 'однозначный wildcard InstallPath считается установленным' {
         Mock Test-RegistryKeyExists { return $false }
         $root = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-installed-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
