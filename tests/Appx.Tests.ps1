@@ -7,6 +7,28 @@
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath 'TestHelpers/ProjectLoader.ps1')
     $script:Config = Import-Configuration -Path (Get-ProjectFilePath -RelativePath 'config/config.json') -SkipLoggingInit
+
+function Invoke-TestAppxPackage {
+    param(
+        [Parameter(Mandatory)][string]$Directory,
+        [Parameter(Mandatory)][string]$FileName,
+        [Parameter(Mandatory)][string]$IdentityName
+    )
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+    $staging = Join-Path $Directory ("staging-" + [guid]::NewGuid().ToString('N').Substring(0, 6))
+    $null = New-Item -Path $staging -ItemType Directory -Force
+    $manifest = @"
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+  <Identity Name="$IdentityName" Publisher="CN=Test" Version="1.0.0.0" />
+</Package>
+"@
+    [System.IO.File]::WriteAllText((Join-Path $staging 'AppxManifest.xml'), $manifest)
+    $package = Join-Path $Directory $FileName
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($staging, $package)
+    return $package
+}
 }
 
 Describe 'Install-AppxPackages' {
@@ -198,6 +220,46 @@ Describe 'Install-AppxPackages' {
         $dependencies.Count | Should -Be 1
         $dependencies[0].Name | Should -Be 'Test.Framework'
         $dependencies[0].MinVersion | Should -Be '2.0.0.0'
+    }
+
+    It 'определяет установленный пакет по Identity, если PackageName не задан' {
+        $null = Invoke-TestAppxPackage -Directory $script:AppxRoot -FileName 'identity.msix' -IdentityName 'Test.Calculator'
+        $script:InstalledPackages.Add('Test.Calculator') | Out-Null
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.Packages[0].PackagePath = 'identity.msix'
+        $config.AppxPackages.Packages[0].PackageName = ''
+        $config.AppxPackages.Packages[0].Dependencies = @()
+        $result = Install-AppxPackages -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $script:Added.Count | Should -Be 0
+        $result.Data.Skipped | Should -Contain 'Calculator'
+    }
+
+    It 'не переустанавливает уже установленную string-зависимость' {
+        $null = Invoke-TestAppxPackage -Directory $script:AppxRoot -FileName 'dep-identity.msix' -IdentityName 'Test.Dep'
+        $script:InstalledPackages.Add('Test.Dep') | Out-Null
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.Packages[0].Dependencies = @('dep-identity.msix')
+        $result = Install-AppxPackages -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $script:Added.Count | Should -Be 1
+        $script:Added[0] | Should -Match 'app\.msixbundle$'
+    }
+
+    It 'не повторяет установку при ошибке 0x80073D02' {
+        $script:Attempts = 0
+        Mock Add-AppxPackage {
+            $script:Attempts++
+            throw 'Deployment failed with HRESULT: 0x80073D02, resources are in use'
+        }
+        $config = Copy-ConfigValue -Value $script:AppxConfig
+        $config.AppxPackages.Packages[0].Dependencies = @()
+        $config.AppxPackages.RetryCount = 2
+        $config.AppxPackages.RetryDelaySeconds = 0
+        $result = Install-AppxPackages -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Failed'
+        $script:Attempts | Should -Be 1
+        $result.Data.Failed[0] | Should -Match '0x80073D02'
     }}
 
 Describe 'Appx submenu' {
