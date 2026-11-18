@@ -1,7 +1,7 @@
 {
   "$schema": "./config.schema.json",
   "Meta": {
-    "Version": "2.1.37",
+    "Version": "2.1.38",
     "IsTestData": true,
     "Environment": "TEST",
     "CompanyName": "Test Company LLC",
@@ -71,6 +71,7 @@
     "InstallerLockCheckIntervalSeconds": 5,
     "SuccessExitCodes": [ 0, 3010 ],
     "RetryExitCodes": [ 1618 ],
+    "AlreadyInstalledExitCodes": [ 1638 ],
     "NetFx3FeatureName": "NetFx3",
     "NetFx3SourceTemplate": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs",
     "DismExecutable": "DISM"

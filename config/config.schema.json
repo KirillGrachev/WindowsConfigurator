@@ -130,6 +130,7 @@
         "InstallerLockCheckIntervalSeconds": { "type": "integer", "minimum": 1, "maximum": 300, "default": 5, "description": "Интервал проверки msiexec." },
         "SuccessExitCodes": { "type": "array", "items": { "type": "integer" }, "minItems": 1, "uniqueItems": true, "default": [ 0, 3010 ], "description": "Коды возврата, считающиеся успехом (3010 = нужен рестарт)." },
         "RetryExitCodes": { "type": "array", "items": { "type": "integer" }, "uniqueItems": true, "default": [ 1618 ], "description": "Коды возврата, при которых установка повторяется." },
+        "AlreadyInstalledExitCodes": { "type": "array", "items": { "type": "integer" }, "uniqueItems": true, "default": [ 1638 ], "description": "Коды возврата, означающие, что продукт уже установлен (1638 = другая версия)." },
         "NetFx3FeatureName": { "type": "string", "default": "NetFx3", "description": "Имя компонента DISM для .NET Framework 3.5." },
         "NetFx3SourceTemplate": { "type": "string", "default": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs", "description": "Шаблон пути к источнику sxs. Токены: {AppsRepositoryRoot}, {VersionLabel}." },
         "DismExecutable": { "type": "string", "default": "DISM", "description": "Имя/путь DISM." }

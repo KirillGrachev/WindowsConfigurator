@@ -137,6 +137,11 @@
         if ($sourcePath -and $Tokens.ContainsKey('VersionLabel')) {
             $sourcePath = (Expand-ConfigToken -InputString $sourcePath -Tokens $Tokens).Value
         }
+        if (-not $sourcePath) {
+            Write-Log -Message "DISM '$featureName': SourcePath не задан, будет использован Windows Update/локальный кэш." -Level Warn
+        } elseif (-not $WhatIfMode -and -not (Test-Path -LiteralPath $sourcePath -ErrorAction SilentlyContinue)) {
+            throw "DISM источник недоступен: $sourcePath. Проверьте SourcePath/NetFx3SourceTemplate и доступ к UNC."
+        }
 
         $allFeatures = $true
         if ($App.ContainsKey('AllFeatures')) { $allFeatures = [bool]$App.AllFeatures }
