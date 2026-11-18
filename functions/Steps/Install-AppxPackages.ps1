@@ -44,6 +44,10 @@
                 $null = Install-AppxPackageFile -Path $Path
                 return
             } catch {
+                if ($_.Exception.Message -match '0x80073D02') {
+                    Write-Log -Message "Appx: пакет '$Path' используется другим приложением (0x80073D02). Закройте указанное приложение и повторите; автоматический retry не выполняется." -Level Error
+                    throw
+                }
                 if ($attempt -ge $attempts) { throw }
                 Write-Log -Message "Appx: попытка $attempt из $attempts не удалась для '$Path': $($_.Exception.Message)" -Level Warn
                 if ($RetryDelaySeconds -gt 0) { Start-Sleep -Seconds $RetryDelaySeconds }
@@ -114,7 +118,7 @@
     foreach ($package in $packages) {
         $name = if ($package.ContainsKey('Name')) { [string]$package.Name } else { '(без имени)' }
         $packageRelative = if ($package.ContainsKey('PackagePath')) { [string]$package.PackagePath } else { '' }
-        $installedPackageName = if ($package.ContainsKey('PackageName') -and $package.PackageName) { [string]$package.PackageName } else { $name }
+        $configuredPackageName = if ($package.ContainsKey('PackageName') -and $package.PackageName) { [string]$package.PackageName } else { '' }
         $forceUpdate = if ($package.ContainsKey('ForceUpdate')) { [bool]$package.ForceUpdate } else { $false }
         $dependencies = if ($package.ContainsKey('Dependencies')) { @($package.Dependencies) } else { @() }
         $requiredVersion = $null
@@ -139,12 +143,18 @@
         }
 
         $packagePath = Resolve-AppxPackagePath -Path $packageRelative -RepositoryRoot $repositoryRoot
+        $manifestIdentity = Get-AppxManifestIdentity -Path $packagePath
+        $installedPackageName = if ($configuredPackageName) { $configuredPackageName } elseif ($manifestIdentity -and $manifestIdentity.Name) { [string]$manifestIdentity.Name } else { $name }
+        if ($configuredPackageName -and $manifestIdentity -and $manifestIdentity.Name -and $configuredPackageName -ne $manifestIdentity.Name) {
+            Write-Log -Message "Appx '${name}': PackageName '$configuredPackageName' не совпадает с Identity '$($manifestIdentity.Name)'." -Level Debug
+        }
         $packageDirectory = Split-Path -Path $packagePath -Parent
         $dependencyPaths = New-Object System.Collections.Generic.List[object]
         foreach ($dependency in $dependencies) {
             $dependencyPath = ''
             $dependencyName = ''
             $dependencyMinVersion = $null
+            $dependencyIdentity = $null
             if ($dependency -is [System.Collections.IDictionary]) {
                 if ($dependency.Contains('Path')) { $dependencyPath = [string]$dependency.Path }
                 if ($dependency.Contains('PackageName')) { $dependencyName = [string]$dependency.PackageName }
@@ -159,8 +169,13 @@
                 $dependencyPath = [string]$dependency
             }
             if (-not $dependencyPath) { continue }
+            $resolvedDependencyPath = Resolve-AppxPackagePath -Path $dependencyPath -RepositoryRoot $repositoryRoot -RelativeTo $packageDirectory
+            if (-not $dependencyName) {
+                $dependencyIdentity = Get-AppxManifestIdentity -Path $resolvedDependencyPath
+                if ($dependencyIdentity -and $dependencyIdentity.Name) { $dependencyName = [string]$dependencyIdentity.Name }
+            }
             $dependencyPaths.Add([PSCustomObject]@{
-                    Path           = Resolve-AppxPackagePath -Path $dependencyPath -RepositoryRoot $repositoryRoot -RelativeTo $packageDirectory
+                    Path           = $resolvedDependencyPath
                     PackageName    = $dependencyName
                     MinimumVersion = $dependencyMinVersion
                 }) | Out-Null
@@ -193,6 +208,14 @@
         }
 
         $installedVersion = Get-AppxPackageVersion -PackageName $installedPackageName
+        if ($null -eq $installedVersion -and $manifestIdentity -and $manifestIdentity.Name -and $manifestIdentity.Name -ne $installedPackageName) {
+            $identityVersion = Get-AppxPackageVersion -PackageName $manifestIdentity.Name
+            if ($null -ne $identityVersion) {
+                $installedPackageName = [string]$manifestIdentity.Name
+                $installedVersion = $identityVersion
+                Write-Log -Message "Appx '${name}': пакет найден по Identity '$installedPackageName'." -Level Debug
+            }
+        }
         if ($null -ne $installedVersion) {
             if ($null -ne $requiredVersion -and $installedVersion -gt $requiredVersion) {
                 Write-Log -Message "[ПРОПУСК] Appx ${name}: установлена более новая версия $installedVersion (требуется $requiredVersion)." -Level Info
@@ -220,7 +243,15 @@
         try {
             Write-Log -Message ">>> Appx: $name, зависимостей: $($dependencyPaths.Count)" -Level Step
             foreach ($dependency in $dependencyPaths) {
-                $wasInstalled = if ($dependency.PackageName) { Test-AppxPackageInstalled -PackageName $dependency.PackageName } else { $true }
+                $wasInstalled = $false
+                if ($dependency.PackageName) {
+                    $installedDependencyVersion = Get-AppxPackageVersion -PackageName $dependency.PackageName
+                    $wasInstalled = ($null -ne $installedDependencyVersion)
+                    if ($wasInstalled -and ($null -eq $dependency.MinimumVersion -or $installedDependencyVersion -ge $dependency.MinimumVersion)) {
+                        Write-Log -Message "[ПРОПУСК] Зависимость уже установлена: $($dependency.PackageName) ($installedDependencyVersion)." -Level Info
+                        continue
+                    }
+                }
                 Invoke-AppxInstallWithRetry -Path $dependency.Path -RetryCount $retryCount -RetryDelaySeconds $retryDelaySeconds
                 if ($dependency.PackageName -and $dependency.MinimumVersion) {
                     $dependencyVersion = Get-AppxPackageVersion -PackageName $dependency.PackageName

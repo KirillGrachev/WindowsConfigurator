@@ -4,6 +4,16 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.37] - 2026-11-18
+
+### Fixed
+
+- Appx now detects an installed package by `Identity` from the manifest when
+  `PackageName` is omitted; already installed dependencies are skipped instead of
+  reinstalled. This avoids `0x80073D02` on shared framework packages.
+- `0x80073D02` ("resources are in use") is no longer retried automatically; the
+  error points to the application that must be closed.
+
 ## [2.1.36] - 2026-11-17
 
 ### Fixed

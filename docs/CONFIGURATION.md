@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.36",
+  "Version": "2.1.37",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -250,13 +250,17 @@ For each selected package, all dependencies are installed first, then the main
 `RepositoryRoot`; absolute and UNC paths are also accepted. Dependency paths are
 resolved relative to the package directory first, then the repository root.
 
-`PackageName` is used for `Get-AppxPackage` and defaults to `Name`. An already
-installed package is skipped when its version is at least `Version` (or
-`MinimumVersion`); a newer installed version is never downgraded. `ForceUpdate`
-reinstalls unless the installed version is newer. A dependency can be a string
-or an object with `Path`, `PackageName` and `MinimumVersion`; the object form
-enables rollback of dependencies installed during this run and enforces `MinimumVersion`. `RetryCount` and
-`RetryDelaySeconds` control transient `Add-AppxPackage` failures.
+`PackageName` is used for `Get-AppxPackage`; if it is empty, the installer
+reads `Identity` from the package manifest. An already installed package is
+skipped when its version is at least `Version` (or `MinimumVersion`); a newer
+installed version is never downgraded. Dependencies that are already installed
+are skipped too. `0x80073D02` ("resources are in use") is reported without
+automatic retries because it needs the blocking application to be closed.
+`ForceUpdate` reinstalls unless the installed version is newer. A dependency can
+be a string or an object with `Path`, `PackageName` and `MinimumVersion`; the
+object form enables rollback of dependencies installed during this run and
+enforces `MinimumVersion`. `RetryCount` and `RetryDelaySeconds` control transient
+`Add-AppxPackage` failures.
 
 If `ValidateManifest` is true, `.appx`/`.msix` manifests are checked for
 `PackageDependency` entries; undeclared and missing dependencies produce warnings.
