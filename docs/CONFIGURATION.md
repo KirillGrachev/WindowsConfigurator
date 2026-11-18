@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.37",
+  "Version": "2.1.38",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -141,6 +141,7 @@ test GVLK key is rejected even in TestMode.
   "InstallerLockCheckIntervalSeconds": 5,
   "SuccessExitCodes": [0, 3010],
   "RetryExitCodes": [1618],
+  "AlreadyInstalledExitCodes": [1638],
   "NetFx3FeatureName": "NetFx3",
   "NetFx3SourceTemplate": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs",
   "DismExecutable": "dism.exe"
@@ -153,6 +154,12 @@ Path tokens:
 - `{VersionLabel}` — the Windows version label from `WindowsVersions`;
 - `{InstallPath}` — the application installation path;
 - `{UserName}` — the target user name.
+
+`SuccessExitCodes` completes an installation, `RetryExitCodes` waits for another
+installer to unlock, and `AlreadyInstalledExitCodes` (default `1638`) marks a
+product as already installed and skips it. Known failures include a hint in the
+report: `1603` points to the installer log, and DISM `0x800F081F` points to
+`SourcePath`/`NetFx3SourceTemplate`, UNC access and the `sxs` version.
 
 ## Built-in application removal
 

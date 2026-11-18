@@ -4,6 +4,18 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.38] - 2026-11-18
+
+### Fixed
+
+- Installers returning `1638` (another product version is installed) are now
+  counted as skipped, not failed. The list is configurable via
+  `Deployment.AlreadyInstalledExitCodes`.
+- Install failure reports include actionable hints for `1603` and DISM
+  `0x800F081F`.
+- DISM failures now report the feature and source path instead of an empty
+  `Путь`; an inaccessible `SourcePath` fails with a clear message.
+
 ## [2.1.37] - 2026-11-18
 
 ### Fixed

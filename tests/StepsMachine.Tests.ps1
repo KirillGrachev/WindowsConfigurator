@@ -619,6 +619,25 @@ Describe 'Шаг Installation: MSI/EXE/Batch/DISM' {
         $result.Data.Failed.Count | Should -Be 1
         $result.Data.Failed[0].ExitCode | Should -Be 1603
         $result.Data.Failed[0].Name | Should -Be 'Test Agent'
+        $result.Data.Failed[0].ErrorMessage | Should -Match '1603 = fatal error'
+    }
+
+    It 'код 1638 считается уже установленным продуктом, а не ошибкой' {
+        Mock Start-ProcessAndWait { return [PSCustomObject]@{ ExitCode = 1638; StandardOutput = ''; StandardError = ''; FilePath = ''; ArgumentString = '' } }
+        $result = Install-Software -Config $script:InstallConfig -AppName 'Test Agent' -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $result.Data.Skipped | Should -Contain 'Test Agent'
+        $result.Data.Failed.Count | Should -Be 0
+    }
+
+    It 'DISM: путь источника и подсказка 0x800F081F попадают в отчёт' {
+        Mock Invoke-DismCommand { return [PSCustomObject]@{ ExitCode = -2146498529; Output = @(); ArgumentString = '' } }
+        $result = Install-Software -Config $script:InstallConfig -AppName 'NET FRAMEWORK 3.5' -VersionLabel 'Win11-24H2' -Confirm:$false
+        $result.Status | Should -Be 'Failed'
+        $failure = $result.Data.Failed[0]
+        $failure.InstallerPath | Should -Match 'DISM /FeatureName:NetFx3'
+        $failure.InstallerPath | Should -Match 'NETFramework35'
+        $failure.ErrorMessage | Should -Match '0x800F081F'
     }
 
     It 'ошибка одного приложения НЕ прерывает установку остальных (регрессия Write-Error в цикле)' {

@@ -54,6 +54,7 @@
 
     $successCodes = @(Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'SuccessExitCodes' -DefaultValue @(0, 3010))
     $retryCodes = @(Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'RetryExitCodes' -DefaultValue @(1618))
+    $alreadyInstalledCodes = @(Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'AlreadyInstalledExitCodes' -DefaultValue @(1638))
     $defaultRetries = [int](Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'InstallerRetryCount' -DefaultValue 3)
     $lockWait = [int](Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'InstallerLockWaitSeconds' -DefaultValue 300)
     $lockInterval = [int](Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'InstallerLockCheckIntervalSeconds' -DefaultValue 5)
@@ -98,6 +99,7 @@
         $exitCode = $null
         $lastError = ''
         $isSuccess = $false
+        $alreadyInstalled = $false
         $attempt = 0
 
         try {
@@ -128,6 +130,10 @@
 
                 if ($successCodes -contains $exitCode) {
                     $isSuccess = $true
+                } elseif ($alreadyInstalledCodes -contains $exitCode) {
+                    Write-Log -Message "[ПРОПУСК] '$appName' уже установлен (код ${exitCode}: другая версия продукта)." -Level Info
+                    $alreadyInstalled = $true
+                    $isSuccess = $true
                 } elseif ($retryCodes -contains $exitCode) {
                     Write-Log -Message "[ПОВТОР] Установка '$appName' заблокирована (код $exitCode). Попытка $attempt из $maxRetries..." -Level Warn
                 } else {
@@ -135,6 +141,10 @@
                 }
             } while (-not $isSuccess -and $attempt -lt $maxRetries)
 
+            if ($alreadyInstalled) {
+                $skipped.Add($appName) | Out-Null
+                continue
+            }
             if (-not $isSuccess) {
                 throw "Ошибка установки. Код выхода: $exitCode (попыток: $attempt)"
             }
@@ -215,10 +225,23 @@
             Write-Log -Message "[OK] Успешно установлено: $appName" -Level Ok
         } catch {
             $lastError = $_.Exception.Message
+            $failurePath = $installerPath
+            if ($appType -eq 'DISM') {
+                $featureName = if ($app.ContainsKey('FeatureName')) { [string]$app.FeatureName } else { '' }
+                $sourcePath = if ($app.ContainsKey('SourcePath')) { [string]$app.SourcePath } else { '' }
+                if (-not $sourcePath -and $netFx3Template) { $sourcePath = $netFx3Template }
+                if ($sourcePath) {
+                    try { $sourcePath = (Expand-ConfigToken -InputString $sourcePath -Tokens $tokens).Value } catch { Write-Log -Message "Не удалось раскрыть SourcePath для отчёта: $($_.Exception.Message)" -Level Debug }
+                }
+                $failurePath = 'DISM /FeatureName:' + $featureName
+                if ($sourcePath) { $failurePath += " /Source:$sourcePath" }
+            }
+            $hint = if ($null -ne $exitCode) { Get-InstallerExitCodeHint -ExitCode $exitCode -AppType $appType } else { '' }
+            if ($hint) { $lastError = "$lastError $hint" }
             $failed.Add(@{
                     Name          = $appName
                     Type          = $appType
-                    InstallerPath = $installerPath
+                    InstallerPath = $failurePath
                     ExitCode      = $(if ($null -ne $exitCode) { $exitCode } else { 'N/A' })
                     ErrorMessage  = $lastError
                     Timestamp     = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
