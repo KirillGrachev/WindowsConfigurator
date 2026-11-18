@@ -4,6 +4,15 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.39] - 2026-11-18
+
+### Fixed
+
+- Idempotency checks now treat `InstallPath` as authoritative when it is
+  configured. A stale `UninstallKey` after a manual uninstall no longer makes the
+  application look installed. A trailing `\*` checks that the directory exists
+  and is not empty; `UninstallKey` is used only when `InstallPath` is omitted.
+
 ## [2.1.38] - 2026-11-18
 
 ### Fixed

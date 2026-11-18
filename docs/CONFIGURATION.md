@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.38",
+  "Version": "2.1.39",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -224,7 +224,10 @@ Types:
 | `DISM` | `dism /Enable-Feature` | `FeatureName` |
 
 `ProductCode`/`UninstallKey` and `InstallPath` are used for idempotency checks.
-`PostInstall` runs after installation; `CopyFiles` copies files with
+When `InstallPath` is set, it is authoritative: a stale `UninstallKey` does not
+make the application look installed. A path ending in `\*` checks that the
+directory exists and is not empty. `UninstallKey` is used only when `InstallPath`
+is omitted. `PostInstall` runs after installation; `CopyFiles` copies files with
 `{InstallPath}` substitution.
 
 ## Appx and MSIX packages

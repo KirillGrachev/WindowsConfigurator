@@ -39,20 +39,25 @@
 
         switch ($type) {
             { $_ -in @('MSI', 'Executable', 'Batch') } {
-                if ($uninstallKey) {
-                    foreach ($root in @('HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
-                                        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall')) {
-                        if (Test-RegistryKeyExists -Path "$root\$uninstallKey") {
-                            Write-Log -Message "Приложение '$($App.Name)' найдено в Uninstall ($uninstallKey)." -Level Debug
-                            return $true
-                        }
-                    }
-                }
+                <#
+                InstallPath is the stronger marker: a stale UninstallKey often
+                survives a manual uninstall and makes the app look installed.
+                The key is used only when InstallPath is not configured.
+                #>
                 if ($installPath) {
-                    if ($installPath -match '[*?]') {
+                    $trimmedWildcard = $installPath -replace '[\\/]\*$', ''
+                    if ($trimmedWildcard -ne $installPath) {
+                        if ([System.IO.Directory]::Exists($trimmedWildcard)) {
+                            $items = @(Get-ChildItem -LiteralPath $trimmedWildcard -Force -ErrorAction SilentlyContinue)
+                            if ($items.Count -gt 0) {
+                                Write-Log -Message "Приложение '$($App.Name)' найдено по InstallPath: $trimmedWildcard ($($items.Count) элементов)." -Level Debug
+                                return $true
+                            }
+                        }
+                    } elseif ($installPath -match '[*?]') {
                         <#
-                        Wildcard InstallPath is kept for products such as Office, but an
-                        ambiguous match must not be treated as "already installed".
+                        Non-terminal wildcard (for example an Office version
+                        directory): exactly one directory match is enough.
                         #>
                         $pathMatches = @(Get-Item -Path $installPath -ErrorAction SilentlyContinue |
                                 Where-Object { $_.PSIsContainer })
@@ -66,6 +71,21 @@
                     } elseif ([System.IO.Directory]::Exists($installPath)) {
                         Write-Log -Message "Приложение '$($App.Name)' найдено по InstallPath: $installPath" -Level Debug
                         return $true
+                    }
+
+                    if ($uninstallKey) {
+                        Write-Log -Message "InstallPath '$installPath' не найден; устаревший UninstallKey '$uninstallKey' игнорируется." -Level Debug
+                    }
+                    return $false
+                }
+
+                if ($uninstallKey) {
+                    foreach ($root in @('HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+                                        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall')) {
+                        if (Test-RegistryKeyExists -Path "$root\$uninstallKey") {
+                            Write-Log -Message "Приложение '$($App.Name)' найдено в Uninstall ($uninstallKey); InstallPath не задан." -Level Debug
+                            return $true
+                        }
                     }
                 }
                 return $false
