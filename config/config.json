@@ -1,7 +1,7 @@
 {
   "$schema": "./config.schema.json",
   "Meta": {
-    "Version": "2.1.39",
+    "Version": "2.1.40",
     "IsTestData": true,
     "Environment": "TEST",
     "CompanyName": "Test Company LLC",
@@ -72,6 +72,8 @@
     "SuccessExitCodes": [ 0, 3010 ],
     "RetryExitCodes": [ 1618 ],
     "AlreadyInstalledExitCodes": [ 1638 ],
+    "NetworkErrorExitCodes": [ 53, 67, 1219, 1222, 2250 ],
+    "NetworkRetryDelaySeconds": 10,
     "NetFx3FeatureName": "NetFx3",
     "NetFx3SourceTemplate": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs",
     "DismExecutable": "DISM"
@@ -260,13 +262,15 @@
     "ExcludedDriveLetters": [],
     "AllowedDriveTypes": [ 3 ],
     "RegistrySubPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+    "ShellFoldersSubPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+    "MirrorShellFolders": true,
     "Folders": [
-      { "Name": "Desktop", "RegValueName": "Desktop", "SourceFolderName": "Desktop" },
-      { "Name": "Documents", "RegValueName": "Personal", "SourceFolderName": "Documents" },
-      { "Name": "Downloads", "RegValueName": "{374DE290-123F-4565-9164-39C4925E467B}", "SourceFolderName": "Downloads" },
-      { "Name": "Pictures", "RegValueName": "My Pictures", "SourceFolderName": "Pictures" },
-      { "Name": "Music", "RegValueName": "My Music", "SourceFolderName": "Music" },
-      { "Name": "Videos", "RegValueName": "My Video", "SourceFolderName": "Videos" }
+      { "Name": "Desktop", "RegValueName": "Desktop", "SourceFolderName": "Desktop", "KnownFolderGuid": "" },
+      { "Name": "Documents", "RegValueName": "Personal", "SourceFolderName": "Documents", "KnownFolderGuid": "{F42EE2D3-909F-4907-8871-4C22FC0BF756}" },
+      { "Name": "Downloads", "RegValueName": "{374DE290-123F-4565-9164-39C4925E467B}", "SourceFolderName": "Downloads", "KnownFolderGuid": "{7D83EE9B-2244-4E70-B1F5-5393042AF1E4}" },
+      { "Name": "Pictures", "RegValueName": "My Pictures", "SourceFolderName": "Pictures", "KnownFolderGuid": "{0DDD015D-B06C-45D5-8C4C-F59713854639}" },
+      { "Name": "Music", "RegValueName": "My Music", "SourceFolderName": "Music", "KnownFolderGuid": "{A0C69A99-21C8-4671-8703-7934162FCF1D}" },
+      { "Name": "Videos", "RegValueName": "My Video", "SourceFolderName": "Videos", "KnownFolderGuid": "{35286A68-3C57-41A1-BBB1-0EAE73D76C95}" }
     ]
   },
   "SignatureSettings": {

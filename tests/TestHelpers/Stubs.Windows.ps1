@@ -57,7 +57,8 @@ $null = New-CommandStub -Name 'Get-AppxPackage' -Body @'
     param(
         [Parameter(ValueFromPipeline)] [string]$Name,
         [switch]$AllUsers,
-        [string]$PackageFullName
+        [string]$PackageFullName,
+        [string[]]$PackageTypeFilter
     )
     process { return @() }
 '@

@@ -289,6 +289,33 @@ Describe 'Шаг AppRemoval: удаление приложений' {
         ($result.Data.Problems -join ' ') | Should -Match 'Элемент не найден'
     }
 
+    It 'ошибка 0x80073D19 (пользователь вышел из системы) не проблема: пакет deprovisioned' {
+        Mock Remove-AppxPackage { throw ([System.Runtime.InteropServices.COMException]::new('Пользователь вышел из системы. (0x80073D19)', -2147009255)) }
+        $result = Remove-WindowsAppxPackages -Config $script:Config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $result.Data.Problems.Count | Should -Be 0
+        $result.Data.DeferredRemovals.Count | Should -BeGreaterThan 0
+        $result.Data.RemovedProvisioned.Count | Should -BeGreaterThan 0
+    }
+
+    It 'для bundle-приложения передаёт в Remove-AppxPackage именно bundle, а не Main (корень 0x80073D19)' {
+        Mock Get-AppxPackage {
+            return @(
+                [PSCustomObject]@{ Name = 'Test.BingWeather'; PackageFullName = 'Test.BingWeather_1.0.0.0_x64__8wekyb3d8bbwe' }
+                [PSCustomObject]@{ Name = 'Test.BingWeather'; PackageFullName = 'Test.BingWeather_1.0.0.0_neutral_~_8wekyb3d8bbwe' }
+            )
+        } -ParameterFilter { $Name -like '*Test.BingWeather*' }
+        $result = Remove-WindowsAppxPackages -Config $script:Config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $script:RemovedPackages | Should -Contain 'Test.BingWeather_1.0.0.0_neutral_~_8wekyb3d8bbwe'
+        $script:RemovedPackages | Should -Not -Contain 'Test.BingWeather_1.0.0.0_x64__8wekyb3d8bbwe'
+    }
+
+    It 'запрашивает Appx-пакеты с Bundle в PackageTypeFilter (иначе bundle не вернётся)' {
+        Remove-WindowsAppxPackages -Config $script:Config -Confirm:$false | Out-Null
+        Should -Invoke Get-AppxPackage -ParameterFilter { $Name -like '*Test.BingWeather*' -and "$PackageTypeFilter" -match 'Bundle' } -Times 1 -Exactly
+    }
+
     It '-WhatIf ничего не удаляет' {
         $result = Remove-WindowsAppxPackages -Config $script:Config -WhatIf -Confirm:$false
         $result.Status | Should -Be 'WhatIf'
@@ -542,7 +569,7 @@ Describe 'Шаг Installation: MSI/EXE/Batch/DISM' {
         $script:ProcCalls = New-Object System.Collections.Generic.List[object]
         Mock Test-SoftwareInstallation { return $false }
         Mock Start-ProcessAndWait {
-            $script:ProcCalls.Add(@{ FilePath = $FilePath; Arguments = @($Arguments); ArgumentString = (ConvertTo-ProcessArgumentString -Arguments $Arguments) }) | Out-Null
+            $script:ProcCalls.Add(@{ FilePath = $FilePath; Arguments = @($Arguments); WorkingDirectory = $WorkingDirectory; ArgumentString = (ConvertTo-ProcessArgumentString -Arguments $Arguments) }) | Out-Null
             return [PSCustomObject]@{ ExitCode = 0; StandardOutput = ''; StandardError = ''; FilePath = $FilePath; ArgumentString = '' }
         }
         Mock Invoke-DismCommand {
@@ -586,12 +613,30 @@ Describe 'Шаг Installation: MSI/EXE/Batch/DISM' {
         ($call.Arguments -join ' ') | Should -Be '/S /D=C:\Program Files\Test PDF Reader'
     }
 
-    It 'Batch запускается через командный интерпретатор из конфигурации' {
+    It 'Batch на UNC запускается через cmd /v:on /s /c с обёрткой pushd (фикс ERROR_NOT_CONNECTED 2250)' {
         Install-Software -Config $script:InstallConfig -AppName 'Test Agent' -Confirm:$false | Out-Null
         $call = $script:ProcCalls[0]
         $call.FilePath | Should -Be 'cmd.exe'
-        $call.Arguments[0] | Should -Be '/c'
-        $call.Arguments[1] | Should -Be '"\\fileserver01.test.local\Deploy$\Apps\Agent\install.cmd"'
+        $call.Arguments[0] | Should -Be '/v:on'
+        $call.Arguments[1] | Should -Be '/s'
+        $call.Arguments[2] | Should -Be '/c'
+        $cmd = [string]$call.Arguments[3]
+        <# pushd сам подключает ресурс и назначает временную букву диска -> корректный CWD вместо %SystemRoot%. #>
+        $cmd.Contains('pushd "\\fileserver01.test.local\Deploy$\Apps\Agent"') | Should -BeTrue
+        $cmd.Contains('call "\\fileserver01.test.local\Deploy$\Apps\Agent\install.cmd"') | Should -BeTrue
+        <# Код возврата батника сохраняется, т.к. popd обнуляет ERRORLEVEL. #>
+        $cmd.Contains('exit /b !WC_RC!') | Should -BeTrue
+        <# Рабочий каталог cmd локальный, чтобы не наследовать UNC. #>
+        ([string]$call.WorkingDirectory).StartsWith('\\') | Should -BeFalse
+    }
+
+    It 'локальный Batch запускается как cmd /c "путь" с рабочим каталогом bat-файла' {
+        Invoke-InstallerAttempt -App @{ Name = 'L'; Type = 'Batch'; InstallerPath = 'C:\Tools\Agent\install.cmd' } `
+            -AppType 'Batch' -InstallerPath 'C:\Tools\Agent\install.cmd' -AppName 'L' -Tokens @{} -Config @{} | Out-Null
+        $call = $script:ProcCalls[0]
+        $call.FilePath | Should -Be 'cmd.exe'
+        ($call.Arguments -join ' ') | Should -Be '/c "C:\Tools\Agent\install.cmd"'
+        $call.WorkingDirectory | Should -Be 'C:\Tools\Agent'
     }
 
     It 'DISM: FeatureName и SourcePath с раскрытым {VersionLabel} (регрессия захардкоженного UNC)' {
@@ -629,6 +674,26 @@ Describe 'Шаг Installation: MSI/EXE/Batch/DISM' {
         $result.Status | Should -Be 'Success'
         $script:Attempt | Should -Be 2
         Should -Invoke Wait-ForInstallerUnlock -Times 1
+    }
+
+    It 'сетевой код 2250 повторяет установку и succeeds со второй попытки (NetworkErrorExitCodes)' {
+        $script:NetAttempt = 0
+        Mock Start-ProcessAndWait {
+            $script:NetAttempt++
+            $code = if ($script:NetAttempt -eq 1) { 2250 } else { 0 }
+            return [PSCustomObject]@{ ExitCode = $code; StandardOutput = ''; StandardError = ''; FilePath = $FilePath; ArgumentString = '' }
+        }
+        $result = Install-Software -Config $script:InstallConfig -AppName 'Test Agent' -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $script:NetAttempt | Should -Be 2
+        Should -Invoke Wait-ForInstallerUnlock -Times 0
+    }
+
+    It 'код 2250 без успеха даёт Failed с подсказкой ERROR_NOT_CONNECTED' {
+        Mock Start-ProcessAndWait { return [PSCustomObject]@{ ExitCode = 2250; StandardOutput = ''; StandardError = ''; FilePath = $FilePath; ArgumentString = '' } }
+        $result = Install-Software -Config $script:InstallConfig -AppName 'Test Agent' -Confirm:$false
+        $result.Status | Should -Be 'Failed'
+        $result.Data.Failed[0].ErrorMessage | Should -Match 'ERROR_NOT_CONNECTED'
     }
 
     It 'неуспешный код выхода даёт Failed и запись в отчёте об ошибках' {

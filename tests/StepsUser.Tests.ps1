@@ -590,6 +590,48 @@ Describe 'Шаг FolderRedirection: перенос папок профиля' {
         Should -Invoke Set-RegistryValue -Times 0
         Should -Invoke Remove-UserRegistryHive -Times 0
     }
+
+    It 'для библиотечных папок пишет ОБА значения: классическое имя и GUID известной папки' {
+        Mock Get-SystemDriveLetter { return 'C' }
+        Mock Get-LocalFixedDrives { return @('D') }
+        Mock Test-Path { return $true }
+        Mock New-Item { return $null }
+        Mock Move-ProfileFolderContent { return 0 }
+        $config = Copy-ConfigValue -Value $script:Config
+        $config.FolderRedirection.Folders = @(
+            @{ Name = 'Desktop'; RegValueName = 'Desktop'; SourceFolderName = 'Desktop'; KnownFolderGuid = '' }
+            @{ Name = 'Documents'; RegValueName = 'Personal'; SourceFolderName = 'Documents'; KnownFolderGuid = '{F42EE2D3-909F-4907-8871-4C22FC0BF756}' }
+        )
+        $result = Set-UserFolderRedirection -UserName 'test.user' -Config $config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $result.Data.FoldersRedirected | Should -Be 2
+
+        $usf = @($script:RegWrites | Where-Object { $_.Path -like '*User Shell Folders' })
+        @($usf | Where-Object { $_.Name -eq 'Desktop' }).Count | Should -Be 1
+        @($usf | Where-Object { $_.Name -eq 'Personal' }).Count | Should -Be 1
+        @($usf | Where-Object { $_.Name -eq '{F42EE2D3-909F-4907-8871-4C22FC0BF756}' }).Count | Should -Be 1
+        <# Desktop: только классическое имя; Documents: имя + GUID => 3 записи REG_EXPAND_SZ. #>
+        @($usf | Where-Object { $_.Type -eq 'REG_EXPAND_SZ' }).Count | Should -Be 3
+        <# Зеркало развёрнутых путей в Shell Folders (REG_SZ): те же 3 имени. #>
+        @($script:RegWrites | Where-Object { $_.Path -like '*Explorer\Shell Folders' -and $_.Type -eq 'REG_SZ' }).Count | Should -Be 3
+    }
+
+    It 'пустая исходная папка не роняет шаг (регрессия .Sum на $null в Measure-Object)' {
+        Mock Get-SystemDriveLetter { return 'C' }
+        Mock Get-LocalFixedDrives { return @('D') }
+        Mock Test-Path { return $true }
+        Mock New-Item { return $null }
+        Mock Move-ProfileFolderContent { return 0 }
+        Mock Get-ChildItem { return @() }
+        <#
+        Раньше на ПУСТОЙ папке (Get-ChildItem -> ничего) Measure-Object -Sum возвращал $null,
+        а чтение .Sum под StrictMode роняло ВЕСЬ шаг: перенаправлялся лишь Desktop, шедший
+        первым непустым. Теперь все папки обрабатываются.
+        #>
+        $result = Set-UserFolderRedirection -UserName 'test.user' -Config $script:Config -Confirm:$false
+        $result.Status | Should -Be 'Success'
+        $result.Data.FoldersRedirected | Should -Be $script:Config.FolderRedirection.Folders.Count
+    }
 }
 
 Describe 'Move-ProfileFolderContent: безопасный перенос' {

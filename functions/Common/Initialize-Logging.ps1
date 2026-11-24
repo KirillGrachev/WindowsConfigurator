@@ -53,14 +53,20 @@
         $resolvedPath = Expand-EnvironmentVariableTokens -InputString $resolvedPath
 
         <#
-        Если переменная окружения не определена (например %SystemRoot% в Linux/macOS),
-        токен остаётся нераскрытым. Создавать каталог с именем '%SystemRoot%' -
-        значит мусорить в файловой системе, поэтому файловый журнал отключается
-        с предупреждением (регрессия, найденная прогоном тестов на Linux).
+        Если переменная окружения не определена, токен остаётся нераскрытым, и создавать
+        каталог с именем '%SystemRoot%' - значит мусорить в файловой системе.
+        На Windows это реальная ошибка конфигурации: предупреждаем и отключаем файловый журнал.
+        На Linux/macOS Windows-переменных (%SystemRoot%, %SystemDrive%) нет в принципе,
+        поэтому журнал переносим в системный temp-каталог: прогон (CI/тесты) остаётся
+        с журналом и без предупреждения - проблем нет ни на одной платформе.
         #>
         if ($resolvedPath -match '%[A-Za-z_][A-Za-z0-9_]*%') {
-            Write-Warning "Путь журнала '$resolvedPath' содержит нераскрытую переменную окружения - файловый журнал отключён."
-            $resolvedPath = ''
+            if ($env:OS -eq 'Windows_NT') {
+                Write-Warning "Путь журнала '$resolvedPath' содержит нераскрытую переменную окружения - файловый журнал отключён."
+                $resolvedPath = ''
+            } else {
+                $resolvedPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath (Join-Path -Path 'WindowsConfigurator' -ChildPath 'configurator.log')
+            }
         }
     }
 

@@ -38,9 +38,54 @@
         return New-StepResult -Step $stepName -Status 'Skipped' -Message 'Удаление приложений отменено пользователем.' -Started $started
     }
 
+    <#
+    Вложенный хелпер: отличает остаточную ошибку 0x80073D19 от реальных сбоев.
+    Основная причина 0x80073D19 (передача Main-пакета вместо bundle в
+    Remove-AppxPackage -AllUsers) устранена в Select-AppxRemovalTarget. Если код
+    всё же возвращается (например, профиль пользователя не загружен), шаг не
+    блокируется: provisioned-копия удаляется, и пакет не достанется новым
+    пользователям.
+    #>
+    function Test-LoggedOffRemovalError {
+        param([Parameter(ValueFromPipeline)] $InputError)
+        process {
+            if (-not $InputError) { return $false }
+            $haystack = New-Object System.Collections.Generic.List[string]
+            $ex = $InputError.Exception
+            while ($null -ne $ex) {
+                <# HResult есть у любого Exception; 0x80073D19 в 32-битном hex = '80073D19'. #>
+                $hr = $ex.HResult
+                if ($hr) { $haystack.Add(('{0:X8}' -f [int]$hr)) | Out-Null }
+                $haystack.Add([string]$ex.Message) | Out-Null
+                $ex = $ex.InnerException
+            }
+            $fqid = $InputError.PSObject.Properties['FullyQualifiedErrorId']
+            if ($fqid) { $haystack.Add([string]$fqid.Value) | Out-Null }
+            return (($haystack -join ' ') -match '80073D19')
+        }
+    }
+
+    <#
+    Вложенный хелпер: выбирает, какой пакет скармливать Remove-AppxPackage -AllUsers.
+    Большинство provisioned-приложений распространяются как bundle. Для них -AllUsers
+    требует именно BUNDLE-пакет (PackageFullName ..._neutral_~_...): машинная
+    регистрация в AppxAllUserStore ключуется по bundle. Если передать per-arch
+    Main-пакет (..._x64__...), финальный шаг не находит ключ в реестре и возвращает
+    вводящую в заблуждение 0x80073D19 ERROR_DEPLOYMENT_BLOCKED_BY_USER_LOG_OFF
+    ("пользователь вышел из системы"), хотя никто не выходил. Поэтому при наличии
+    bundle удаляем его; иначе - Main/Framework.
+    #>
+    function Select-AppxRemovalTarget {
+        param([object[]]$Packages)
+        $bundles = @($Packages | Where-Object { [string]$_.PackageFullName -like '*_neutral_~_*' })
+        if ($bundles.Count -gt 0) { return $bundles }
+        return @($Packages)
+    }
+
     $removedPackages = New-Object System.Collections.Generic.List[string]
     $removedProvisioned = New-Object System.Collections.Generic.List[string]
     $legacyResults = New-Object System.Collections.Generic.List[object]
+    $deferredRemovals = New-Object System.Collections.Generic.List[string]
     $problems = New-Object System.Collections.Generic.List[string]
 
     <# --- 1. Классические (Win32) приложения --- #>
@@ -72,8 +117,8 @@
             if ($hasAppx) {
                 $installed = @()
                 if ($testMode) { $installed = @(Get-WCTestModeAppxFixture -Filter $pattern) }
-                else { $installed = @(Get-AppxPackage -AllUsers -Name $pattern -ErrorAction SilentlyContinue) }
-                foreach ($package in $installed) {
+                else { $installed = @(Get-AppxPackage -AllUsers -Name $pattern -PackageTypeFilter Main, Framework, Bundle, Resource -ErrorAction SilentlyContinue) }
+                foreach ($package in @(Select-AppxRemovalTarget -Packages $installed)) {
                     if ($whatIf) {
                         Write-Log -Message "WHAT IF: Remove-AppxPackage $($package.PackageFullName)" -Level Info
                         $removedPackages.Add("whatif:$($package.PackageFullName)")
@@ -88,8 +133,13 @@
                         $removedPackages.Add([string]$package.PackageFullName)
                         Write-Log -Message "Удалён пакет$(if ($testMode) { ' (ТЕСТ)' }): $($package.PackageFullName)" -Level Ok
                     } catch {
-                        $problems.Add("appx:$($package.PackageFullName): $($_.Exception.Message)")
-                        Write-Log -Message "Не удалось удалить пакет $($package.PackageFullName): $($_.Exception.Message)" -Level Warn
+                        if (Test-LoggedOffRemovalError -InputError $_) {
+                            $deferredRemovals.Add([string]$package.PackageFullName) | Out-Null
+                            Write-Log -Message "Пакет $($package.PackageFullName) не удалён для текущих пользователей (0x80073D19). Provisioned-копия удаляется - новым пользователям пакет не установится." -Level Info
+                        } else {
+                            $problems.Add("appx:$($package.PackageFullName): $($_.Exception.Message)")
+                            Write-Log -Message "Не удалось удалить пакет $($package.PackageFullName): $($_.Exception.Message)" -Level Warn
+                        }
                     }
                 }
             }
@@ -134,8 +184,8 @@
                 if ($hasAppx) {
                     $packages = @()
                     if ($testMode) { $packages = @(Get-WCTestModeAppxFixture -Filter $filter) }
-                    else { $packages = @(Get-AppxPackage -AllUsers -Name $filter -ErrorAction SilentlyContinue) }
-                    foreach ($package in $packages) {
+                    else { $packages = @(Get-AppxPackage -AllUsers -Name $filter -PackageTypeFilter Main, Framework, Bundle, Resource -ErrorAction SilentlyContinue) }
+                    foreach ($package in @(Select-AppxRemovalTarget -Packages $packages)) {
                         if ($whatIf) {
                             Write-Log -Message "WHAT IF: Remove-AppxPackage $($package.PackageFullName) (фильтр $filter)" -Level Info
                             continue
@@ -148,7 +198,12 @@
                             }
                             $removedPackages.Add([string]$package.PackageFullName)
                         } catch {
-                            $problems.Add("appx:$($package.PackageFullName): $($_.Exception.Message)")
+                            if (Test-LoggedOffRemovalError -InputError $_) {
+                                $deferredRemovals.Add([string]$package.PackageFullName) | Out-Null
+                                Write-Log -Message "Пакет $($package.PackageFullName) не удалён для текущих пользователей (0x80073D19); deprovisioning выполнен." -Level Info
+                            } else {
+                                $problems.Add("appx:$($package.PackageFullName): $($_.Exception.Message)")
+                            }
                         }
                     }
                 }
@@ -185,6 +240,7 @@
         RemovedPackages   = @($removedPackages.ToArray())
         RemovedProvisioned = @($removedProvisioned.ToArray())
         LegacyResults     = @($legacyResults.ToArray())
+        DeferredRemovals  = @($deferredRemovals.ToArray())
         Problems          = @($problems.ToArray())
     }
 
@@ -197,6 +253,7 @@
     $status = if ($problems.Count -gt 0 -and $removedPackages.Count -eq 0 -and $removedProvisioned.Count -eq 0 -and $legacyResults.Count -eq 0) { 'Failed' } else { 'Success' }
     $message = "Удалено пакетов: $($removedPackages.Count), provisioned: $($removedProvisioned.Count), классических приложений: $(@($legacyResults | Where-Object { $_.Removed }).Count)."
     if ($problems.Count -gt 0) { $message += " Проблем: $($problems.Count)." }
+    if ($deferredRemovals.Count -gt 0) { $message += " Отложено (0x80073D19): $($deferredRemovals.Count) - deprovisioned, новым пользователям не установятся." }
 
     return New-StepResult -Step $stepName -Status $status -Message $message -Started $started -Data $data
 }

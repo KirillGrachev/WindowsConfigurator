@@ -233,6 +233,14 @@ Describe 'Журналирование: Initialize-Logging и Write-Log' {
         @($errors).Count | Should -Be 0
     }
 
+    It '-NoConsole пишет в файл, но не выводит в консоль (без жёлтой вспышки)' {
+        $null = Initialize-Logging -Level 'Info' -FilePath $script:LogFile
+        $warnings = & { Write-Log -Message 'тихое предупреждение' -Level Warn -NoConsole } 3>&1
+        @($warnings).Count | Should -Be 0
+        $content = [System.IO.File]::ReadAllText($script:LogFile)
+        $content | Should -Match '\[WARN\] тихое предупреждение'
+    }
+
     It 'DEBUG уходит в поток Verbose и не виден без -Verbose' {
         $null = Initialize-Logging -Level 'Debug' -FilePath $script:LogFile
 
@@ -302,6 +310,19 @@ Describe 'Журналирование: Initialize-Logging и Write-Log' {
             $normalized | Should -Be (Join-Path -Path $script:LogDir -ChildPath 'expanded.log')
             Test-Path -Path $state.FilePath | Should -BeTrue
         } finally { Remove-Item Env:\WC_LOG_ROOT -ErrorAction SilentlyContinue }
+    }
+
+    It 'нераскрытая Windows-переменная в пути журнала на non-Windows даёт журнал в temp без предупреждения' -Skip:($env:OS -eq 'Windows_NT') {
+        $w = @()
+        $state = Initialize-Logging -Level 'Info' -FilePath '%SystemRoot%\Temp\WindowsConfigurator\configurator.log' -WarningVariable w -WarningAction SilentlyContinue
+        try {
+            @($w).Count | Should -Be 0
+            $state.FilePath | Should -Not -BeNullOrEmpty
+            $state.FilePath | Should -Not -Match '%'
+            Test-Path -LiteralPath $state.FilePath | Should -BeTrue
+        } finally {
+            Remove-Item -LiteralPath $state.FilePath -Force -ErrorAction SilentlyContinue
+        }
     }
 
     It 'конфигурация Logging из config.json применяется' {

@@ -30,7 +30,9 @@
         [string]$Level = 'Info',
 
         [AllowNull()]
-        [object]$Data
+        [object]$Data,
+
+        [switch]$NoConsole
     )
 
     begin {
@@ -103,6 +105,9 @@ $wcState.Logging = $state
             }
         }
 
+        <# NoConsole: только файловый журнал - например, предупреждения перед интерактивным
+           меню, чтобы не мелькать жёлтым до Clear-Host. #>
+        if ($NoConsole) { return }
         if (-not $state.WriteToConsole) { return }
         if ($rank -lt $threshold) { return }
 

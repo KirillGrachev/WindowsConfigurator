@@ -108,7 +108,16 @@
     if ($null -eq $Config) { throw 'Загрузка конфигурации не удалась (Config = $null).' }
 
     foreach ($warning in (Get-ConfigurationWarnings -Config $Config)) {
-        Write-Log -Message $warning -Level Warn
+        <#
+        В интерактивном режиме меню сразу делает Clear-Host: предупреждение, выведенное
+        в консоль до меню, лишь мелькает жёлтым и стирается. Пишем его только в журнал,
+        чтобы старт меню был чистым (в остальных режимах предупреждение видно в консоли).
+        #>
+        if ($Interactive) {
+            Write-Log -Message $warning -Level Warn -NoConsole
+        } else {
+            Write-Log -Message $warning -Level Warn
+        }
     }
 
     <#
@@ -161,6 +170,12 @@
                 $null = Set-WCTestMode -Enabled:$false
             }
         }
+        <#
+        Форма сводки ДОЛЖНА совпадать с обычным путём (DurationMs/WhatIf): точка входа
+        Configure-Windows.ps1 читает $summary.DurationMs под StrictMode, и отсутствие
+        свойства роняло интерактивный запуск (launcher вызывает -Interactive).
+        #>
+        $finishedAt = [System.DateTime]::Now
         return [PSCustomObject]@{
             Success       = $true
             Mode          = 'Interactive'
@@ -171,7 +186,9 @@
             FailedSteps   = @()
             SkippedSteps  = @()
             StartedAt     = $startedAt
-            FinishedAt    = [System.DateTime]::Now
+            FinishedAt    = $finishedAt
+            DurationMs    = [int]($finishedAt - $startedAt).TotalMilliseconds
+            WhatIf        = [bool]$WhatIfPreference
             FatalError    = ''
         }
     }

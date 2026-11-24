@@ -107,12 +107,56 @@
     }
 
     if ($AppType -eq 'Batch') {
+        <# Аргументы батника (необязательно) раскрываются так же, как для EXE/MSI. #>
+        $argumentString = if ($App.ContainsKey('Arguments')) { [string]$App.Arguments } else { '' }
+        $expanded = Expand-InstallerArguments -ArgumentString $argumentString -Tokens $Tokens
+        if ($expanded.UnresolvedTokens.Count -gt 0) {
+            Write-Log -Message "В аргументах '$AppName' остались нераскрытые токены: $($expanded.UnresolvedTokens -join ', ')" -Level Warn
+        }
+        $batchArgs = ConvertTo-ProcessArgumentString -Arguments $expanded.Arguments
+
+        if ($InstallerPath -match '^\\\\') {
+            <#
+            Сетевой (UNC) батник. cmd НЕ умеет использовать UNC как текущий каталог:
+            без обёртки он печатает "UNC paths are not supported", переходит в %SystemRoot%,
+            а дочерний процесс теряет подключение к ресурсу. В итоге установщик (например
+            Office Deployment Tool) не находит setup.exe по относительным путям / %~dp0 и
+            возвращает 2250 (ERROR_NOT_CONNECTED). Обёртка pushd сама подключает ресурс и
+            назначает временную букву диска, поэтому батник выполняется в корректном CWD.
+            Код возврата батника сохраняем в WC_RC через delayed expansion, т.к. popd обнуляет ERRORLEVEL.
+            #>
+            <# Каталог берём строкой по последнему '\', а не Split-Path: в Linux Split-Path
+               заменяет '\' на '/', а cmd для UNC требует обратные слэши. #>
+            $uncDir = $InstallerPath.Substring(0, $InstallerPath.LastIndexOf('\'))
+            $innerCommand = 'pushd "' + $uncDir + '" && call "' + $InstallerPath + '"'
+            if ($batchArgs) { $innerCommand += ' ' + $batchArgs }
+            $innerCommand += ' & set "WC_RC=!ERRORLEVEL!" & popd & exit /b !WC_RC!'
+            $commandToken = '"' + $innerCommand + '"'
+
+            if ($WhatIfMode) {
+                Write-Log -Message "WHAT IF: $CmdInterpreter /v:on /s /c $commandToken" -Level Info
+                return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true }
+            }
+
+            <# Рабочий каталог cmd делаем локальным, чтобы не наследовать UNC и не ловить предупреждение cmd. #>
+            $localWorkDir = [System.IO.Path]::GetTempPath()
+            Write-Log -Message "UNC-батник '$AppName' запускается через pushd (временная буква диска): $InstallerPath" -Level Debug
+            $result = Start-ProcessAndWait -FilePath $CmdInterpreter -Arguments @('/v:on', '/s', '/c', $commandToken) -WorkingDirectory $localWorkDir
+            return [PSCustomObject]@{ ExitCode = $result.ExitCode; WhatIf = $false }
+        }
+
+        <# Локальный батник: рабочим каталогом делаем его папку, чтобы относительные пути и %~dp0 работали. #>
+        $localSepIndex = $InstallerPath.LastIndexOf('\')
+        $localDir = if ($localSepIndex -gt 0) { $InstallerPath.Substring(0, $localSepIndex) } else { Split-Path -Path $InstallerPath -Parent }
+        $commandToken = '"' + $InstallerPath + '"'
+        if ($batchArgs) { $commandToken += ' ' + $batchArgs }
+
         if ($WhatIfMode) {
-            Write-Log -Message "WHAT IF: $CmdInterpreter /c `"$InstallerPath`"" -Level Info
+            Write-Log -Message "WHAT IF: $CmdInterpreter /c $commandToken" -Level Info
             return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true }
         }
 
-        $result = Start-ProcessAndWait -FilePath $CmdInterpreter -Arguments @('/c', "`"$InstallerPath`"")
+        $result = Start-ProcessAndWait -FilePath $CmdInterpreter -Arguments @('/c', $commandToken) -WorkingDirectory $localDir
         return [PSCustomObject]@{ ExitCode = $result.ExitCode; WhatIf = $false }
     }
 
@@ -139,7 +183,7 @@
         }
         if (-not $sourcePath) {
             Write-Log -Message "DISM '$featureName': SourcePath не задан, будет использован Windows Update/локальный кэш." -Level Warn
-        } elseif (-not $WhatIfMode -and -not (Test-Path -LiteralPath $sourcePath -ErrorAction SilentlyContinue)) {
+        } elseif (-not $WhatIfMode -and -not (Test-WCTestMode) -and -not (Test-Path -LiteralPath $sourcePath -ErrorAction SilentlyContinue)) {
             throw "DISM источник недоступен: $sourcePath. Проверьте SourcePath/NetFx3SourceTemplate и доступ к UNC."
         }
 

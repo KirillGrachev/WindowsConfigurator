@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.39",
+  "Version": "2.1.40",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -142,6 +142,8 @@ test GVLK key is rejected even in TestMode.
   "SuccessExitCodes": [0, 3010],
   "RetryExitCodes": [1618],
   "AlreadyInstalledExitCodes": [1638],
+  "NetworkErrorExitCodes": [53, 67, 1219, 1222, 2250],
+  "NetworkRetryDelaySeconds": 10,
   "NetFx3FeatureName": "NetFx3",
   "NetFx3SourceTemplate": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs",
   "DismExecutable": "dism.exe"
@@ -157,9 +159,14 @@ Path tokens:
 
 `SuccessExitCodes` completes an installation, `RetryExitCodes` waits for another
 installer to unlock, and `AlreadyInstalledExitCodes` (default `1638`) marks a
-product as already installed and skips it. Known failures include a hint in the
-report: `1603` points to the installer log, and DISM `0x800F081F` points to
-`SourcePath`/`NetFx3SourceTemplate`, UNC access and the `sxs` version.
+product as already installed and skips it. `NetworkErrorExitCodes` (default `53`,
+`67`, `1219`, `1222`, `2250`) are transient network failures: the installation is
+retried after `NetworkRetryDelaySeconds`. Batch installers on a UNC path are run
+through `pushd`/`popd` so `cmd.exe` gets a valid working directory and keeps the
+network connection (this is what prevents Office Deployment Tool exit code
+`2250`). Known failures include a hint in the report: `1603` points to the
+installer log, `2250` to the lost network connection, and DISM `0x800F081F` points
+to `SourcePath`/`NetFx3SourceTemplate`, UNC access and the `sxs` version.
 
 ## Built-in application removal
 
@@ -175,6 +182,16 @@ report: `1603` points to the installer log, and DISM `0x800F081F` points to
 `AppsToRemove` can be a flat list or categories; categories are also exposed as
 `AppsToRemoveByCategory`. `ProvisionedAppFilters` removes provisioned packages.
 `RemoveWebExperience` removes Windows Web Experience components.
+
+Most provisioned apps are bundles. `Remove-AppxPackage -AllUsers` must receive the
+bundle package (`..._neutral_~_...`), not the per-architecture Main package
+(`..._x64__...`); otherwise it fails with the misleading `0x80073D19`
+`ERROR_DEPLOYMENT_BLOCKED_BY_USER_LOG_OFF` ("the user has logged off") even when
+nobody logged off. The step queries packages with
+`-PackageTypeFilter Main, Framework, Bundle, Resource` and prefers the bundle, so
+bundled apps are removed for all users. A residual `0x80073D19` is reported as
+`DeferredRemovals` (Info), not a step problem: the provisioned copy is removed and
+the app will not reach new users.
 
 Classic applications:
 
@@ -229,6 +246,15 @@ make the application look installed. A path ending in `\*` checks that the
 directory exists and is not empty. `UninstallKey` is used only when `InstallPath`
 is omitted. `PostInstall` runs after installation; `CopyFiles` copies files with
 `{InstallPath}` substitution.
+
+A non-terminal wildcard (for example `C:\Program Files\Microsoft Office*`) must
+match exactly ONE directory. If it matches several, the check cannot decide which
+directory marks the application as installed and conservatively reports "not
+installed" (`InstallPath ... неоднозначен (N совпадений)`), so the installer runs
+again on every pass. Office creates several sibling `Microsoft Office*` folders,
+so prefer a specific directory such as
+`C:\Program Files\Microsoft Office\root\Office16` (Office 2016/2019/2021/2024
+Click-to-Run) over a sibling-matching wildcard.
 
 ## Appx and MSIX packages
 
@@ -347,9 +373,10 @@ display name for backward compatibility. `Target`: `AC`, `DC` or `Both`.
   "PreferredDriveLetter": "D",
   "ExcludedDriveLetters": [],
   "AllowedDriveTypes": [3],
+  "MirrorShellFolders": true,
   "Folders": [
     { "Name": "Desktop", "RegValueName": "Desktop" },
-    { "Name": "Documents", "RegValueName": "Personal" }
+    { "Name": "Documents", "RegValueName": "Personal", "KnownFolderGuid": "{F42EE2D3-909F-4907-8871-4C22FC0BF756}" }
   ]
 }
 ```
@@ -359,6 +386,19 @@ display name for backward compatibility. `Target`: `AC`, `DC` or `Both`.
 drive, `5` — CD/DVD. The system drive is detected automatically (via
 `Win32_OperatingSystem.SystemDrive`/`%SystemDrive%`) and always excluded, even
 when it is not `C:`. If no suitable drive exists, the step fails.
+
+Windows applies redirection reliably only when `User Shell Folders` holds BOTH the
+classic value (`Personal`, `My Pictures`, …) and the Known Folder GUID that the
+folder's **Location** tab creates. Set `KnownFolderGuid` for every library folder
+(`Desktop` needs none), otherwise the folder changes only in Quick access — not in
+"This PC", libraries or apps. With `MirrorShellFolders` (default `true`) the
+expanded paths are also written to `Shell Folders` (`ShellFoldersSubPath`) so the
+change applies immediately. Known GUIDs: Documents
+`{F42EE2D3-909F-4907-8871-4C22FC0BF756}`, Downloads
+`{7D83EE9B-2244-4E70-B1F5-5393042AF1E4}`, Pictures
+`{0DDD015D-B06C-45D5-8C4C-F59713854639}`, Music
+`{A0C69A99-21C8-4671-8703-7934162FCF1D}`, Videos
+`{35286A68-3C57-41A1-BBB1-0EAE73D76C95}`.
 
 ## Outlook signature
 
