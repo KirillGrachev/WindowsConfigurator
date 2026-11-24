@@ -197,6 +197,20 @@ Describe 'Оркестратор Start-WindowsConfiguration' {
         $script:CalledSteps.Count | Should -Be 0
     }
 
+    It '-Interactive возвращает сводку с DurationMs и WhatIf (форма как у обычного пути; регрессия StrictMode)' {
+        $summary = Start-WindowsConfiguration -UserName 'test.user' -Interactive -Config $script:Config
+        $summary.PSObject.Properties['DurationMs'] | Should -Not -BeNullOrEmpty
+        $summary.DurationMs | Should -BeGreaterOrEqual 0
+        $summary.PSObject.Properties['WhatIf'] | Should -Not -BeNullOrEmpty
+        $summary.Success | Should -BeTrue
+    }
+
+    It '-Interactive не выводит предупреждения конфигурации в консоль до меню (нет жёлтой вспышки)' {
+        $warnings = @()
+        $null = Start-WindowsConfiguration -UserName 'test.user' -Interactive -Config $script:Config -WarningVariable warnings -WarningAction SilentlyContinue
+        @($warnings).Count | Should -Be 0
+    }
+
     It 'StepDelaySeconds=0 не вызывает пауз между шагами' {
         Start-WindowsConfiguration -UserName 'test.user' -RunSteps @('Desktop', 'Taskbar') -Config $script:Config -StepDelaySeconds 0 | Out-Null
         Should -Invoke Start-Sleep -Times 0

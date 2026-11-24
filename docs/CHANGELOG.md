@@ -4,6 +4,62 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.40] - 2026-11-24
+
+### Fixed
+
+- Folder redirection now writes BOTH the classic value name and the Known Folder
+  GUID into `User Shell Folders` (plus an optional `Shell Folders` mirror), so
+  Documents/Downloads/Pictures/Music/Videos redirect everywhere ("This PC",
+  libraries, apps). Previously only `Desktop` took effect, because it is the one
+  folder that has no secondary GUID value. Per-folder GUID is configured via
+  `FolderRedirection.Folders[].KnownFolderGuid`; mirroring is controlled by
+  `FolderRedirection.MirrorShellFolders`/`ShellFoldersSubPath`.
+- Folder redirection no longer aborts on the first empty source folder.
+  `Measure-Object -Sum` returns `$null` for an empty set, and reading `.Sum` under
+  `StrictMode` crashed the whole step, so only `Desktop` (processed first, usually
+  non-empty) got redirected. The free-space preflight is now null-safe and a
+  failure of one folder no longer stops the rest.
+- Batch installers on a UNC path (`\\server\share\...\setup.bat`) are launched
+  through `pushd`/`popd`, giving `cmd.exe` a real working directory (a temporary
+  drive letter) instead of falling back to `%SystemRoot%` and losing the network
+  connection. This fixes Office Deployment Tool failures with exit code `2250`
+  (`ERROR_NOT_CONNECTED`); the batch exit code is preserved. Local batch files now
+  run with their own folder as the working directory and honour `Arguments`.
+- Network installer exit codes (`53`, `67`, `1219`, `1222`, `2250`) are retried
+  after a short pause (`Deployment.NetworkErrorExitCodes`,
+  `Deployment.NetworkRetryDelaySeconds`) and get an actionable hint in the failure
+  report.
+- Appx removal now feeds the BUNDLE package to `Remove-AppxPackage -AllUsers`.
+  Most provisioned apps are bundles, but `Get-AppxPackage` returns only
+  Main/Framework by default, so the cmdlet received the per-architecture Main
+  package and failed at the final registry step with the misleading `0x80073D19`
+  `ERROR_DEPLOYMENT_BLOCKED_BY_USER_LOG_OFF` ("the user has logged off") even though
+  nobody logged off. Packages are now queried with
+  `-PackageTypeFilter Main, Framework, Bundle, Resource` and the bundle
+  (`..._neutral_~_...`) is preferred, so bundled apps are actually removed for all
+  users. A residual `0x80073D19` (for example a user profile that is not loaded) is
+  still logged at Info under `DeferredRemovals` rather than counted as a step
+  problem, because the provisioned package is removed and the app will not reach
+  new users.
+- The `Run_Windows11Setup.cmd` launcher no longer renders warning markers as an
+  empty `[]`. With `EnableDelayedExpansion` the `!` in `echo [!]` is consumed as a
+  delayed-expansion delimiter, so the marker displayed as `[]`; all such markers
+  are now `[*]`, which renders correctly and consistently.
+- Interactive mode no longer crashes when the entry point prints the run summary:
+  the `-Interactive` return object now carries `DurationMs` and `WhatIf`, matching
+  the normal path. Previously `Configure-Windows.ps1` threw under `StrictMode` on
+  the missing `DurationMs` ("The property 'DurationMs' cannot be found").
+- Interactive mode no longer flashes configuration warnings (yellow) before the
+  menu clears the screen: they are written to the log only via the new
+  `Write-Log -NoConsole` switch. The `Run_Windows11Setup.cmd` launcher also no
+  longer passes `-Verbose`, so the menu starts clean.
+- File logging no longer warns or disables itself on Linux/macOS when the configured
+  log path uses Windows-only variables (`%SystemRoot%`): on non-Windows the log is
+  placed under the system temp directory instead, so CI/test runs keep a working log
+  with no warning. On Windows an unexpandable variable is still reported as a config
+  error.
+
 ## [2.1.39] - 2026-11-18
 
 ### Fixed

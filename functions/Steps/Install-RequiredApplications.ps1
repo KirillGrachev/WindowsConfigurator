@@ -55,6 +55,8 @@
     $successCodes = @(Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'SuccessExitCodes' -DefaultValue @(0, 3010))
     $retryCodes = @(Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'RetryExitCodes' -DefaultValue @(1618))
     $alreadyInstalledCodes = @(Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'AlreadyInstalledExitCodes' -DefaultValue @(1638))
+    $networkRetryCodes = @(Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'NetworkErrorExitCodes' -DefaultValue @(53, 67, 1219, 1222, 2250))
+    $networkRetryDelay = [int](Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'NetworkRetryDelaySeconds' -DefaultValue 10)
     $defaultRetries = [int](Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'InstallerRetryCount' -DefaultValue 3)
     $lockWait = [int](Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'InstallerLockWaitSeconds' -DefaultValue 300)
     $lockInterval = [int](Get-ConfigSectionValue -Config $Config -Section 'Deployment' -Key 'InstallerLockCheckIntervalSeconds' -DefaultValue 5)
@@ -109,9 +111,15 @@
 
             do {
                 $attempt++
-                if ($attempt -gt 1 -and $retryCodes -contains $exitCode) {
-                    $unlocked = Wait-ForInstallerUnlock -MaxWaitSeconds $lockWait -CheckIntervalSeconds $lockInterval
-                    if (-not $unlocked) { throw "Установщик не освободился за $lockWait сек." }
+                if ($attempt -gt 1) {
+                    if ($retryCodes -contains $exitCode) {
+                        $unlocked = Wait-ForInstallerUnlock -MaxWaitSeconds $lockWait -CheckIntervalSeconds $lockInterval
+                        if (-not $unlocked) { throw "Установщик не освободился за $lockWait сек." }
+                    } elseif ($networkRetryCodes -contains $exitCode -and $networkRetryDelay -gt 0) {
+                        <# Сетевая ошибка (напр. 2250) может быть мгновенным обрывом SMB - короткая пауза и повтор. #>
+                        Write-Log -Message "[ПОВТОР] Сетевая ошибка $exitCode - пауза $networkRetryDelay сек перед повтором '$appName'." -Level Warn
+                        Start-Sleep -Seconds $networkRetryDelay
+                    }
                 }
 
                 <#
@@ -136,6 +144,8 @@
                     $isSuccess = $true
                 } elseif ($retryCodes -contains $exitCode) {
                     Write-Log -Message "[ПОВТОР] Установка '$appName' заблокирована (код $exitCode). Попытка $attempt из $maxRetries..." -Level Warn
+                } elseif ($networkRetryCodes -contains $exitCode) {
+                    Write-Log -Message "[ПОВТОР] Сетевая ошибка при установке '$appName' (код $exitCode). Попытка $attempt из $maxRetries..." -Level Warn
                 } else {
                     break
                 }

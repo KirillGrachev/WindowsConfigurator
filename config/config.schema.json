@@ -131,6 +131,8 @@
         "SuccessExitCodes": { "type": "array", "items": { "type": "integer" }, "minItems": 1, "uniqueItems": true, "default": [ 0, 3010 ], "description": "Коды возврата, считающиеся успехом (3010 = нужен рестарт)." },
         "RetryExitCodes": { "type": "array", "items": { "type": "integer" }, "uniqueItems": true, "default": [ 1618 ], "description": "Коды возврата, при которых установка повторяется." },
         "AlreadyInstalledExitCodes": { "type": "array", "items": { "type": "integer" }, "uniqueItems": true, "default": [ 1638 ], "description": "Коды возврата, означающие, что продукт уже установлен (1638 = другая версия)." },
+        "NetworkErrorExitCodes": { "type": "array", "items": { "type": "integer" }, "uniqueItems": true, "default": [ 53, 67, 1219, 1222, 2250 ], "description": "Сетевые коды возврата установщика (53/67 = путь/имя сети не найдено, 1219 = конфликт учётных данных сеанса, 1222 = сеть отсутствует, 2250 = подключение не существует). Установка повторяется после короткой паузы." },
+        "NetworkRetryDelaySeconds": { "type": "integer", "minimum": 0, "maximum": 600, "default": 10, "description": "Пауза перед повтором установки при сетевом коде возврата." },
         "NetFx3FeatureName": { "type": "string", "default": "NetFx3", "description": "Имя компонента DISM для .NET Framework 3.5." },
         "NetFx3SourceTemplate": { "type": "string", "default": "{AppsRepositoryRoot}\\NETFramework35\\{VersionLabel}\\sxs", "description": "Шаблон пути к источнику sxs. Токены: {AppsRepositoryRoot}, {VersionLabel}." },
         "DismExecutable": { "type": "string", "default": "DISM", "description": "Имя/путь DISM." }
@@ -263,6 +265,8 @@
         "ExcludedDriveLetters": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z]$" }, "uniqueItems": true, "default": [], "description": "Буквы дисков, которые нельзя использовать. Системный диск исключается автоматически." },
         "AllowedDriveTypes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 6 }, "minItems": 1, "default": [ 3 ], "description": "Win32_LogicalDisk.DriveType: 3 = локальный фиксированный, 4 = сетевой, 5 = CD/DVD." },
         "RegistrySubPath": { "type": "string", "default": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders", "description": "Подпуть User Shell Folders в кусте пользователя." },
+        "ShellFoldersSubPath": { "type": "string", "default": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders", "description": "Подпуть Shell Folders (кэш развёрнутых путей) в кусте пользователя." },
+        "MirrorShellFolders": { "type": "boolean", "default": true, "description": "Зеркалировать развёрнутые пути в Shell Folders (REG_SZ), чтобы перенаправление применялось сразу и в \"Этом компьютере\", а не только после пересчёта Explorer." },
         "Folders": {
           "type": "array",
           "minItems": 1,
@@ -578,7 +582,8 @@
       "properties": {
         "Name": { "type": "string", "minLength": 1, "description": "Имя папки на целевом диске." },
         "RegValueName": { "type": "string", "minLength": 1, "description": "Имя значения в User Shell Folders (Personal, Desktop, {374DE290-...})." },
-        "SourceFolderName": { "type": "string", "default": "", "description": "Имя исходной папки в профиле. Пусто = совпадает с Name." }
+        "SourceFolderName": { "type": "string", "default": "", "description": "Имя исходной папки в профиле. Пусто = совпадает с Name." },
+        "KnownFolderGuid": { "type": "string", "default": "", "description": "Дополнительное имя значения в User Shell Folders - GUID известной папки ({F42EE2D3-...}). Windows создаёт его при перемещении папки через оснастку \"Расположение\"; без него перенаправление Documents/Downloads/Pictures/Music/Videos применяется не везде (Этот компьютер, библиотеки, приложения). Пусто = не писать (например, Desktop)." }
       }
     },
     "appxPackage": {

@@ -166,6 +166,21 @@ Describe 'Импорт реальной конфигурации проекта'
         @($script:Config.FolderRedirection.Folders | Where-Object { $_.RegValueName -eq '{374DE290-123F-4565-9164-39C4925E467B}' }).Count | Should -Be 1
     }
 
+    It 'FolderRedirection.Folders: библиотечные папки имеют KnownFolderGuid, Desktop - нет' {
+        $byName = @{}
+        foreach ($folder in $script:Config.FolderRedirection.Folders) { $byName[[string]$folder.Name] = $folder }
+        <#
+        Без GUID известной папки Windows применяет перенаправление лишь к "Быстрому доступу",
+        а в "Этом компьютере" и для приложений остаётся старый путь (так работал оригинал).
+        #>
+        $byName['Documents'].KnownFolderGuid | Should -Be '{F42EE2D3-909F-4907-8871-4C22FC0BF756}'
+        $byName['Downloads'].KnownFolderGuid | Should -Be '{7D83EE9B-2244-4E70-B1F5-5393042AF1E4}'
+        $byName['Pictures'].KnownFolderGuid | Should -Be '{0DDD015D-B06C-45D5-8C4C-F59713854639}'
+        $byName['Music'].KnownFolderGuid | Should -Be '{A0C69A99-21C8-4671-8703-7934162FCF1D}'
+        $byName['Videos'].KnownFolderGuid | Should -Be '{35286A68-3C57-41A1-BBB1-0EAE73D76C95}'
+        $byName['Desktop'].KnownFolderGuid | Should -BeNullOrEmpty
+    }
+
     It 'PostInstall и CopyFiles всегда массивы (даже если в конфиге не заданы)' {
         foreach ($app in $script:Config.AppsToInstall) {
             <# Пустой массив - валидное значение (у приложения может не быть пост-установки). #>

@@ -9,7 +9,7 @@ color 0F
 :: Проверка прав администратора
 fltmc >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [!] Требуются права администратора.
+    echo [*] Требуются права администратора.
     echo [*] Перезапуск от имени администратора...
     powershell -Command "Start-Process -FilePath 'cmd' -ArgumentList '/c', '%~f0 %*' -Verb RunAs"
     exit /b
@@ -46,13 +46,13 @@ if NOT "!DETECTED_USER!"=="" (
     set /p "USERNAME_INPUT=Введите имя (Enter для !DETECTED_USER!): "
     if "!USERNAME_INPUT!"=="" set "USERNAME_INPUT=!DETECTED_USER!"
 ) else (
-    echo [!] Не удалось определить пользователя автоматически.
+    echo [*] Не удалось определить пользователя автоматически.
     echo.
     set /p "USERNAME_INPUT=Введите имя пользователя вручную: "
 )
 
 if "!USERNAME_INPUT!"=="" (
-    echo [!] Имя не может быть пустым.
+    echo [*] Имя не может быть пустым.
     timeout /t 2 >nul
     goto input
 )
@@ -65,7 +65,7 @@ set "USER_NAME=!CLEAN_INPUT:"=!"
 set "ENTRY_POINT=%~dp0Configure-Windows.ps1"
 
 if not exist "!ENTRY_POINT!" (
-    echo [!] Ошибка: Точка входа не найдена: !ENTRY_POINT!
+    echo [*] Ошибка: Точка входа не найдена: !ENTRY_POINT!
     pause
     exit /b
 )
@@ -78,7 +78,8 @@ echo.
 :: ЗАПУСК ЧЕРЕЗ POWERSHELL.EXE
 :: -File передаёт аргументы без склейки в -Command, поэтому имя пользователя
 :: не может превратиться в PowerShell-код.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "!ENTRY_POINT!" -UserName "!USER_NAME!" -Interactive -Verbose
+:: -Verbose не передаём: интерактивное меню должно стартовать чисто, без мелькания журналов.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "!ENTRY_POINT!" -UserName "!USER_NAME!" -Interactive
 
 echo.
 echo [*] Скрипт завершил работу.
