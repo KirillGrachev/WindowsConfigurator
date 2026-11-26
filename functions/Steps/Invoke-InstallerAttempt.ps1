@@ -24,6 +24,8 @@
         Путь к cmd.exe.
     .PARAMETER NetFx3Template
         Шаблон источника DISM.
+    .PARAMETER AttemptNumber
+        Номер попытки для уникального имени журнала MSI.
     .PARAMETER WhatIfMode
         Только показать команду.
     .OUTPUTS
@@ -57,9 +59,13 @@
         [AllowEmptyString()]
         [string]$NetFx3Template = '',
 
+        [ValidateRange(1, 100)]
+        [int]$AttemptNumber = 1,
+
         [switch]$WhatIfMode
     )
 
+    $installerLogPath = ''
     if ($AppType -eq 'MSI') {
         $arguments = New-Object System.Collections.Generic.List[string]
         $arguments.Add('/i') | Out-Null
@@ -81,13 +87,48 @@
             Write-Log -Message "В аргументах '$AppName' остались нераскрытые токены: $($expanded.UnresolvedTokens -join ', ')" -Level Warn
         }
 
+        <# 1603 is a generic MSI failure. Keep a verbose log per attempt unless
+           the configuration already supplies /l... or /log. Never turn 1603
+           into success merely because an installation directory exists. #>
+        $hasLogSwitch = @($expanded.Arguments | Where-Object { $_ -match '^/(l[^\s]*|log)$' }).Count -gt 0
+        if (-not $hasLogSwitch) {
+            $loggingState = (Get-WCState).Logging
+            $logRoot = if ($loggingState -and $loggingState.FilePath) {
+                Split-Path -Path ([string]$loggingState.FilePath) -Parent
+            } elseif ($env:ProgramData) {
+                Join-Path -Path $env:ProgramData -ChildPath 'WindowsConfigurator'
+            } else {
+                [System.IO.Path]::GetTempPath()
+            }
+            $logDirectory = Join-Path -Path $logRoot -ChildPath 'InstallerLogs'
+            if (Test-WCTestMode) { $logDirectory = ConvertTo-WCTestModeSandboxPath -Path $logDirectory }
+            $safeName = [regex]::Replace($AppName, '[^A-Za-z0-9._-]', '_')
+            if ($safeName.Length -gt 60) { $safeName = $safeName.Substring(0, 60) }
+            $logName = '{0}_{1}_attempt{2}_{3}.log' -f $safeName, (Get-Date -Format 'yyyyMMdd-HHmmss'), $AttemptNumber, ([guid]::NewGuid().ToString('N').Substring(0, 8))
+            $installerLogPath = Join-Path -Path $logDirectory -ChildPath $logName
+            if (-not $WhatIfMode) {
+                try {
+                    if (-not (Test-Path -LiteralPath $logDirectory -PathType Container)) {
+                        $null = New-Item -Path $logDirectory -ItemType Directory -Force -ErrorAction Stop
+                    }
+                } catch {
+                    Write-Log -Message "Не удалось создать каталог журнала MSI '$logDirectory': $($_.Exception.Message). Установка продолжится без дополнительного журнала." -Level Warn
+                    $installerLogPath = ''
+                }
+            }
+            if ($installerLogPath) {
+                $arguments.Add('/l*v') | Out-Null
+                $arguments.Add('"' + $installerLogPath + '"') | Out-Null
+            }
+        }
+
         if ($WhatIfMode) {
             Write-Log -Message "WHAT IF: $MsiExec $(ConvertTo-ProcessArgumentString -Arguments @($arguments.ToArray()))" -Level Info
-            return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true }
+            return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true; LogPath = $installerLogPath }
         }
 
         $result = Start-ProcessAndWait -FilePath $MsiExec -Arguments @($arguments.ToArray())
-        return [PSCustomObject]@{ ExitCode = $result.ExitCode; WhatIf = $false }
+        return [PSCustomObject]@{ ExitCode = $result.ExitCode; WhatIf = $false; LogPath = $installerLogPath }
     }
 
     if ($AppType -eq 'Executable') {
@@ -130,7 +171,7 @@
             $uncDir = $InstallerPath.Substring(0, $InstallerPath.LastIndexOf('\'))
             $innerCommand = 'pushd "' + $uncDir + '" && call "' + $InstallerPath + '"'
             if ($batchArgs) { $innerCommand += ' ' + $batchArgs }
-            $innerCommand += ' & set "WC_RC=!ERRORLEVEL!" & popd & exit /b !WC_RC!'
+            $innerCommand += ' & set "WC_RC=!ERRORLEVEL!" & popd & exit !WC_RC!'
             $commandToken = '"' + $innerCommand + '"'
 
             if ($WhatIfMode) {
@@ -141,7 +182,7 @@
             <# Рабочий каталог cmd делаем локальным, чтобы не наследовать UNC и не ловить предупреждение cmd. #>
             $localWorkDir = [System.IO.Path]::GetTempPath()
             Write-Log -Message "UNC-батник '$AppName' запускается через pushd (временная буква диска): $InstallerPath" -Level Debug
-            $result = Start-ProcessAndWait -FilePath $CmdInterpreter -Arguments @('/v:on', '/s', '/c', $commandToken) -WorkingDirectory $localWorkDir
+            $result = Start-ProcessAndWait -FilePath $CmdInterpreter -Arguments @('/d', '/v:on', '/s', '/c', $commandToken) -WorkingDirectory $localWorkDir
             return [PSCustomObject]@{ ExitCode = $result.ExitCode; WhatIf = $false }
         }
 
@@ -152,11 +193,11 @@
         if ($batchArgs) { $commandToken += ' ' + $batchArgs }
 
         if ($WhatIfMode) {
-            Write-Log -Message "WHAT IF: $CmdInterpreter /c $commandToken" -Level Info
+            Write-Log -Message "WHAT IF: $CmdInterpreter /d /s /c $commandToken" -Level Info
             return [PSCustomObject]@{ ExitCode = 0; WhatIf = $true }
         }
 
-        $result = Start-ProcessAndWait -FilePath $CmdInterpreter -Arguments @('/c', $commandToken) -WorkingDirectory $localDir
+        $result = Start-ProcessAndWait -FilePath $CmdInterpreter -Arguments @('/d', '/s', '/c', $commandToken) -WorkingDirectory $localDir
         return [PSCustomObject]@{ ExitCode = $result.ExitCode; WhatIf = $false }
     }
 

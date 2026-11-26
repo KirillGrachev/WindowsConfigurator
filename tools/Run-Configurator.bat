@@ -15,7 +15,7 @@ net session >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [INFO] Запрашиваю права администратора...
     powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -ArgumentList '%*' -Verb RunAs"
-    exit /b %ERRORLEVEL%
+    goto :eof
 )
 
 where pwsh >nul 2>nul

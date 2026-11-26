@@ -477,7 +477,7 @@
         "Arguments": { "type": "string", "default": "", "description": "Аргументы установщика. Разбираются с учётом кавычек (Split-CommandLineArguments); токен [InstallerPath] раскрывается в путь установщика." },
         "ProductCode": { "type": "string", "default": "", "description": "MSI ProductCode - маркер 'уже установлено' в ветке Uninstall." },
         "UninstallKey": { "type": "string", "default": "", "description": "Имя ключа Uninstall (для EXE/Batch)." },
-        "InstallPath": { "type": "string", "default": "", "description": "Каталог установки: второй маркер 'уже установлено' и цель CopyFiles ([InstallPath])." },
+        "InstallPath": { "type": "string", "default": "", "description": "Каталог установки: маркер 'уже установлено' и цель CopyFiles ([InstallPath]). Допускаются * и ?: любой найденный каталог означает установку; несколько версий не вызывают переустановку. Маска не выбирает целевой каталог для аргументов установщика." },
         "Retries": { "type": "integer", "minimum": 1, "maximum": 10, "default": 3, "description": "Переопределение Deployment.InstallerRetryCount для этого приложения." },
         "PostInstall": {
           "type": "array",
