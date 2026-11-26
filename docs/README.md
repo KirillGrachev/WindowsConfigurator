@@ -17,7 +17,9 @@ changes.
 - **One config** — `config/config.json` or `config/config.yaml`, validated against `config/config.schema.json`.
 - **Interactive menu** — pick steps one by one, with submenus for MSI/EXE and Appx/MSIX installation.
 - **Batch mode** — run everything with `-RunAll` or selected steps with `-RunSteps`.
-- **Idempotent** — already installed applications and Appx packages are skipped; repeated runs are safe.
+- **Idempotent** — already installed applications and Appx packages are skipped; an `InstallPath` wildcard that matches any directory counts as installed, and repeated runs are safe.
+- **Install diagnostics** — MSI runs keep a per-attempt `/l*v` log, and the failure report prints its path; `1603` remains an error with an actionable hint.
+- **Folder redirection** — writes both the classic value and the Known Folder GUID, and mirrors `Shell Folders` so changes apply in Explorer and apps.
 - **Appx on demand** — menu item 13, not included in `-RunAll`; installed packages and dependencies are skipped, identity is read from the manifest, and minimum versions, optional dependency rollback and manifest warnings are supported.
 - **Secrets** — `env:`, `file:` and `dpapi:` references instead of plaintext keys in the configuration.
 - **TestMode** — registry, processes, files and Appx operations are simulated in a sandbox.
@@ -191,7 +193,7 @@ manifest reliably.
 
 ```text
 Configure-Windows.ps1        entry point and exit codes
-WindowsConfigurator.psd1    module manifest
+WindowsConfigurator.psd1     module manifest
 Run_Windows11Setup.cmd       launcher: elevation + Windows PowerShell 5.1 + interactive menu
 config/config.json           configuration (test data in the repository)
 config/config.schema.json    JSON Schema with defaults and rules
