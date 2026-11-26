@@ -56,17 +56,17 @@
                         }
                     } elseif ($installPath -match '[*?]') {
                         <#
-                        Non-terminal wildcard (for example an Office version
-                        directory): exactly one directory match is enough.
+                        Non-terminal wildcard (for example a versioned app
+                        directory): ANY matching directory is a positive marker.
+                        Several version directories must not trigger reinstall.
+                        This is an existence check, not a version comparison.
                         #>
-                        $pathMatches = @(Get-Item -Path $installPath -ErrorAction SilentlyContinue |
+                        $pathMatches = @(Get-Item -Path $installPath -Force -ErrorAction SilentlyContinue |
                                 Where-Object { $_.PSIsContainer })
-                        if ($pathMatches.Count -eq 1) {
-                            Write-Log -Message "Приложение '$($App.Name)' найдено по InstallPath: $($pathMatches[0].FullName)" -Level Debug
+                        if ($pathMatches.Count -gt 0) {
+                            $matchedNames = @($pathMatches | ForEach-Object { $_.FullName })
+                            Write-Log -Message "Приложение '$($App.Name)' найдено по InstallPath '$installPath': совпадений каталогов $($pathMatches.Count) ($($matchedNames -join '; ')). Повторная установка не требуется." -Level Debug
                             return $true
-                        }
-                        if ($pathMatches.Count -gt 1) {
-                            Write-Log -Message "InstallPath '$installPath' неоднозначен ($($pathMatches.Count) совпадений) - приложение считается неустановленным." -Level Warn
                         }
                     } elseif ([System.IO.Directory]::Exists($installPath)) {
                         Write-Log -Message "Приложение '$($App.Name)' найдено по InstallPath: $installPath" -Level Debug

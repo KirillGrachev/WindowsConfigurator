@@ -27,7 +27,7 @@ and the failed rule).
 
 ```json
 "Meta": {
-  "Version": "2.1.40",
+  "Version": "2.1.41",
   "IsTestData": false,
   "Environment": "PROD",
   "CompanyName": "Example Company",
@@ -168,6 +168,20 @@ network connection (this is what prevents Office Deployment Tool exit code
 installer log, `2250` to the lost network connection, and DISM `0x800F081F` points
 to `SourcePath`/`NetFx3SourceTemplate`, UNC access and the `sxs` version.
 
+For MSI installs, WindowsConfigurator adds `/l*v` with a unique per-attempt log
+under `InstallerLogs` next to the main configurator log (or under
+`%ProgramData%\WindowsConfigurator` when file logging is disabled), unless the
+application arguments already contain `/l...` or `/log`. The failure report prints
+the log path. `1603` remains a failure: it is a generic MSI fatal error and must
+not be added to `SuccessExitCodes`. Inspect the MSI log for `Return value 3`,
+pending reboot, permissions, antivirus interference, or a conflicting version.
+
+Batch installers are launched with `cmd /d` (AutoRun disabled). UNC batches use
+`pushd`/`call`/`popd` and terminate the outer `cmd /c` with `exit`, preserving the
+batch exit code. `Terminate batch job (Y/N)?` is a CMD interruption prompt, not an
+application uninstall prompt; it can still appear if the user presses Ctrl+C or a
+vendor batch explicitly raises a console control event.
+
 ## Built-in application removal
 
 ```json
@@ -247,14 +261,18 @@ directory exists and is not empty. `UninstallKey` is used only when `InstallPath
 is omitted. `PostInstall` runs after installation; `CopyFiles` copies files with
 `{InstallPath}` substitution.
 
-A non-terminal wildcard (for example `C:\Program Files\Microsoft Office*`) must
-match exactly ONE directory. If it matches several, the check cannot decide which
-directory marks the application as installed and conservatively reports "not
-installed" (`InstallPath ... неоднозначен (N совпадений)`), so the installer runs
-again on every pass. Office creates several sibling `Microsoft Office*` folders,
-so prefer a specific directory such as
-`C:\Program Files\Microsoft Office\root\Office16` (Office 2016/2019/2021/2024
-Click-to-Run) over a sibling-matching wildcard.
+A wildcard in `InstallPath` (for example `C:\Program Files\MyApp*`) is an
+**existence marker**, not a version comparison. If it matches one OR several
+directories, the application is considered installed and the installer is skipped.
+Files are ignored; hidden directories are included. This prevents reinstall loops
+when an application keeps several versioned folders side by side.
+
+Do not use a wildcard as the concrete installation target in installer arguments
+(for example `/D=[InstallPath]` or `INSTALLDIR=[InstallPath]`). The wildcard is for
+detection only; it does not choose a destination folder. If the application is
+absent and the installer needs a target, configure a fixed path or let the vendor
+installer choose its default. For MSI, `ProductCode` is version-specific; for
+upgrade-stable detection prefer the vendor `UninstallKey` or a precise path/marker.
 
 ## Appx and MSIX packages
 

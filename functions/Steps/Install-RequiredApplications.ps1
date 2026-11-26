@@ -99,6 +99,7 @@
         if ($VersionLabel) { $tokens['VersionLabel'] = $VersionLabel }
 
         $exitCode = $null
+        $installerLogPath = ''
         $lastError = ''
         $isSuccess = $false
         $alreadyInstalled = $false
@@ -129,8 +130,9 @@
                 #>
                 $attemptResult = Invoke-InstallerAttempt -App $app -AppType $appType -InstallerPath $installerPath `
                     -AppName $appName -Tokens $tokens -Config $Config -MsiExec $msiExec `
-                    -CmdInterpreter $cmdInterpreter -NetFx3Template $netFx3Template -WhatIfMode:$whatIf
+                    -CmdInterpreter $cmdInterpreter -NetFx3Template $netFx3Template -AttemptNumber $attempt -WhatIfMode:$whatIf
                 $exitCode = $attemptResult.ExitCode
+                $installerLogPath = if ($attemptResult.PSObject.Properties['LogPath']) { [string]$attemptResult.LogPath } else { '' }
                 if ($attemptResult.WhatIf) {
                     $isSuccess = $true
                     break
@@ -254,6 +256,7 @@
                     InstallerPath = $failurePath
                     ExitCode      = $(if ($null -ne $exitCode) { $exitCode } else { 'N/A' })
                     ErrorMessage  = $lastError
+                    LogPath       = $installerLogPath
                     Timestamp     = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
                 }) | Out-Null
             Write-Log -Message "[ОШИБКА] Не удалось установить '$appName': $lastError" -Level Error

@@ -12,7 +12,7 @@ if %errorLevel% neq 0 (
     echo [*] Требуются права администратора.
     echo [*] Перезапуск от имени администратора...
     powershell -Command "Start-Process -FilePath 'cmd' -ArgumentList '/c', '%~f0 %*' -Verb RunAs"
-    exit /b
+    goto :eof
 )
 
 :: Автоопределение активного пользователя
@@ -67,7 +67,7 @@ set "ENTRY_POINT=%~dp0Configure-Windows.ps1"
 if not exist "!ENTRY_POINT!" (
     echo [*] Ошибка: Точка входа не найдена: !ENTRY_POINT!
     pause
-    exit /b
+    goto :eof
 )
 
 echo.

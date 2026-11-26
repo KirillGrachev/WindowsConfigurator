@@ -4,6 +4,21 @@ All notable changes to WindowsConfigurator are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.41] - 2026-11-26
+
+### Fixed
+
+- Wildcard `InstallPath` detection now treats one OR several matching directories
+  as installed. Versioned sibling folders no longer cause a reinstall loop; files
+  are ignored and hidden directories are included.
+- MSI installs now create a unique verbose `/l*v` log per attempt (unless the
+  configuration already supplies a logging switch), and the failure report shows
+  the log path. `1603` is still reported as a failure, with a clearer hint.
+- Batch launchers use `cmd /d` to disable AutoRun; the UNC wrapper ends the outer
+  `cmd /c` with `exit` instead of `exit /b`, while preserving the batch exit code.
+  This avoids the outer wrapper's batch-termination prompt on normal completion.
+  Ctrl+C or a vendor batch's own control events can still produce a CMD prompt.
+
 ## [2.1.40] - 2026-11-24
 
 ### Fixed

@@ -38,6 +38,7 @@
         $path = if ($failure.ContainsKey('InstallerPath')) { $failure.InstallerPath } else { '' }
         $code = if ($failure.ContainsKey('ExitCode')) { $failure.ExitCode } else { 'N/A' }
         $reason = if ($failure.ContainsKey('ErrorMessage')) { $failure.ErrorMessage } else { '' }
+        $logPath = if ($failure.ContainsKey('LogPath')) { [string]$failure.LogPath } else { '' }
         $time = if ($failure.ContainsKey('Timestamp')) { $failure.Timestamp } else { '' }
 
         $lines.Add("[-] Приложение : $name") | Out-Null
@@ -45,6 +46,7 @@
         $lines.Add("    Путь       : $path") | Out-Null
         $lines.Add("    Код ошибки : $code") | Out-Null
         $lines.Add("    Причина    : $reason") | Out-Null
+        if ($logPath) { $lines.Add("    Журнал     : $logPath") | Out-Null }
         $lines.Add("    Время      : $time") | Out-Null
         $lines.Add(('-' * 60)) | Out-Null
     }

@@ -478,11 +478,23 @@ Describe 'Test-SoftwareInstallation: определение установлен
         } finally { Remove-Item -Path $root -Recurse -Force }
     }
 
-    It 'неоднозначный wildcard InstallPath не считается установленным' {
+    It 'несколько каталогов по маске версии считаются установленным приложением' {
+        Mock Test-RegistryKeyExists { return $true }
+        $root = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-installed-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
+        $null = New-Item -Path (Join-Path $root 'App 1.0') -ItemType Directory -Force
+        $null = New-Item -Path (Join-Path $root 'App 2.0') -ItemType Directory -Force
+        [System.IO.File]::WriteAllText((Join-Path $root 'App.exe'), 'x')
+        try {
+            Test-SoftwareInstallation -App @{ Name = 'X'; Type = 'MSI'; InstallPath = (Join-Path $root 'App*'); UninstallKey = '{stale}' } | Should -BeTrue
+            Should -Invoke Test-RegistryKeyExists -Times 0
+        } finally { Remove-Item -Path $root -Recurse -Force }
+    }
+
+    It 'маска InstallPath не считает файлы каталогами установки' {
         Mock Test-RegistryKeyExists { return $false }
         $root = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("wc-installed-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 6))
-        $null = New-Item -Path (Join-Path $root 'App 1') -ItemType Directory -Force
-        $null = New-Item -Path (Join-Path $root 'App 2') -ItemType Directory -Force
+        $null = New-Item -Path $root -ItemType Directory -Force
+        [System.IO.File]::WriteAllText((Join-Path $root 'App 1.0.txt'), 'x')
         try {
             Test-SoftwareInstallation -App @{ Name = 'X'; Type = 'MSI'; InstallPath = (Join-Path $root 'App*') } | Should -BeFalse
         } finally { Remove-Item -Path $root -Recurse -Force }
@@ -617,15 +629,17 @@ Describe 'Шаг Installation: MSI/EXE/Batch/DISM' {
         Install-Software -Config $script:InstallConfig -AppName 'Test Agent' -Confirm:$false | Out-Null
         $call = $script:ProcCalls[0]
         $call.FilePath | Should -Be 'cmd.exe'
-        $call.Arguments[0] | Should -Be '/v:on'
-        $call.Arguments[1] | Should -Be '/s'
-        $call.Arguments[2] | Should -Be '/c'
-        $cmd = [string]$call.Arguments[3]
+        $call.Arguments[0] | Should -Be '/d'
+        $call.Arguments[1] | Should -Be '/v:on'
+        $call.Arguments[2] | Should -Be '/s'
+        $call.Arguments[3] | Should -Be '/c'
+        $cmd = [string]$call.Arguments[4]
         <# pushd сам подключает ресурс и назначает временную букву диска -> корректный CWD вместо %SystemRoot%. #>
         $cmd.Contains('pushd "\\fileserver01.test.local\Deploy$\Apps\Agent"') | Should -BeTrue
         $cmd.Contains('call "\\fileserver01.test.local\Deploy$\Apps\Agent\install.cmd"') | Should -BeTrue
         <# Код возврата батника сохраняется, т.к. popd обнуляет ERRORLEVEL. #>
-        $cmd.Contains('exit /b !WC_RC!') | Should -BeTrue
+        $cmd.Contains('exit !WC_RC!') | Should -BeTrue
+        $cmd.Contains('exit /b !WC_RC!') | Should -BeFalse
         <# Рабочий каталог cmd локальный, чтобы не наследовать UNC. #>
         ([string]$call.WorkingDirectory).StartsWith('\\') | Should -BeFalse
     }
@@ -635,7 +649,7 @@ Describe 'Шаг Installation: MSI/EXE/Batch/DISM' {
             -AppType 'Batch' -InstallerPath 'C:\Tools\Agent\install.cmd' -AppName 'L' -Tokens @{} -Config @{} | Out-Null
         $call = $script:ProcCalls[0]
         $call.FilePath | Should -Be 'cmd.exe'
-        ($call.Arguments -join ' ') | Should -Be '/c "C:\Tools\Agent\install.cmd"'
+        ($call.Arguments -join ' ') | Should -Be '/d /s /c "C:\Tools\Agent\install.cmd"'
         $call.WorkingDirectory | Should -Be 'C:\Tools\Agent'
     }
 
@@ -704,6 +718,38 @@ Describe 'Шаг Installation: MSI/EXE/Batch/DISM' {
         $result.Data.Failed[0].ExitCode | Should -Be 1603
         $result.Data.Failed[0].Name | Should -Be 'Test Agent'
         $result.Data.Failed[0].ErrorMessage | Should -Match '1603 = fatal error'
+    }
+
+    It 'MSI получает уникальный verbose-журнал, а путь попадает в отчёт 1603' {
+        $logRoot = Join-Path -Path $TestDrive -ChildPath 'wc-msi-logs'
+        $null = Initialize-Logging -Level 'None' -FilePath (Join-Path $logRoot 'configurator.log')
+        try {
+            Mock Start-ProcessAndWait -ParameterFilter { $FilePath -like '*msiexec*' } {
+                $script:ProcCalls.Add(@{ FilePath = $FilePath; Arguments = @($Arguments); WorkingDirectory = $WorkingDirectory }) | Out-Null
+                return [PSCustomObject]@{ ExitCode = 1603; StandardOutput = ''; StandardError = ''; FilePath = $FilePath; ArgumentString = '' }
+            }
+            $result = Install-Software -Config $script:InstallConfig -AppName 'Test Office Suite' -VersionLabel 'Win11-24H2' -Confirm:$false
+            $result.Status | Should -Be 'Failed'
+            $call = $script:ProcCalls | Where-Object { $_.FilePath -like '*msiexec*' } | Select-Object -First 1
+            $call.Arguments | Should -Contain '/l*v'
+            $result.Data.Failed[0].LogPath | Should -Match 'attempt1_.*\.log$'
+            $report = Write-InstallFailureReport -Failures $result.Data.Failed
+            $report | Should -Match 'Журнал'
+            $report | Should -Match ([regex]::Escape($result.Data.Failed[0].LogPath))
+        } finally { $null = Initialize-Logging -Level 'None' -FilePath '' }
+    }
+
+    It 'MSI не перезаписывает пользовательский ключ журналирования' {
+        $config = Copy-ConfigValue -Value $script:InstallConfig
+        $config.AppsToInstall[0].Arguments = '/qn /l*v "C:\Logs\custom.log"'
+        Mock Start-ProcessAndWait -ParameterFilter { $FilePath -like '*msiexec*' } {
+            $script:ProcCalls.Add(@{ FilePath = $FilePath; Arguments = @($Arguments); WorkingDirectory = $WorkingDirectory }) | Out-Null
+            return [PSCustomObject]@{ ExitCode = 0; StandardOutput = ''; StandardError = ''; FilePath = $FilePath; ArgumentString = '' }
+        }
+        Install-Software -Config $config -AppName 'Test Office Suite' -VersionLabel 'Win11-24H2' -Confirm:$false | Out-Null
+        $call = $script:ProcCalls | Where-Object { $_.FilePath -like '*msiexec*' } | Select-Object -First 1
+        @($call.Arguments | Where-Object { $_ -eq '/l*v' }).Count | Should -Be 1
+        $call.Arguments | Should -Contain '"C:\Logs\custom.log"'
     }
 
     It 'код 1638 считается уже установленным продуктом, а не ошибкой' {
